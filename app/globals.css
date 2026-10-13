@@ -162,3 +162,7 @@ html.cursor-on .cn-cursor.ring.hot { width: 48px; height: 48px; margin: -24px 0 
 html.cursor-on .cn-cursor.ring.text, html.cursor-on .cn-cursor.dot.text { opacity: 0; }
 html.cursor-on, html.cursor-on a, html.cursor-on button, html.cursor-on select, html.cursor-on label, html.cursor-on [role="checkbox"] { cursor: none; }
 html.cursor-on input, html.cursor-on textarea { cursor: text; }
+
+/* Typed text in text inputs: Geist Mono + lime caret; placeholders keep the UI font */
+.fx-input { font-family: var(--font-geist-mono), ui-monospace, monospace; letter-spacing: .02em; caret-color: rgb(var(--lime)); }
+.fx-input::placeholder { font-family: var(--font-space-grotesk), system-ui, sans-serif; letter-spacing: normal; }
