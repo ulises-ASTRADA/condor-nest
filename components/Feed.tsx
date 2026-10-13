@@ -147,25 +147,43 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
 
           {total === 0 ? <Empty f={f} set={set} /> : (
             <LayoutGroup>
-              <m.ul className="mt-4 grid gap-3 sm:grid-cols-2" initial={still ? false : 'hidden'} animate="show"
+              <m.div className="mt-4 flex flex-col gap-3" initial={still ? false : 'hidden'} animate="show"
                 variants={{ show: { transition: { staggerChildren: 0.05, delayChildren: 0.4 } } }}>
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {shown.flatMap((l, i) => {
-                    const out = [];
-                    if (i === dataless && dataless > 0) out.push(<m.li layout={!big && !still} key="dataless" className="col-span-full pt-2 font-mono text-xs uppercase tracking-[.08em] text-fg-muted" exit={{ opacity: 0 }}>Sin datos de competencia</m.li>);
-                    out.push(
-                      <m.li key={l.id} layout={!big && !still ? 'position' : false} variants={i < 8 ? item : undefined}
-                        initial={i < 8 ? undefined : still ? false : item.hidden} whileInView={i < 8 ? undefined : item.show} viewport={{ once: true, margin: '-10% 0px' }}
-                        exit={item.exit} transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8, delay: Math.min(i, 12) * 0.015 }}
-                        whileTap={still ? undefined : { scale: 0.98 }}>
-                        <ListingCard listing={l} now={now} />
-                      </m.li>,
-                    );
-                    if (i > 3 && (i + 1) % 10 === 0) out.push(<li key={`af-${i}`} className="col-span-full"><Affiliate url={affUrl} /></li>);
-                    return out;
-                  })}
-                </AnimatePresence>
-              </m.ul>
+                {(() => {
+                  // Masonry: split each run of cards into 2 column arrays by index (i % 2) so
+                  // top-to-bottom order follows the sort. Mobile: columns become display:contents
+                  // and CSS order restores the exact sort order in one column.
+                  type Seg = { key: string; items: { l: typeof shown[number]; i: number }[]; after?: React.ReactNode };
+                  const segs: Seg[] = [{ key: 's0', items: [] }];
+                  shown.forEach((l, i) => {
+                    if (i === dataless && dataless > 0) segs.push({ key: 'dataless', items: [] });
+                    segs[segs.length - 1].items.push({ l, i });
+                    if (i > 3 && (i + 1) % 10 === 0) { segs[segs.length - 1].after = <Affiliate url={affUrl} />; segs.push({ key: `s${i + 1}`, items: [] }); }
+                  });
+                  return segs.filter((g) => g.items.length || g.after || g.key === 'dataless').map((g) => (
+                    <div key={g.key} className="flex flex-col gap-3">
+                      {g.key === 'dataless' && <p className="pt-2 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Sin datos de competencia</p>}
+                      <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:items-start">
+                        {[0, 1].map((c) => (
+                          <ul key={c} className="contents sm:flex sm:flex-col sm:gap-3">
+                            <AnimatePresence mode="popLayout" initial={false}>
+                              {g.items.filter((_, k) => k % 2 === c).map(({ l, i }) => (
+                                <m.li key={l.id} style={{ order: i }} layout={!big && !still ? 'position' : false} variants={i < 8 ? item : undefined}
+                                  initial={i < 8 ? undefined : still ? false : item.hidden} whileInView={i < 8 ? undefined : item.show} viewport={{ once: true, margin: '-10% 0px' }}
+                                  exit={item.exit} transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8, delay: Math.min(i, 12) * 0.015 }}
+                                  whileTap={still ? undefined : { scale: 0.98 }}>
+                                  <ListingCard listing={l} now={now} />
+                                </m.li>
+                              ))}
+                            </AnimatePresence>
+                          </ul>
+                        ))}
+                      </div>
+                      {g.after}
+                    </div>
+                  ));
+                })()}
+              </m.div>
               <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>
               {organic.length > limit && (
                 <div className="mt-6 text-center"><button onClick={() => setLimit((x) => x + PAGE)} className="min-h-tap rounded-pill border border-lime/60 px-6 text-lime hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">Ver más</button></div>
