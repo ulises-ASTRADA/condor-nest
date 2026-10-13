@@ -20,15 +20,16 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
   const err = st === 'invalid' || st === 'error';
   return (
     <LazyMotion features={domAnimation}>
-      <section aria-labelledby={`${id}-t`} className={`rounded-card border border-border bg-surface p-4 ${variant === 'compact' ? '' : 'sm:p-6'}`}>
-        <h2 id={`${id}-t`} className="font-medium text-lg">Las mejores oportunidades, cada lunes</h2>
-        {variant !== 'compact' && <p className="mt-1 text-sm text-fg-muted">Un mail por semana con lo que cierra pronto y lo que tiene poca competencia. Sin spam.</p>}
+      <section aria-labelledby={`${id}-t`} className={`rounded-card border border-violet/35 p-[18px] [background:radial-gradient(120%_140%_at_0%_0%,rgb(var(--violet)/.18),transparent_60%),rgb(var(--surface))] ${variant === 'compact' ? '' : 'sm:p-5'}`}>
+        {variant === 'compact'
+          ? <><h2 id={`${id}-t`} className="font-display text-base font-semibold">Cada lunes, en tu mail</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Lo que cierra pronto y lo que tiene poca competencia.</p></>
+          : <><h2 id={`${id}-t`} className="font-display text-lg font-semibold">Las mejores oportunidades, cada lunes</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Un mail por semana con lo que cierra pronto y lo que tiene poca competencia. Sin spam.</p></>}
         <AnimatePresence initial={false}>
           {!done && (
             <m.form key="f" onSubmit={submit} noValidate className="mt-3 overflow-hidden" exit={still ? undefined : { height: 0, opacity: 0, transition: { duration: 0.24 } }}>
-              <label htmlFor={id} className="mb-1 block text-sm">Tu email</label>
+              <label htmlFor={id} className={variant === 'compact' ? 'sr-only' : 'mb-1 block text-sm'}>Tu email</label>
               <m.div key={shake} className="flex gap-2" animate={still || !shake ? undefined : { x: [0, -6, 6, -4, 4, 0] }} transition={{ duration: 0.32 }}>
-                <input id={id} type="email" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); if (err) setSt('idle'); }}
+                <input id={id} type="email" placeholder={variant === 'compact' ? 'Tu email' : undefined} autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); if (err) setSt('idle'); }}
                   aria-invalid={err} aria-describedby={`${id}-m`}
                   className={`min-h-tap w-full min-w-0 rounded-pill border bg-surface-2 px-4 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime ${err ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6),0_0_16px_-4px_rgb(var(--danger)/.5)]' : 'border-border'}`} />
                 <m.button layout={!still} type="submit" disabled={st === 'submitting'} aria-label={st === 'submitting' ? 'Enviando…' : undefined}

@@ -1,12 +1,13 @@
-// Affiliate slot (§3.7). Renders only when a real affiliate URL is configured; no example data is shipped.
-export function Affiliate() {
-  const url = process.env.NEXT_PUBLIC_LEDGER_AFFILIATE_URL;
-  if (!url) return null;
+// Affiliate slot (§3.7): Mercado Libre Argentina. URL comes from the AFFILIATE_URL env var (server-side);
+// until Ulises's Mercado Libre affiliate link is set, it falls back to a plain public listing (NOT tracked).
+export const AFFILIATE_FALLBACK = 'https://listado.mercadolibre.com.ar/hardware-wallet';
+export function affiliateUrl() { return process.env.AFFILIATE_URL || AFFILIATE_FALLBACK; }
+export function Affiliate({ url }: { url: string }) {
   return (
-    <aside className="rounded-card bg-surface-2 p-4 text-sm" aria-label="Afiliado">
-      <p className="font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Afiliado</p>
-      <a href={url} rel="sponsored noopener" target="_blank" className="mt-1 block font-medium text-fg underline-offset-4 hover:underline" aria-label="Guardá tus premios en una hardware wallet: Ledger (abre sitio externo)">Guardá tus premios en una hardware wallet → Ledger ↗</a>
-      <p className="mt-1 text-fg-muted">Si comprás con este link, Condor Nest recibe una comisión. No cambia el precio.</p>
+    <aside className="rounded-card border border-border bg-surface-2 px-4 py-3.5 text-sm" aria-label="Afiliado">
+      <p className="font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Afiliado</p>
+      <a href={url} rel="sponsored noopener" target="_blank" className="my-1.5 block text-fg underline-offset-4 hover:text-lime hover:underline" aria-label="Hardware wallets en Mercado Libre (abre sitio externo)">Hardware wallet → Mercado Libre ↗</a>
+      <p className="text-xs text-fg-muted">Condor Nest recibe comisión. No cambia el precio.</p>
     </aside>
   );
 }

@@ -1,6 +1,7 @@
 import { getListings, lastIngest } from '@/lib/supabase';
 import { filtersFromSearch } from '@/lib/rank';
 import { Feed } from '@/components/Feed';
+import { affiliateUrl } from '@/components/Affiliate';
 import { UpdatedStamp } from '@/components/UpdatedStamp';
 import { isOpen } from '@/lib/rank';
 export const revalidate = 300;
@@ -18,7 +19,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         <p className="mt-2 text-fg-muted">Hackathons, bounties y grants en LatAm o solo para LatAm, en un solo feed, actualizado todos los días.</p>
         <UpdatedStamp iso={updated} open={open} now={now.toISOString()} />
       </section>
-      <Feed listings={listings} now={now.toISOString()} initial={{ f, sort }} />
+      <Feed listings={listings} now={now.toISOString()} initial={{ f, sort }} affUrl={affiliateUrl()} />
     </>
   );
 }

@@ -15,8 +15,11 @@ test('menos competencia: eligible first, then score, data-less last by deadline'
   assert.deepEqual(r.map((x) => x.id), ['b', 'c', 'd', 'a']);
 });
 test('type + IRL filters', () => {
-  assert.equal(matches(L({}), { ...DEFAULT_FILTERS, tipo: 'hackathon' }, now), false);
-  assert.equal(matches(L({ modality: 'irl' }), { ...DEFAULT_FILTERS, irl: true }, now), true);
+  assert.equal(matches(L({}), { ...DEFAULT_FILTERS, tipos: ['hackathon'] }, now), false);
+  assert.equal(matches(L({ modality: 'irl' }), { ...DEFAULT_FILTERS, modalidades: ['irl'] }, now), true);
+  assert.equal(matches(L({ modality: 'online' }), { ...DEFAULT_FILTERS, modalidades: ['irl'] }, now), false);
+  assert.equal(matches(L({ title: 'Agentic Banking MCP' }), { ...DEFAULT_FILTERS, ecos: ['IA'] }, now), true);
+  assert.equal(matches(L({ title: 'Write a thread' }), { ...DEFAULT_FILTERS, ecos: ['Ethereum'] }, now), false);
 });
 test('sig2 + deadline states', () => {
   assert.equal(sig2(41.6), 42); assert.equal(sig2(1234), 1200);
