@@ -1,20 +1,21 @@
 -- Condor Nest security hardening (2026-10-13).
--- PART A is safe with the currently deployed app (applied live 2026-10-13).
+-- PART A is safe with the currently deployed app. Applied live 2026-10-13, EXCEPT listings_https_urls (deferred).
 -- PART B must be applied ONLY AFTER deploying the security-fixes branch with SUPABASE_SERVICE_ROLE_KEY set.
 
 -- ===== PART A: table grants (deployed app only needs anon SELECT on listings + ingest_runs) =====
 revoke all on public.listings, public.ingest_runs, public.newsletter_subscribers, public.cn_secrets from anon, authenticated;
 grant select on public.listings to anon, authenticated;
 grant select on public.ingest_runs to anon, authenticated; -- removed in PART B
+-- public ingest status exposes only ran_at of successful runs. Default privileges grant ALL on new
+-- relations, and a simple view is auto-updatable and owner-run, so revoke ALL before granting SELECT.
+create or replace view public.cn_last_ingest as select ran_at from public.ingest_runs where error is null;
+revoke all on public.cn_last_ingest from anon, authenticated;
+grant select on public.cn_last_ingest to anon, authenticated;
 -- https-only links (NOT VALID: checks new/updated rows only; existing rows already verified https)
 alter table public.listings add constraint listings_https_urls check (
   (source_url is null or source_url ~ '^https://') and (apply_url is null or apply_url ~ '^https://')
   and (verified_url is null or verified_url ~ '^https://') and (source_post_url is null or source_post_url ~ '^https://')) not valid;
 
--- ===== PART B: after deploy =====
--- B1. public ingest status exposes only ran_at of successful runs
-create or replace view public.cn_last_ingest as select ran_at from public.ingest_runs where error is null;
-grant select on public.cn_last_ingest to anon, authenticated;
 drop policy if exists "public read" on public.ingest_runs;
 revoke select on public.ingest_runs from anon, authenticated;
 
