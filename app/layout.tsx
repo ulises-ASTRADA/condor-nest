@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: '#07080B', colorScheme: 'dark light', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
 // Runs before paint: theme + reduced-motion preference from localStorage (no flash).
-const boot = `try{var t=localStorage.getItem('cn-theme');if(t==='light'||(!t&&matchMedia('(prefers-color-scheme: light)').matches))document.documentElement.classList.add('light');if(localStorage.getItem('cn-reduce-motion')==='1')document.documentElement.setAttribute('data-reduce-motion','')}catch(e){}`;
+const boot = `try{var t=localStorage.getItem('cn-theme');if(t==='light')document.documentElement.classList.add('light');if(localStorage.getItem('cn-reduce-motion')==='1')document.documentElement.setAttribute('data-reduce-motion','')}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
