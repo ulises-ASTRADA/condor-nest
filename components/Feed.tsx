@@ -161,7 +161,6 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
                         <ListingCard listing={l} now={now} />
                       </m.li>,
                     );
-                    if (i === 4) out.push(<li key="nl" className="col-span-full"><Newsletter variant="inline" /></li>);
                     if (i > 3 && (i + 1) % 10 === 0) out.push(<li key={`af-${i}`} className="col-span-full"><Affiliate url={affUrl} /></li>);
                     return out;
                   })}

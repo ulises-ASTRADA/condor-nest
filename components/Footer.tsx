@@ -4,8 +4,8 @@ import { Newsletter } from './Newsletter';
 export function Footer() {
   return (
     <footer className="border-t border-border bg-bg/80">
-      <div className="mx-auto grid max-w-content gap-8 px-4 py-10 lg:grid-cols-2 lg:px-6">
-        <Newsletter variant="footer" />
+      <div className="mx-auto grid max-w-content gap-6 px-4 py-8 lg:px-6">
+        <div className="lg:hidden"><Newsletter variant="mini" /></div>
         <div className="space-y-3 text-sm text-fg-muted">
           <nav aria-label="Pie" className="flex flex-wrap gap-x-4 gap-y-1">
             <Link className="min-h-tap inline-flex items-center hover:text-fg" href="/acerca">Acerca</Link>
