@@ -20,27 +20,27 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
   const err = st === 'invalid' || st === 'error';
   return (
     <LazyMotion features={domAnimation}>
-      <section aria-labelledby={`${id}-t`} className={`rounded-card border border-violet/35 p-[18px] [background:radial-gradient(120%_140%_at_0%_0%,rgb(var(--violet)/.18),transparent_60%),rgb(var(--surface))] ${variant === 'compact' ? '' : 'sm:p-5'}`}>
+      <section aria-labelledby={`${id}-t`} className={`rounded-card border border-violet/35 [background:radial-gradient(120%_140%_at_0%_0%,rgb(var(--violet)/.18),transparent_60%),rgb(var(--surface))] ${variant === 'compact' ? 'p-[18px]' : 'p-5'}`}>
         {variant === 'compact'
           ? <><h2 id={`${id}-t`} className="font-display text-base font-semibold">Cada lunes, en tu mail</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Lo que cierra pronto y lo que tiene poca competencia.</p></>
-          : <><h2 id={`${id}-t`} className="font-display text-lg font-semibold">Las mejores oportunidades, cada lunes</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Un mail por semana con lo que cierra pronto y lo que tiene poca competencia. Sin spam.</p></>}
+          : <><h2 id={`${id}-t`} className="font-display text-lg font-semibold leading-6">Las mejores oportunidades, cada lunes</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Un mail por semana con lo que cierra pronto y lo que tiene poca competencia. Sin spam.</p></>}
         <AnimatePresence initial={false}>
           {!done && (
-            <m.form key="f" onSubmit={submit} noValidate className="mt-3 overflow-hidden" exit={still ? undefined : { height: 0, opacity: 0, transition: { duration: 0.24 } }}>
-              <label htmlFor={id} className={variant === 'compact' ? 'sr-only' : 'mb-1 block text-sm'}>Tu email</label>
-              <m.div key={shake} className="flex gap-2" animate={still || !shake ? undefined : { x: [0, -6, 6, -4, 4, 0] }} transition={{ duration: 0.32 }}>
-                <input id={id} type="email" placeholder={variant === 'compact' ? 'Tu email' : undefined} autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); if (err) setSt('idle'); }}
+            <m.form key="f" onSubmit={submit} noValidate className="overflow-hidden" exit={still ? undefined : { height: 0, opacity: 0, transition: { duration: 0.24 } }}>
+              <label htmlFor={id} className={variant === 'compact' ? 'sr-only' : 'mb-2 block text-[13px] text-fg-muted'}>Tu email</label>
+              <m.div key={shake} className="flex flex-col gap-2" animate={still || !shake ? undefined : { x: [0, -6, 6, -4, 4, 0] }} transition={{ duration: 0.32 }}>
+                <input id={id} type="email" placeholder="vos@ejemplo.com" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); if (err) setSt('idle'); }}
                   aria-invalid={err} aria-describedby={`${id}-m`}
-                  className={`min-h-tap w-full min-w-0 rounded-pill border bg-surface-2 px-4 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime ${err ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6),0_0_16px_-4px_rgb(var(--danger)/.5)]' : 'border-border'}`} />
+                  className={`h-12 w-full min-w-0 rounded-[12px] border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime ${err ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6),0_0_16px_-4px_rgb(var(--danger)/.5)]' : 'border-border'}`} />
                 <m.button layout={!still} type="submit" disabled={st === 'submitting'} aria-label={st === 'submitting' ? 'Enviando…' : undefined}
-                  className={`min-h-tap shrink-0 rounded-pill bg-lime font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${st === 'submitting' ? 'grid w-tap place-items-center' : 'px-5'}`}>
+                  className={`h-12 w-full rounded-[12px] bg-lime font-bold text-primary-fg shadow-[0_0_24px_-6px_rgb(var(--lime)/.6)] transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg grid place-items-center`}>
                   {st === 'submitting' ? <span className="h-5 w-5 animate-spin rounded-pill border-2 border-primary-fg/30 border-t-primary-fg [animation-duration:800ms]" /> : 'Suscribirme'}
                 </m.button>
               </m.div>
             </m.form>
           )}
         </AnimatePresence>
-        <div id={`${id}-m`} aria-live="polite" className="mt-2 min-h-5 text-sm">
+        <div id={`${id}-m`} aria-live="polite" className={`text-sm ${done || err ? 'mt-2' : ''}`}>
           {done && (
             <p className="flex items-center gap-2 font-medium">
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="text-lime"><m.path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" initial={still ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }} /></svg>
@@ -49,7 +49,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
           )}
           {err && <m.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-danger">{MSG[st]}</m.p>}
         </div>
-        <p className="mt-1 text-xs text-fg-muted">Podés darte de baja cuando quieras.</p>
+        {variant !== 'compact' && <p className="mt-2.5 text-xs text-fg-muted">Podés darte de baja cuando quieras.</p>}
       </section>
     </LazyMotion>
   );

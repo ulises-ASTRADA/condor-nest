@@ -47,7 +47,7 @@ function Counter({ n, still }: { n: number; still: boolean }) {
   );
 }
 
-export function Feed({ listings, now, initial, affUrl }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string }) {
+export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode }) {
   const [f, setF] = useState<Filters>(initial.f);
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
@@ -55,6 +55,8 @@ export function Feed({ listings, now, initial, affUrl }: { listings: Listing[]; 
   const [lowEnd, setLowEnd] = useState(false);
   const first = useRef(true);
   const nowD = useMemo(() => new Date(now), [now]);
+  const [tick, setTick] = useState(() => new Date(now).getTime());
+  useEffect(() => { setTick(Date.now()); const t = setInterval(() => setTick(Date.now()), 30000); return () => clearInterval(t); }, []);
 
   useEffect(() => {
     setLowEnd((navigator.hardwareConcurrency ?? 8) <= 4);
@@ -87,13 +89,12 @@ export function Feed({ listings, now, initial, affUrl }: { listings: Listing[]; 
   const search = (
     <label className="block">
       <span className="sr-only">Buscar</span>
-      <input type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="🔍 Buscar…"
-        className="min-h-tap w-full rounded-pill border border-border bg-surface-2 px-4 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime" />
+      <input type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="⌕  Buscar hackathons, bounties, grants…"
+        className="h-12 w-full rounded-[12px] border border-border bg-surface-2 px-3.5 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime" />
     </label>
   );
   const mobileControls = (
-    <div className="space-y-3">
-      {search}
+    <div className="mt-3">
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
         {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Chip>)}
@@ -104,41 +105,35 @@ export function Feed({ listings, now, initial, affUrl }: { listings: Listing[]; 
   );
   const sideControls = (
     <div className="text-sm">
-      {search}
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
       <H4>Modalidad</H4>
       {(['online', 'irl'] as Modality[]).map((m) => <Check key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Check>)}
       <H4>Ecosistema</H4>
       {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
-      <H4>Estado</H4>
-      <Check on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Check>
     </div>
   );
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_300px]">
-        <aside className="hidden lg:block" aria-label="Filtros"><div className="sticky top-[90px]"><p className="mb-3 font-mono text-[11px] uppercase tracking-[.08em] text-fg-muted">Filtros</p>{sideControls}</div></aside>
+      <div className="grid gap-6 pt-5 lg:grid-cols-[240px_minmax(0,1fr)_300px] lg:gap-8 lg:pt-8">
+        <aside className="hidden lg:block" aria-label="Filtros"><div className="sticky top-[90px]">{sideControls}</div></aside>
         <section aria-label="Oportunidades" className="min-w-0">
+          {hero}
+          <div className="mt-4">{search}</div>
           <div className="lg:hidden">{mobileControls}</div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 lg:mt-0">
+          <div className="mt-3.5 flex items-center justify-between gap-2 text-sm">
             <p className="text-sm text-fg-muted"><Counter n={total} still={still} /></p>
-            <div role="radiogroup" aria-label="Ordenar" className="chip-row -mx-4 flex max-w-full gap-1 overflow-x-auto px-4 text-sm sm:mx-0 sm:px-0">
-              <span className="self-center pr-1 text-fg-muted">Ordenar:</span>
-              <LayoutGroup id="sort">
-                {SORTS.map((s) => (
-                  <button key={s.id} role="radio" aria-checked={sort === s.id} onClick={() => setSort(s.id)}
-                    className={`relative min-h-tap shrink-0 px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime rounded ${sort === s.id ? 'text-lime' : 'text-fg-muted hover:text-fg'}`}>
-                    {s.label}
-                    {sort === s.id && <m.span layoutId="sort-indicator" className="absolute inset-x-2 bottom-1.5 h-0.5 rounded-pill bg-lime" transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }} />}
-                  </button>
-                ))}
-              </LayoutGroup>
-            </div>
+            <label className="relative flex items-center gap-1.5 rounded-[10px] border border-lime/50 px-2.5 py-1.5 text-lime focus-within:ring-2 focus-within:ring-lime">
+              <span aria-hidden="true">⇅</span><span className="sr-only">Ordenar</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="cursor-pointer appearance-none bg-transparent pr-4 text-lime focus:outline-none">
+                {SORTS.map((s) => <option key={s.id} value={s.id} className="bg-surface text-fg">{s.label}</option>)}
+              </select>
+              <span aria-hidden="true" className="pointer-events-none absolute right-2.5">▾</span>
+            </label>
           </div>
           {sort === 'menos-competencia' && (
-            <p className="mt-1 text-xs text-fg-muted">Ordenado por premio por participante (estimado). <Link href="/acerca#ranking" className="text-lime underline-offset-4 hover:underline">¿Cómo se calcula?</Link></p>
+            <p className="mt-1.5 text-xs text-fg-muted">Ordenado por premio por participante (estimado). <Link href="/acerca#ranking" className="text-cyan underline decoration-cyan/50 underline-offset-4 hover:underline">¿Cómo se calcula?</Link></p>
           )}
 
           {featured.map((l) => (
@@ -150,7 +145,7 @@ export function Feed({ listings, now, initial, affUrl }: { listings: Listing[]; 
 
           {total === 0 ? <Empty f={f} set={set} /> : (
             <LayoutGroup>
-              <m.ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" initial={still ? false : 'hidden'} animate="show"
+              <m.ul className="mt-4 grid gap-3 sm:grid-cols-2" initial={still ? false : 'hidden'} animate="show"
                 variants={{ show: { transition: { staggerChildren: 0.05, delayChildren: 0.4 } } }}>
                 <AnimatePresence mode="popLayout" initial={false}>
                   {shown.flatMap((l, i) => {
@@ -170,18 +165,23 @@ export function Feed({ listings, now, initial, affUrl }: { listings: Listing[]; 
                   })}
                 </AnimatePresence>
               </m.ul>
+              <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>
               {organic.length > limit && (
                 <div className="mt-6 text-center"><button onClick={() => setLimit((x) => x + PAGE)} className="min-h-tap rounded-pill border border-lime/60 px-6 text-lime hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">Ver más</button></div>
               )}
             </LayoutGroup>
           )}
         </section>
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-[90px] lg:self-start">
+        <aside className="hidden flex-col gap-4 lg:flex lg:sticky lg:top-[90px] lg:self-start">
           <Newsletter variant="compact" />
           {closingWeek.length > 0 && (
             <section aria-labelledby="cs">
-              <h4 id="cs" className="mb-2.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierran esta semana</h4>
-              <ul className="space-y-3">{closingWeek.map((l) => <li key={l.id}><ListingCard listing={l} variant="compact" now={now} /></li>)}</ul>
+              <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierran esta semana</h4>
+              <ul>{closingWeek.map((l) => { const ms = new Date(effDeadline(l)!).getTime() - tick; return (
+                <li key={l.id} className="border-b border-border py-2.5 text-sm">
+                  <Link href={`/o/${l.slug}`} className="hover:text-lime" lang={l.titleLang}>{l.title}</Link>
+                  <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? 'cerrada' : `en ${rel(ms)}`}</div>
+                </li>); })}</ul>
             </section>
           )}
           <Affiliate url={affUrl} />
@@ -197,4 +197,9 @@ function Empty({ f, set }: { f: Filters; set: (p: Partial<Filters>) => void }) {
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
   if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
+}
+
+function rel(ms: number) {
+  const m = Math.floor(ms / 6e4), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  return d > 0 ? `${d} d ${h} h` : h > 0 ? `${h} h ${mm} min` : `${mm} min`;
 }
