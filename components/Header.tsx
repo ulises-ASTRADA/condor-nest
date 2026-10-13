@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Wordmark } from './Brand';
 import { ThemeToggle } from './Toggles';
+import { MusicToggle } from './Music';
 export function Header() {
   return (
     <header className="site-header sticky top-0 z-40 border-b border-transparent">
@@ -11,7 +12,7 @@ export function Header() {
           <Link className="nav-link" href="/?tipo=bounty">Bounties</Link>
           <Link className="nav-link" href="/?tipo=grant">Grants</Link>
         </nav>
-        <ThemeToggle />
+        <div className="flex items-center"><MusicToggle /><ThemeToggle /></div>
       </div>
     </header>
   );
