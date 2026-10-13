@@ -33,7 +33,7 @@ function Counter({ n, still }: { n: number; still: boolean }) {
   );
 }
 
-export function Feed({ listings, now, initial, explicitRegion }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; explicitRegion: boolean }) {
+export function Feed({ listings, now, initial }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort } }) {
   const [f, setF] = useState<Filters>(initial.f);
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
@@ -44,13 +44,11 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
 
   useEffect(() => {
     setLowEnd((navigator.hardwareConcurrency ?? 8) <= 4);
-    if (!explicitRegion) { const v = localStorage.getItem('cn-latam'); if (v === '0') setF((p) => ({ ...p, latam: false })); }
-  }, [explicitRegion]);
+  }, []);
   useEffect(() => {
     if (first.current) { first.current = false; return; }
     const qs = filtersToSearch(f, sort);
     window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
-    localStorage.setItem('cn-latam', f.latam ? '1' : '0');
   }, [f, sort]);
 
   const featured = useMemo(() => listings.filter((l) => l.featured && matches(l, f, nowD)).slice(0, 1), [listings, f, nowD]);
@@ -78,8 +76,6 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
           className="min-h-tap w-full rounded-pill border border-border bg-surface-2 px-4 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime" />
       </label>
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label="Filtros">
-        <Chip on={f.latam} onClick={() => set({ latam: !f.latam })}>{f.latam ? '✓ ' : ''}Abierto a AR/LatAm</Chip>
-        {f.latam && <Chip on={f.includeUnknown} onClick={() => set({ includeUnknown: !f.includeUnknown })}>Incluir sin confirmar</Chip>}
         <Chip on={f.tipo === 'hackathon'} onClick={() => toggleTipo('hackathon')}>Hackathon</Chip>
         <Chip on={f.tipo === 'bounty'} onClick={() => toggleTipo('bounty')}>Bounty</Chip>
         <Chip on={f.tipo === 'grant'} onClick={() => toggleTipo('grant')}>Grant</Chip>
@@ -170,8 +166,7 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
 
 function Empty({ f, set }: { f: Filters; set: (p: Partial<Filters>) => void }) {
   const btn = 'mt-3 min-h-tap rounded-pill bg-lime px-5 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
-  let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, latam: f.latam })}>Limpiar filtros</button>;
+  let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS })}>Limpiar filtros</button>;
   if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
-  else if (f.latam && !f.includeUnknown) { msg = "Hoy no hay nada abierto a AR/LatAm con estos filtros. Probá incluir 'Elegibilidad sin confirmar'."; action = <button className={btn} onClick={() => set({ includeUnknown: true })}>Incluir sin confirmar</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
 }

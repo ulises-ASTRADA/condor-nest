@@ -4,8 +4,8 @@ export const SORTS: { id: Sort; label: string }[] = [
   { id: 'cierra-pronto', label: 'Cierra pronto' }, { id: 'mayor-premio', label: 'Mayor premio' },
   { id: 'menos-competencia', label: 'Menos competencia' }, { id: 'mas-nuevos', label: 'Más nuevos' },
 ];
-export type Filters = { latam: boolean; includeUnknown: boolean; tipo: ListingType | null; irl: boolean; q: string; showClosed: boolean };
-export const DEFAULT_FILTERS: Filters = { latam: true, includeUnknown: false, tipo: null, irl: false, q: '', showClosed: false };
+export type Filters = { tipo: ListingType | null; irl: boolean; q: string; showClosed: boolean };
+export const DEFAULT_FILTERS: Filters = { tipo: null, irl: false, q: '', showClosed: false };
 
 /** deadline used for open/closed + ordering: deadline, else IRL start */
 export const effDeadline = (l: Listing) => l.deadlineAt ?? (l.modality !== 'online' ? l.startsAt : null);
@@ -13,10 +13,6 @@ export const isOpen = (l: Listing, now: Date) => { const d = effDeadline(l); ret
 
 export function matches(l: Listing, f: Filters, now: Date): boolean {
   if (!f.showClosed && !isOpen(l, now)) return false;
-  if (f.latam) {
-    const ok = ['ar', 'latam', 'global'].includes(l.eligibility) || (f.includeUnknown && l.eligibility === 'unknown');
-    if (!ok) return false;
-  }
   if (f.tipo && l.type !== f.tipo) return false;
   if (f.irl && l.modality === 'online') return false;
   if (f.q) {
@@ -50,28 +46,22 @@ export function sortListings(list: Listing[], sort: Sort, now: Date): Listing[] 
   });
 }
 
-export function filtersFromSearch(sp: Record<string, string | string[] | undefined>): { f: Filters; sort: Sort; explicitRegion: boolean } {
+export function filtersFromSearch(sp: Record<string, string | string[] | undefined>): { f: Filters; sort: Sort } {
   const g = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : sp[k]) as string | undefined;
-  const region = g('region');
   const tipo = g('tipo');
   const orden = g('orden') as Sort | undefined;
   return {
     f: {
-      latam: region ? region === 'latam' : true,
-      includeUnknown: g('sinconfirmar') === '1',
       tipo: tipo === 'hackathon' || tipo === 'bounty' || tipo === 'grant' ? tipo : null,
       irl: g('modalidad') === 'irl',
       q: g('q') ?? '',
       showClosed: g('cerradas') === '1',
     },
     sort: SORTS.some((s) => s.id === orden) ? orden! : 'cierra-pronto',
-    explicitRegion: !!region,
   };
 }
 export function filtersToSearch(f: Filters, sort: Sort): string {
   const p = new URLSearchParams();
-  p.set('region', f.latam ? 'latam' : 'todas');
-  if (f.includeUnknown) p.set('sinconfirmar', '1');
   if (f.tipo) p.set('tipo', f.tipo);
   if (f.irl) p.set('modalidad', 'irl');
   if (f.q) p.set('q', f.q);
