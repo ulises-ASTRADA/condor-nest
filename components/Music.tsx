@@ -1,33 +1,38 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-// Lo-fi background music (basement.studio style). Track: "A cup of tea" by TAD, CC0 — see public/audio/LICENSE.md.
+// Lo-fi background music (basement.studio style). Track: "Condor Nest lo-fi" by Lo-Fi Mate (original, fully synthesized) — see public/audio/LICENSE.md.
 // Starts on load if the browser allows autoplay, otherwise on the first pointerdown/keydown/touchstart.
 // If the user turned it off before (localStorage cn-music=off), it never auto-starts. Audio file is only fetched when playback starts.
-const SRC = '/audio/a-cup-of-tea.mp3', VOL = 0.35, KEY = 'cn-music';
+const SRC = '/audio/condor-nest-lofi.mp3', VOL = 0.35, KEY = 'cn-music';
 const GESTURES = ['pointerdown', 'keydown', 'touchstart'] as const;
 
 export function MusicToggle() {
   const [on, setOn] = useState(false);
-  const r = useRef<{ ctx?: AudioContext; el?: HTMLAudioElement; gain?: GainNode; t?: number }>({});
+  // Gapless loop: decode once into an AudioBuffer and loop an AudioBufferSourceNode (no <audio> loop seam).
+  const r = useRef<{ ctx?: AudioContext; gain?: GainNode; buf?: Promise<AudioBuffer>; src?: AudioBufferSourceNode; t0?: number; off: number; t?: number }>({ off: 0 });
   const btn = useRef<HTMLButtonElement>(null);
 
   const ensure = () => {
     const s = r.current;
-    if (!s.ctx) s.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    if (!s.el) {
-      s.el = new Audio(); s.el.preload = 'none'; s.el.loop = true; s.el.src = SRC;
-      s.gain = s.ctx.createGain(); s.gain.gain.value = 0;
-      s.ctx.createMediaElementSource(s.el).connect(s.gain).connect(s.ctx.destination);
-    }
-    return s as Required<typeof s>;
+    if (!s.ctx) { s.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      s.gain = s.ctx.createGain(); s.gain.gain.value = 0; s.gain.connect(s.ctx.destination); }
+    if (!s.buf) s.buf = fetch(SRC).then((x) => x.arrayBuffer()).then((ab) => s.ctx!.decodeAudioData(ab)); // fetched only on first start
+    return s;
   };
   const ramp = (to: number, secs: number) => { const { ctx, gain } = r.current; if (!ctx || !gain) return; const n = ctx.currentTime;
     gain.gain.cancelScheduledValues(n); gain.gain.setValueAtTime(gain.gain.value, n); gain.gain.linearRampToValueAtTime(to, n + secs); };
+  const halt = () => { const s = r.current; if (!s.src || !s.ctx) return; const buf = s.src.buffer!;
+    s.off = (s.off + s.ctx.currentTime - (s.t0 ?? 0)) % buf.duration; try { s.src.stop(); } catch {} s.src.disconnect(); s.src = undefined; };
   const start = async () => {
     const s = ensure(); clearTimeout(s.t);
-    try { await s.ctx.resume(); await s.el.play(); ramp(VOL, 2); setOn(true); return true; } catch { return false; }
+    try {
+      await s.ctx!.resume(); if (s.ctx!.state !== 'running') return false;
+      const buf = await s.buf!;
+      if (!s.src) { const src = s.ctx!.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(s.gain!); src.start(0, s.off); s.src = src; s.t0 = s.ctx!.currentTime; }
+      ramp(VOL, 2); setOn(true); return true;
+    } catch { s.buf = undefined; return false; }
   };
-  const stop = (temp = false) => { const s = r.current; if (!s.el) return; ramp(0, 1.5); if (!temp) setOn(false); clearTimeout(s.t); s.t = window.setTimeout(() => s.el?.pause(), 1600); };
+  const stop = (temp = false) => { const s = r.current; if (!s.src) { if (!temp) setOn(false); return; } ramp(0, 1.5); if (!temp) setOn(false); clearTimeout(s.t); s.t = window.setTimeout(halt, 1600); };
 
   const onRef = useRef(false); onRef.current = on;
   const away = useRef(false);
@@ -52,7 +57,7 @@ export function MusicToggle() {
     GESTURES.forEach((g) => window.addEventListener(g, onGesture, { capture: true, passive: true }));
     // Try on load: only if autoplay is allowed (a fresh AudioContext starts 'running'); avoids fetching the file otherwise.
     const probe = new AudioContext();
-    if (probe.state === 'running' && (!('getAutoplayPolicy' in navigator) || (navigator as unknown as { getAutoplayPolicy: (t: string) => string }).getAutoplayPolicy('mediaelement') === 'allowed')) { probe.close(); start().then((ok) => { if (ok) { done = true; GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true)); } }); } else probe.close();
+    if (probe.state === 'running' && (!('getAutoplayPolicy' in navigator) || (navigator as unknown as { getAutoplayPolicy: (t: string) => string }).getAutoplayPolicy('audiocontext') === 'allowed')) { probe.close(); start().then((ok) => { if (ok) { done = true; GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true)); } }); } else probe.close();
     return () => GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

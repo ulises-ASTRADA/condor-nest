@@ -1,9 +1,8 @@
 # Background music
 
-- **Track:** "A cup of tea" (lo-fi hip hop, ~70 BPM), from the "lofi Compilation"
-- **Artist:** TAD
-- **Source:** https://opengameart.org/content/lofi-compilation (file: https://opengameart.org/sites/default/files/A%20cup%20of%20tea.mp3)
-- **License:** CC0 1.0 Universal (Public Domain Dedication). No attribution required, web use allowed. (TAD asks for an optional "Tad" credit, given on /acerca as a courtesy.)
-- **Processing:** leading/trailing silence trimmed and re-encoded to 128 kbps stereo MP3 with ffmpeg (`a-cup-of-tea.mp3`).
-- **Note:** commenters report false YouTube Content ID claims on tracks from this pack. This doesn't affect web playback.
-- Downloaded 2026-10-13. Replaces "Dimly lit" by iamoneabe (CC0), which wasn't lo-fi enough.
+- **Track:** "Condor Nest lo-fi" (`condor-nest-lofi.mp3`, 2:00, re-encoded to 128 kbps stereo)
+- **Artist:** Lo-Fi Mate (made for Ulises Astrada / Condor Nest, 2026-10-13)
+- **License:** original composition, 100% synthesized in code. No samples, recordings, soundfonts, third-party audio or vocals. Cleared for public self-hosting on the web, commercial use included; no third-party rights involved.
+- Chosen by Ulises from Lo-Fi Mate's versions. Its hash didn't match v1/v2/v3 in /workspace/lofi-options, so it's another Lo-Fi Mate version (Ulises confirmed it's by Lo-Fi Mate).
+- Playback loops gaplessly with a Web Audio AudioBufferSourceNode (`loop = true`).
+- Replaces "A cup of tea" by TAD (CC0).

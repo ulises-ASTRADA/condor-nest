@@ -11,7 +11,7 @@ export default function Acerca() {
         <p className="mt-2">Ulises, creador de Condor Nest, trabaja en belo. belo organiza el hackathon del 28 de octubre en Buenos Aires que listamos. Lo listamos con los mismos criterios que cualquier otro evento y no está pagado como Destacado.</p>
         <p className="mt-2">Los listados de belo no reciben ninguna ventaja en el orden del feed.</p>
         <p className="mt-2">Los espacios “Destacado” son pagos y siempre están marcados. Los links “Afiliado” también: si comprás con ellos, Condor Nest recibe una comisión y no cambia el precio. No aceptamos afiliados de exchanges ni de productos de rendimiento.</p></section>
-      <section id="musica" className="mt-8"><h2 className="font-medium text-xl">Música</h2><p className="mt-2 text-fg-muted">“A cup of tea” de TAD (<a className="underline underline-offset-2 hover:text-lime" href="https://opengameart.org/content/lofi-compilation" rel="noopener" target="_blank">OpenGameArt</a>), dominio público (CC0). La podés apagar desde el botón del ecualizador arriba.</p></section>
+      <section id="musica" className="mt-8"><h2 className="font-medium text-xl">Música</h2><p className="mt-2 text-fg-muted">Lo-fi original de Lo-Fi Mate, hecho para Condor Nest. La podés apagar desde el botón del ecualizador arriba.</p></section>
     </article>
   );
 }
