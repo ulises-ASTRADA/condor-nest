@@ -1,6 +1,6 @@
 import type { Listing } from '@/lib/types';
 import { ELIG_LABEL, TYPE_LABEL } from '@/lib/format';
-const base = 'inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em]';
+const base = 'badge inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em]';
 export function TypeBadge({ type }: { type: Listing['type'] }) {
   const c = type === 'hackathon' ? 'text-violet border-violet/50' : type === 'bounty' ? 'text-lime border-lime/50' : 'text-cyan border-cyan/50';
   return <span className={`${base} ${c}`}>{TYPE_LABEL[type]}</span>;

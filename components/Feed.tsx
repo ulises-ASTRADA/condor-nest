@@ -3,11 +3,25 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { LazyMotion, domAnimation, m, AnimatePresence, LayoutGroup, useReducedMotion, useSpring, useTransform } from 'motion/react';
 import Link from 'next/link';
 import type { Listing, ListingType } from '@/lib/types';
-import { DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, type Filters, type Sort } from '@/lib/rank';
+import { ALL_TYPES, DEFAULT_FILTERS, SORTS, type Modality, filtersToSearch, matches, sortListings, isOpen, effDeadline, type Filters, type Sort } from '@/lib/rank';
 import { ListingCard } from './ListingCard';
 import { Newsletter } from './Newsletter';
 import { Affiliate } from './Affiliate';
 import { useReduceMotionPref } from './Toggles';
+import { ECOSYSTEMS, type Eco } from '@/lib/eco';
+
+const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
+const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+
+function Check({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" role="checkbox" aria-checked={on} onClick={onClick} className="fx-check flex min-h-9 w-full items-center gap-2 rounded py-1.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
+      <span aria-hidden="true" data-off={on ? undefined : ''} className={`grid h-[18px] w-[18px] place-items-center rounded-[5px] text-xs transition-[background-color,box-shadow] duration-instant ${on ? 'bg-lime text-bg shadow-[0_0_12px_-2px_rgb(var(--lime)/.7)]' : 'border border-border'}`}>{on ? '✓' : ''}</span>
+      {children}
+    </button>
+  );
+}
+const H4 = ({ children }: { children: React.ReactNode }) => <h4 className="mb-2.5 mt-5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">{children}</h4>;
 
 const PAGE = 20;
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -33,7 +47,7 @@ function Counter({ n, still }: { n: number; still: boolean }) {
   );
 }
 
-export function Feed({ listings, now, initial, explicitRegion }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; explicitRegion: boolean }) {
+export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode }) {
   const [f, setF] = useState<Filters>(initial.f);
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
@@ -41,16 +55,16 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
   const [lowEnd, setLowEnd] = useState(false);
   const first = useRef(true);
   const nowD = useMemo(() => new Date(now), [now]);
+  const [tick, setTick] = useState(() => new Date(now).getTime());
+  useEffect(() => { setTick(Date.now()); const t = setInterval(() => setTick(Date.now()), 30000); return () => clearInterval(t); }, []);
 
   useEffect(() => {
     setLowEnd((navigator.hardwareConcurrency ?? 8) <= 4);
-    if (!explicitRegion) { const v = localStorage.getItem('cn-latam'); if (v === '0') setF((p) => ({ ...p, latam: false })); }
-  }, [explicitRegion]);
+  }, []);
   useEffect(() => {
     if (first.current) { first.current = false; return; }
     const qs = filtersToSearch(f, sort);
     window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
-    localStorage.setItem('cn-latam', f.latam ? '1' : '0');
   }, [f, sort]);
 
   const featured = useMemo(() => listings.filter((l) => l.featured && matches(l, f, nowD)).slice(0, 1), [listings, f, nowD]);
@@ -62,7 +76,9 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
   const big = shown.length > 40;
 
   const set = (p: Partial<Filters>) => { setF((o) => ({ ...o, ...p })); setLimit(PAGE); };
-  const toggleTipo = (t: ListingType) => set({ tipo: f.tipo === t ? null : t });
+  // mobile chips: a type chip shows "only this type"; tapping again restores all
+  const chipTipo = (t: ListingType) => set({ tipos: f.tipos.length === 1 && f.tipos[0] === t ? [...ALL_TYPES] : [t] });
+  const onlyTipo = (t: ListingType) => f.tipos.length === 1 && f.tipos[0] === t;
   const blur = !lowEnd;
   const item = {
     hidden: still ? { opacity: 1 } : { opacity: 0, y: 16, ...(blur ? { filter: 'blur(4px)' } : {}) },
@@ -70,48 +86,56 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
     exit: still ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, scale: 0.96, transition: { duration: 0.16 } },
   };
 
-  const controls = (
-    <div className="space-y-3">
-      <label className="block">
-        <span className="sr-only">Buscar</span>
-        <input type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="🔍 Buscar…"
-          className="min-h-tap w-full rounded-pill border border-border bg-surface-2 px-4 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime" />
-      </label>
-      <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0" role="group" aria-label="Filtros">
-        <Chip on={f.latam} onClick={() => set({ latam: !f.latam })}>{f.latam ? '✓ ' : ''}Abierto a AR/LatAm</Chip>
-        {f.latam && <Chip on={f.includeUnknown} onClick={() => set({ includeUnknown: !f.includeUnknown })}>Incluir sin confirmar</Chip>}
-        <Chip on={f.tipo === 'hackathon'} onClick={() => toggleTipo('hackathon')}>Hackathon</Chip>
-        <Chip on={f.tipo === 'bounty'} onClick={() => toggleTipo('bounty')}>Bounty</Chip>
-        <Chip on={f.tipo === 'grant'} onClick={() => toggleTipo('grant')}>Grant</Chip>
-        <Chip on={f.irl} onClick={() => set({ irl: !f.irl })}>IRL</Chip>
+  const search = (
+    <label className="block">
+      <span className="sr-only">Buscar</span>
+      <input type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="⌕  Buscar hackathons, bounties, grants…"
+        className="fx-input h-12 w-full rounded-[12px] border border-border bg-surface-2 px-3.5 text-base text-fg placeholder:text-fg-muted" />
+    </label>
+  );
+  const mobileControls = (
+    <div className="mt-3">
+      <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
+        {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
+        {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Chip>)}
+        {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
         <Chip on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Chip>
       </div>
+    </div>
+  );
+  const sideControls = (
+    <div className="text-sm">
+      <H4>Tipo</H4>
+      {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
+      <H4>Modalidad</H4>
+      {(['online', 'irl'] as Modality[]).map((m) => <Check key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Check>)}
+      <H4>Ecosistema</H4>
+      {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
+      <H4>Estado</H4>
+      <Check on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Check>
     </div>
   );
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_300px]">
-        <aside className="hidden lg:block"><div className="sticky top-20"><p className="mb-3 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Filtros</p>{controls}</div></aside>
+      <div className="grid gap-6 pt-5 lg:grid-cols-[240px_minmax(0,1fr)_300px] lg:gap-8 lg:pt-8">
+        <aside className="hidden lg:block" aria-label="Filtros"><div className="sticky top-[90px]">{sideControls}</div></aside>
         <section aria-label="Oportunidades" className="min-w-0">
-          <div className="lg:hidden">{controls}</div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 lg:mt-0">
+          {hero}
+          <div className="mt-4">{search}</div>
+          <div className="lg:hidden">{mobileControls}</div>
+          <div className="mt-3.5 flex items-center justify-between gap-2 text-sm">
             <p className="text-sm text-fg-muted"><Counter n={total} still={still} /></p>
-            <div role="radiogroup" aria-label="Ordenar" className="chip-row -mx-4 flex max-w-full gap-1 overflow-x-auto px-4 text-sm sm:mx-0 sm:px-0">
-              <span className="self-center pr-1 text-fg-muted">Ordenar:</span>
-              <LayoutGroup id="sort">
-                {SORTS.map((s) => (
-                  <button key={s.id} role="radio" aria-checked={sort === s.id} onClick={() => setSort(s.id)}
-                    className={`relative min-h-tap shrink-0 px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime rounded ${sort === s.id ? 'text-lime' : 'text-fg-muted hover:text-fg'}`}>
-                    {s.label}
-                    {sort === s.id && <m.span layoutId="sort-indicator" className="absolute inset-x-2 bottom-1.5 h-0.5 rounded-pill bg-lime" transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }} />}
-                  </button>
-                ))}
-              </LayoutGroup>
-            </div>
+            <label className="fx-sort relative flex items-center gap-1.5 rounded-[10px] border border-lime/50 px-2.5 py-1.5 text-lime focus-within:ring-2 focus-within:ring-lime">
+              <span aria-hidden="true">⇅</span><span className="sr-only">Ordenar</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="cursor-pointer appearance-none bg-transparent pr-4 text-lime focus:outline-none">
+                {SORTS.map((s) => <option key={s.id} value={s.id} className="bg-surface text-fg">{s.label}</option>)}
+              </select>
+              <span aria-hidden="true" className="pointer-events-none absolute right-2.5">▾</span>
+            </label>
           </div>
           {sort === 'menos-competencia' && (
-            <p className="mt-1 text-xs text-fg-muted">Ordenado por premio por participante (estimado). <Link href="/acerca#ranking" className="text-lime underline-offset-4 hover:underline">¿Cómo se calcula?</Link></p>
+            <p className="mt-1.5 text-xs text-fg-muted">Ordenado por premio por participante (estimado). <Link href="/acerca#ranking" className="text-cyan underline decoration-cyan/50 underline-offset-4 hover:underline">¿Cómo se calcula?</Link></p>
           )}
 
           {featured.map((l) => (
@@ -123,7 +147,7 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
 
           {total === 0 ? <Empty f={f} set={set} /> : (
             <LayoutGroup>
-              <m.ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" initial={still ? false : 'hidden'} animate="show"
+              <m.ul className="mt-4 grid gap-3 sm:grid-cols-2" initial={still ? false : 'hidden'} animate="show"
                 variants={{ show: { transition: { staggerChildren: 0.05, delayChildren: 0.4 } } }}>
                 <AnimatePresence mode="popLayout" initial={false}>
                   {shown.flatMap((l, i) => {
@@ -138,30 +162,32 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
                       </m.li>,
                     );
                     if (i === 4) out.push(<li key="nl" className="col-span-full"><Newsletter variant="inline" /></li>);
-                    if (i > 3 && (i + 1) % 10 === 0) out.push(<li key={`af-${i}`} className="col-span-full"><Affiliate /></li>);
+                    if (i > 3 && (i + 1) % 10 === 0) out.push(<li key={`af-${i}`} className="col-span-full"><Affiliate url={affUrl} /></li>);
                     return out;
                   })}
                 </AnimatePresence>
               </m.ul>
+              <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>
               {organic.length > limit && (
                 <div className="mt-6 text-center"><button onClick={() => setLimit((x) => x + PAGE)} className="min-h-tap rounded-pill border border-lime/60 px-6 text-lime hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">Ver más</button></div>
               )}
             </LayoutGroup>
           )}
         </section>
-        <aside className="space-y-4">
-          <div className="hidden lg:block"><Newsletter variant="compact" /></div>
+        <aside className="hidden flex-col gap-4 lg:flex lg:sticky lg:top-[90px] lg:self-start">
+          <Newsletter variant="compact" />
           {closingWeek.length > 0 && (
-            <section className="rounded-card border border-border bg-surface p-4" aria-labelledby="cs">
-              <h2 id="cs" className="font-medium">Cierran esta semana</h2>
-              <ul className="mt-3 space-y-3">{closingWeek.map((l) => <li key={l.id}><ListingCard listing={l} variant="compact" now={now} /></li>)}</ul>
+            <section aria-labelledby="cs">
+              <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierran esta semana</h4>
+              <ul>{closingWeek.map((l) => { const ms = new Date(effDeadline(l)!).getTime() - tick; return (
+                <li key={l.id} className="fx-mini border-b border-border py-2.5 text-sm">
+                  <Link href={`/o/${l.slug}`} className="hover:text-lime" lang={l.titleLang}>{l.title}</Link>
+                  <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? 'cerrada' : `en ${rel(ms)}`}</div>
+                </li>); })}</ul>
             </section>
           )}
-          <Affiliate />
-          <section className="rounded-card border border-border bg-surface p-4 text-sm text-fg-muted">
-            <p><Link href="/acerca" className="text-fg hover:text-lime">Acerca de Condor Nest</Link></p>
-            <p className="mt-1">Ulises, creador de Condor Nest, trabaja en belo. <Link href="/acerca#divulgacion" className="text-lime hover:underline">Ver divulgación →</Link></p>
-          </section>
+          <Affiliate url={affUrl} />
+          <p className="text-[13px] text-fg-muted"><b className="text-fg">Divulgación.</b> Ulises, creador de Condor Nest, trabaja en belo. <Link href="/acerca#divulgacion" className="underline underline-offset-2 hover:text-lime">Ver más</Link></p>
         </aside>
       </div>
     </LazyMotion>
@@ -170,8 +196,12 @@ export function Feed({ listings, now, initial, explicitRegion }: { listings: Lis
 
 function Empty({ f, set }: { f: Filters; set: (p: Partial<Filters>) => void }) {
   const btn = 'mt-3 min-h-tap rounded-pill bg-lime px-5 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
-  let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, latam: f.latam })}>Limpiar filtros</button>;
+  let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
   if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
-  else if (f.latam && !f.includeUnknown) { msg = "Hoy no hay nada abierto a AR/LatAm con estos filtros. Probá incluir 'Elegibilidad sin confirmar'."; action = <button className={btn} onClick={() => set({ includeUnknown: true })}>Incluir sin confirmar</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
+}
+
+function rel(ms: number) {
+  const m = Math.floor(ms / 6e4), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  return d > 0 ? `${d} d ${h} h` : h > 0 ? `${h} h ${mm} min` : `${mm} min`;
 }

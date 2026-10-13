@@ -4,12 +4,12 @@ const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const headers = () => ({ apikey: KEY, Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' });
 
 export async function getListings(): Promise<Listing[]> {
-  const r = await fetch(`${URL_}/rest/v1/listings?select=*`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
+  const r = await fetch(`${URL_}/rest/v1/listings?select=*&in_latam=eq.true`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
   if (!r.ok) throw new Error(`supabase ${r.status}`);
   return (await r.json()).map(fromRow);
 }
 export async function getListing(slug: string): Promise<Listing | null> {
-  const r = await fetch(`${URL_}/rest/v1/listings?select=*&slug=eq.${encodeURIComponent(slug)}`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
+  const r = await fetch(`${URL_}/rest/v1/listings?select=*&in_latam=eq.true&slug=eq.${encodeURIComponent(slug)}`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
   if (!r.ok) throw new Error(`supabase ${r.status}`);
   const rows = await r.json();
   return rows[0] ? fromRow(rows[0]) : null;

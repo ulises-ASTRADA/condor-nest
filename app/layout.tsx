@@ -1,3 +1,4 @@
+import { Cursor } from '@/components/Cursor';
 import type { Metadata, Viewport } from 'next';
 import { Unbounded, Space_Grotesk, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main id="contenido" className="mx-auto max-w-content px-4 pb-24 lg:px-6">{children}</main>
         <Footer />
-        <ClientBoot />
+        <ClientBoot /><Cursor />
       </body>
     </html>
   );
