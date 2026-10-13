@@ -23,7 +23,7 @@ function Cta({ l, className = '' }: { l: Listing; className?: string }) {
   if (!l.applyUrl) return <p className={`grid min-h-14 place-items-center rounded-pill border border-border bg-surface-2 px-6 text-center text-sm text-fg-muted ${className}`}>Link de inscripción: a confirmar</p>;
   const label = src ? `Postulate en ${src}` : 'Postulate en el sitio oficial';
   return (
-    <a href={l.applyUrl} target="_blank" rel="noopener" aria-label={`${label} (abre sitio externo)`}
+    <a href={l.applyUrl} target="_blank" rel="noopener noreferrer" aria-label={`${label} (abre sitio externo)`}
       className={`grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${className}`}>{label} ↗</a>
   );
 }
@@ -70,7 +70,7 @@ export default async function Detail({ params }: P) {
         <article className="min-w-0 lg:col-span-2">
           <div className="flex flex-wrap gap-1.5"><TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} /></div>
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
-          <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}<a href={l.sourceUrl} target="_blank" rel="noopener" aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a></p>
+          <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           {l.disclosureKey === 'belo' && (
             <div className="mt-4 rounded-card bg-surface-2 p-4 text-sm" role="note">
               <span aria-hidden="true">ⓘ </span><strong>Transparencia:</strong> Ulises, creador de Condor Nest, trabaja en belo, organizador de este hackathon. Lo listamos con los mismos criterios que cualquier otro evento {l.featured ? 'y este espacio es Destacado.' : 'y no está pagado como Destacado.'}
@@ -89,7 +89,7 @@ export default async function Detail({ params }: P) {
             {(l.deadlineAt || l.startsAt) && <a href={`/o/${l.slug}/ics`} className="mt-3 inline-flex min-h-tap items-center rounded-pill border border-lime/60 px-4 text-sm text-lime hover:shadow-glow-lime">Agregar al calendario</a>}
           </section>
           {l.verifiedUrl && (
-            <p className="mt-6 text-xs text-fg-muted">Verificado en la página oficial: <a className="hover:text-lime" href={l.verifiedUrl} target="_blank" rel="noopener">{new URL(l.verifiedUrl).hostname} ↗</a>{l.sourcePostUrl && <> · Lo vimos en <a className="hover:text-lime" href={l.sourcePostUrl} target="_blank" rel="noopener">este post de X ↗</a></>}</p>
+            <p className="mt-6 text-xs text-fg-muted">Verificado en la página oficial: <a className="hover:text-lime" href={l.verifiedUrl} target="_blank" rel="noopener noreferrer">{new URL(l.verifiedUrl).hostname} ↗</a>{l.sourcePostUrl && <> · Lo vimos en <a className="hover:text-lime" href={l.sourcePostUrl} target="_blank" rel="noopener noreferrer">este post de X ↗</a></>}</p>
           )}
           <section id="similares" className="mt-10">
             <h2 className="font-medium text-lg">Similares</h2>
