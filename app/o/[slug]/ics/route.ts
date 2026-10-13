@@ -11,6 +11,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ slug: stri
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CondorNest//ES', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
     `UID:${l.id}@condornest`, `DTSTAMP:${fmt(new Date().toISOString())}`, `DTSTART:${fmt(at)}`, `DTEND:${fmt(end)}`,
     `SUMMARY:${esc((l.deadlineAt ? 'Cierre: ' : '') + l.title)}`, `URL:${l.applyUrl ?? l.sourceUrl}`,
-    `DESCRIPTION:${esc(`Horario en Argentina (ART). Fuente: ${l.sourceUrl}`)}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    `DESCRIPTION:${esc(`Fuente: ${l.sourceUrl}`)}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   return new Response(ics, { headers: { 'content-type': 'text/calendar; charset=utf-8', 'content-disposition': `attachment; filename="${slug}.ics"` } });
 }

@@ -10,7 +10,7 @@
   <img alt="Español primero" src="https://img.shields.io/badge/UI-español-FF4FD8?style=for-the-badge&labelColor=07080B">
 </p>
 
-<p align="center"><code>Un solo feed · menos competencia · deadlines en ART</code></p>
+<p align="center"><code>Un solo feed · menos competencia · deadlines en tu hora local</code></p>
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | 🌎 **Filtro LatAm** | Sólo oportunidades abiertas a builders de LatAm, con elegibilidad marcada en cada card. |
 | 🎯 **Orden "menos competencia"** | Rankea por pozo vs. envíos/inscriptos (≈ USD por envío). |
-| ⏰ **Deadlines en ART** | Todas las fechas en hora argentina (UTC-3), con "cierra en…" en vivo. |
+| ⏰ **Deadlines en tu hora** | Las fechas se muestran en la zona horaria del visitante (detectada en el navegador, con fallback a Buenos Aires), con "cierra en…" en vivo. |
 | 🛰️ **Fuentes** | Superteam Earn API · Devpost · Taikai · eventos curados desde X (verificados en su página oficial y con el post de origen citado). |
 | 🔎 **Filtros** | Tipo, modalidad (online / IRL), ecosistema (Solana, IA, Ethereum) y "Ver cerradas". |
 | 🎧 **Lo-fi de fondo** | Con fade-in al iniciar y fade-out al pausar o cambiar de pestaña. |
@@ -88,9 +88,9 @@ Sólo los **nombres**; los valores viven en `.env.local` y en Vercel.
 
 Headers estrictos (CSP, X-Frame-Options, nosniff), grants mínimos en la base, token de ingest en Supabase Vault y `noindex` mientras el sitio está en v1.
 
-## 🤝 Divulgación
+## 🤝 Transparencia
 
-Ulises, creador de Condor Nest, **trabaja en belo**. Los listings de belo (como el belo buildathon del 28/10) lo indican en el sitio. El link de Mercado Libre es de afiliado: Condor Nest recibe comisión y no cambia el precio.
+El link de Mercado Libre es de afiliado: Condor Nest recibe comisión y no cambia el precio.
 
 ## 🎵 Música
 

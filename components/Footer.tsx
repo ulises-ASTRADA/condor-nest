@@ -10,9 +10,8 @@ export function Footer() {
           <nav aria-label="Pie" className="flex flex-wrap gap-x-4 gap-y-1">
             <Link className="min-h-tap inline-flex items-center hover:text-fg" href="/acerca">Acerca</Link>
             <Link className="min-h-tap inline-flex items-center hover:text-fg" href="/publicar">Publicá tu evento</Link>
-            <Link className="min-h-tap inline-flex items-center hover:text-fg" href="/acerca#divulgacion">Divulgación belo</Link>
           </nav>
-          <p>Hecho en Buenos Aires para builders de LatAm · Datos de Superteam Earn, Devpost, Taikai y curación propia · Ulises, creador de Condor Nest, trabaja en belo. <Link href="/acerca#divulgacion" className="text-lime underline-offset-4 hover:underline">Ver divulgación →</Link></p>
+          <p>Hecho en Buenos Aires para builders de LatAm · Datos de Superteam Earn, Devpost, Taikai y curación propia</p>
           <ReduceMotionToggle />
         </div>
       </div>

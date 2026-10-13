@@ -22,24 +22,37 @@ export function rewardText(l: Listing): { main: string; prefix: string | null; a
 }
 export { STABLE_USD };
 
-const dtf = new Intl.DateTimeFormat('es-AR', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
-export function artShort(iso: string): string {
-  const p = Object.fromEntries(dtf.formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+const fmtCache = new Map<string, Intl.DateTimeFormat>();
+function fmt(tz: string, opts: Intl.DateTimeFormatOptions, key: string) {
+  const k = tz + '|' + key; let f = fmtCache.get(k);
+  if (!f) { f = new Intl.DateTimeFormat('es-AR', { timeZone: tz, ...opts }); fmtCache.set(k, f); }
+  return f;
+}
+const parts = (f: Intl.DateTimeFormat, iso: string) => Object.fromEntries(f.formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+/** Short GMT offset for a zone at a given instant, e.g. "GMT-3". */
+export function tzOffset(tz: string, iso: string = new Date().toISOString()): string {
+  try { const p = parts(fmt(tz, { timeZoneName: 'shortOffset' }, 'off'), iso); return String(p.timeZoneName ?? 'GMT').replace('UTC', 'GMT'); } catch { return 'GMT'; }
+}
+export const tzCity = (tz: string) => (tz.split('/').pop() ?? tz).replace(/_/g, ' ');
+/** Human zone label, e.g. "hora de Lima (GMT-5)". */
+export const tzLabel = (tz: string, iso?: string) => tz === 'UTC' || tz === 'Etc/UTC' ? 'hora UTC (GMT)' : `hora de ${tzCity(tz)} (${tzOffset(tz, iso)})`;
+
+export function artShort(iso: string, tz: string = TZ): string {
+  const p = parts(fmt(tz, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }, 'short'), iso);
   const wd = String(p.weekday).replace('.', '');
-  return `${wd} ${p.day}/${p.month} · ${p.hour}:${p.minute} ART`;
+  return `${wd} ${p.day}/${p.month} · ${p.hour}:${p.minute} ${tzOffset(tz, iso)}`;
 }
-const dShort = new Intl.DateTimeFormat('es-AR', { timeZone: TZ, day: '2-digit', month: '2-digit' });
-export const artDay = (iso: string) => dShort.format(new Date(iso));
-const dLong = new Intl.DateTimeFormat('es-AR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false });
-export function srDate(iso: string, verb = 'Cierra'): string {
-  const p = Object.fromEntries(dLong.formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
-  return `${verb} el ${p.weekday} ${p.day} de ${p.month} a las ${p.hour}:${p.minute}, hora de Argentina.`;
+export const artDay = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit' }, 'day').format(new Date(iso));
+export const dayKey = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit', year: 'numeric' }, 'dk').format(new Date(iso));
+export const hhmm = (iso: string, tz: string = TZ) => fmt(tz, { hour: '2-digit', minute: '2-digit', hour12: false }, 'hm').format(new Date(iso));
+export function srDate(iso: string, verb = 'Cierra', tz: string = TZ): string {
+  const p = parts(fmt(tz, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false }, 'long'), iso);
+  return `${verb} el ${p.weekday} ${p.day} de ${p.month} a las ${p.hour}:${p.minute}, ${tzLabel(tz, iso)}.`;
 }
-const full = new Intl.DateTimeFormat('es-AR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-export const artFull = (iso: string) => full.format(new Date(iso)) + ' ART';
+export const artFull = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }, 'full').format(new Date(iso)) + ' ' + tzOffset(tz, iso);
 
 export type DeadlineState = 'normal' | 'soon' | 'warning' | 'urgent' | 'closing' | 'closed' | 'unknown' | 'rolling';
-export function deadlineInfo(l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>, now: Date) {
+export function deadlineInfo(l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>, now: Date, tz: string = TZ) {
   let iso = l.deadlineAt; let verb: 'Cierra' | 'Empieza' = 'Cierra';
   if (!iso && l.modality !== 'online' && l.startsAt) { iso = l.startsAt; verb = 'Empieza'; }
   if (!iso) {
@@ -48,9 +61,9 @@ export function deadlineInfo(l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type'
   }
   const ms = new Date(iso).getTime() - now.getTime();
   const h = ms / 3.6e6; const d = Math.floor(h / 24);
-  const date = artShort(iso);
+  const date = artShort(iso, tz);
   let state: DeadlineState; let label: string;
-  if (ms <= 0) { state = 'closed'; label = verb === 'Cierra' ? `Cerrado el ${artDay(iso)}` : `Empezó el ${artDay(iso)}`; }
+  if (ms <= 0) { state = 'closed'; label = verb === 'Cierra' ? `Cerrado el ${artDay(iso, tz)}` : `Empezó el ${artDay(iso, tz)}`; }
   else if (h < 1) { state = 'closing'; label = `¡Último momento! ${Math.max(1, Math.floor(ms / 6e4))} min`; }
   else if (h < 24) { state = 'urgent'; label = `${verb} en ${Math.floor(h)} h ${Math.floor((ms % 3.6e6) / 6e4)} min`; }
   else if (h < 72) { state = 'warning'; label = `${verb} en ${d} d ${Math.floor(h % 24)} h`; }

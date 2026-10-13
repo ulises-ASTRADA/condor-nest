@@ -40,9 +40,6 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
             {c.low && <span className="rounded-pill border border-success/50 px-2 font-mono text-xs uppercase tracking-[.08em] text-success">Poca competencia</span>}
           </p>
         )}
-        {l.disclosureKey === 'belo' && (
-          <p className="mt-2 text-sm text-fg-muted"><span aria-hidden="true">ⓘ </span>Divulgación: el creador de Condor Nest trabaja en belo.</p>
-        )}
       </article>
     </Link>
   );

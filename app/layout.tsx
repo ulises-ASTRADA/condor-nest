@@ -12,7 +12,7 @@ const grotesk = Space_Grotesk({ subsets: ['latin', 'latin-ext'], display: 'swap'
 const mono = Geist_Mono({ subsets: ['latin', 'latin-ext'], weight: '500', display: 'swap', variable: '--font-geist-mono' });
 
 const TITLE = 'Condor Nest · Hackathons, bounties y grants para builders LatAm';
-const DESC = 'Hackathons, bounties y grants abiertos a Argentina y LatAm, en español y actualizados todos los días. Deadlines en hora argentina.';
+const DESC = 'Hackathons, bounties y grants abiertos a Argentina y LatAm, en español y actualizados todos los días. Deadlines en tu hora local.';
 export const metadata: Metadata = {
   title: { default: TITLE, template: '%s · Condor Nest' },
   description: DESC,

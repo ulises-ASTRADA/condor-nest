@@ -186,7 +186,6 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
             </section>
           )}
           <Affiliate url={affUrl} />
-          <p className="text-[13px] text-fg-muted"><b className="text-fg">Divulgación.</b> Ulises, creador de Condor Nest, trabaja en belo. <Link href="/acerca#divulgacion" className="underline underline-offset-2 hover:text-lime">Ver más</Link></p>
         </aside>
       </div>
     </LazyMotion>
