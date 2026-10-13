@@ -15,7 +15,7 @@ export async function getListing(slug: string): Promise<Listing | null> {
   return rows[0] ? fromRow(rows[0]) : null;
 }
 export async function lastIngest(): Promise<string | null> {
-  const r = await fetch(`${URL_}/rest/v1/ingest_runs?select=ran_at&error=is.null&order=ran_at.desc&limit=1`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
+  const r = await fetch(`${URL_}/rest/v1/cn_last_ingest?select=ran_at&order=ran_at.desc&limit=1`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
   if (!r.ok) return null;
   return (await r.json())[0]?.ran_at ?? null;
 }

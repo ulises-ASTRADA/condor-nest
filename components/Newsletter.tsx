@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+const TS_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useReduceMotionPref } from './Toggles';
 type St = 'idle' | 'submitting' | 'success' | 'already' | 'invalid' | 'error';
@@ -7,13 +8,18 @@ const MSG: Partial<Record<St, string>> = { success: '¡Listo! Revisá tu mail pa
 
 export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compact' | 'footer' }) {
   const [st, setSt] = useState<St>('idle'); const [email, setEmail] = useState(''); const [shake, setShake] = useState(0);
+  const tsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!TS_KEY || document.getElementById('cf-ts')) return;
+    const sc = document.createElement('script'); sc.id = 'cf-ts'; sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'; sc.async = true; document.head.appendChild(sc);
+  }, []);
   const still = !!useReducedMotion() || useReduceMotionPref();
   const done = st === 'success' || st === 'already';
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setSt('invalid'); setShake((s) => s + 1); return; }
     setSt('submitting');
-    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) }); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already'].includes(j.status)) setShake((s) => s + 1); }
+    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: (tsRef.current?.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value }) }); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already'].includes(j.status)) setShake((s) => s + 1); }
     catch { setSt('error'); setShake((s) => s + 1); }
   }
   const id = `nl-${variant}`;
@@ -37,6 +43,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
                   {st === 'submitting' ? <span className="h-5 w-5 animate-spin rounded-pill border-2 border-primary-fg/30 border-t-primary-fg [animation-duration:800ms]" /> : 'Suscribirme'}
                 </m.button>
               </m.div>
+              {TS_KEY && <div ref={tsRef} className="cf-turnstile mt-2" data-sitekey={TS_KEY} />}
             </m.form>
           )}
         </AnimatePresence>

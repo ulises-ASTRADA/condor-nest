@@ -1,3 +1,8 @@
+/** Returns the URL only if it parses and uses https:, else null (blocks javascript:/data: etc.). */
+export function safeHttpsUrl(v: unknown): string | null {
+  if (typeof v !== 'string' || !v) return null;
+  try { const x = new URL(v); return x.protocol === 'https:' ? x.toString() : null; } catch { return null; }
+}
 export type ListingType = 'hackathon' | 'bounty' | 'grant';
 export type Eligibility = 'ar' | 'latam' | 'global' | 'restricted' | 'unknown';
 export type Listing = {
@@ -33,17 +38,18 @@ export type Listing = {
 
 export type Row = Record<string, any>;
 export function fromRow(r: Row): Listing {
+  const u = (v: any) => safeHttpsUrl(v);
   const n = (v: any) => (v === null || v === undefined ? null : Number(v));
   return {
     id: r.id, slug: r.slug, type: r.type, title: r.title, organizer: r.organizer, source: r.source,
-    sourceUrl: r.source_url, rewardAmount: n(r.reward_amount), rewardCurrency: r.reward_currency,
+    sourceUrl: u(r.source_url) ?? '', rewardAmount: n(r.reward_amount), rewardCurrency: r.reward_currency,
     rewardUsd: n(r.reward_usd), rewardKind: r.reward_kind, deadlineAt: r.deadline_at, startsAt: r.starts_at,
     endsAt: r.ends_at, competitors: n(r.competitors), competitorsKind: r.competitors_kind, eligibility: r.eligibility,
     eligibilityNote: r.eligibility_note, modality: r.modality, city: r.city, ecosystems: r.ecosystems ?? [],
     summaryEs: r.summary_es, featured: !!r.featured && (!r.featured_until || new Date(r.featured_until) > new Date()),
     featuredUntil: r.featured_until, disclosureKey: r.disclosure_key, updatedAt: r.updated_at, createdAt: r.created_at,
-    titleLang: r.title_lang ?? 'en', applyUrl: r.apply_url, sourcePostUrl: r.source_post_url,
-    verifiedUrl: r.verified_url, curated: !!r.curated,
+    titleLang: r.title_lang ?? 'en', applyUrl: u(r.apply_url), sourcePostUrl: u(r.source_post_url),
+    verifiedUrl: u(r.verified_url), curated: !!r.curated,
   };
 }
 
