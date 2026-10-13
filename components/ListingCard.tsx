@@ -15,9 +15,9 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
     requestAnimationFrame(() => { el.style.setProperty('--mx', `${e.clientX - b.left}px`); el.style.setProperty('--my', `${e.clientY - b.top}px`); });
   };
   return (
-    <Link href={`/o/${l.slug}`} className="card-link group block rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+    <Link href={`/o/${l.slug}`} className="card-link group flex h-full flex-col rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
       <article onPointerMove={spot}
-        className={`card rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
+        className={`card flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
         {variant === 'featured' && (
           <span data-featured-pill className="featured-pill mb-2 inline-block rounded-pill bg-magenta px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">Destacado</span>
@@ -26,8 +26,9 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
           <TypeBadge type={l.type} /> <EligBadge l={l} /> <span>· {l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
+        <div className="mt-auto pt-2">
         {variant !== 'compact' && (
-          <p className={`mt-2 font-mono tabular ${r.missing ? 'text-sm text-fg-muted' : 'text-xl'}`}>
+          <p className={`font-mono tabular ${r.missing ? 'text-sm text-fg-muted' : 'text-xl'}`}>
             {r.prefix && <span className="mr-1.5 text-xs uppercase tracking-[.08em] text-fg-muted">{r.prefix}</span>}
             {r.main}{r.approx && <span className="ml-2 text-sm text-fg-muted">{r.approx}</span>}
           </p>
@@ -40,6 +41,7 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
             {c.low && <span className="rounded-pill border border-success/50 px-2 font-mono text-xs uppercase tracking-[.08em] text-success">Poca competencia</span>}
           </p>
         )}
+        </div>
       </article>
     </Link>
   );
