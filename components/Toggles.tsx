@@ -6,7 +6,7 @@ export function ThemeToggle() {
   const flip = () => { const v = !light; setLight(v); document.documentElement.classList.toggle('light', v); localStorage.setItem('cn-theme', v ? 'light' : 'dark'); };
   return (
     <button type="button" onClick={flip} aria-label={light ? 'Usar modo oscuro' : 'Usar modo claro'}
-      className="grid h-tap w-tap place-items-center rounded-pill text-fg-muted transition-colors duration-fast hover:text-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
+      className="fx-rotate grid h-tap w-tap place-items-center rounded-pill text-fg-muted transition-colors duration-fast hover:text-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
       <span aria-hidden="true">{light ? '☾' : '☀'}</span>
     </button>
   );

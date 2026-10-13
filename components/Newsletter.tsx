@@ -31,9 +31,9 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
               <m.div key={shake} className="flex flex-col gap-2" animate={still || !shake ? undefined : { x: [0, -6, 6, -4, 4, 0] }} transition={{ duration: 0.32 }}>
                 <input id={id} type="email" placeholder="vos@ejemplo.com" autoComplete="email" required value={email} onChange={(e) => { setEmail(e.target.value); if (err) setSt('idle'); }}
                   aria-invalid={err} aria-describedby={`${id}-m`}
-                  className={`h-12 w-full min-w-0 rounded-[12px] border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime ${err ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6),0_0_16px_-4px_rgb(var(--danger)/.5)]' : 'border-border'}`} />
+                  style={{ ['--fx-fill' as string]: 'rgb(var(--bg))' }} className={`fx-input h-12 w-full min-w-0 rounded-[12px] border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted ${err ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6),0_0_16px_-4px_rgb(var(--danger)/.5)]' : 'border-border'}`} />
                 <m.button layout={!still} type="submit" disabled={st === 'submitting'} aria-label={st === 'submitting' ? 'Enviando…' : undefined}
-                  className={`h-12 w-full rounded-[12px] bg-lime font-bold text-primary-fg shadow-[0_0_24px_-6px_rgb(var(--lime)/.6)] transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg grid place-items-center`}>
+                  className={`btn-sweep h-12 w-full rounded-[12px] bg-lime font-bold text-primary-fg shadow-[0_0_24px_-6px_rgb(var(--lime)/.6)] transition-shadow duration-fast active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg grid place-items-center`}>
                   {st === 'submitting' ? <span className="h-5 w-5 animate-spin rounded-pill border-2 border-primary-fg/30 border-t-primary-fg [animation-duration:800ms]" /> : 'Suscribirme'}
                 </m.button>
               </m.div>

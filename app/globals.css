@@ -99,3 +99,66 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
 @keyframes skel { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 @view-transition { navigation: auto; }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* ---------- Focus: subtle gradient border + faint glow (inputs) ---------- */
+.fx-input { --fx-fill: rgb(var(--surface-2)); transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+.fx-input:focus, .fx-input:focus-visible {
+  outline: none; border-color: transparent;
+  background: linear-gradient(var(--fx-fill), var(--fx-fill)) padding-box, linear-gradient(90deg, rgb(var(--cyan)), rgb(var(--violet))) border-box;
+  box-shadow: 0 0 0 3px rgb(var(--cyan) / .12), 0 0 18px -4px rgb(var(--violet) / .45);
+}
+
+/* ---------- Hover system (150–250ms, transform/opacity first) ---------- */
+@media (hover: hover) {
+  .card-link:hover .card:not(.featured) { border-color: transparent;
+    background: linear-gradient(rgb(var(--surface)), rgb(var(--surface))) padding-box, linear-gradient(135deg, rgb(var(--lime)), rgb(var(--cyan))) border-box;
+    box-shadow: 0 10px 30px -14px rgb(var(--cyan) / .45); }
+  .card-link:hover .card::before { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--cyan) / .12), transparent 60%); }
+  .card { transition: transform 200ms cubic-bezier(.16,1,.3,1), box-shadow 200ms ease, border-color 200ms ease; }
+  .card-link:hover .card { transform: translateY(-3px); }
+
+  .nav-link { position: relative; transition: color 180ms ease; }
+  .nav-link::after { content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 1px; background: linear-gradient(90deg, rgb(var(--lime)), rgb(var(--cyan)));
+    transform: scaleX(0); transform-origin: left; transition: transform 220ms cubic-bezier(.16,1,.3,1); }
+  .nav-link:hover { color: rgb(var(--fg)); } .nav-link:hover::after { transform: scaleX(1); }
+
+  .badge { transition: filter 160ms ease; } .card-link:hover .badge, .badge:hover { filter: brightness(1.3) saturate(1.15); }
+
+  .btn-sweep { position: relative; overflow: hidden; isolation: isolate; transition: transform 180ms ease, box-shadow 180ms ease; }
+  .btn-sweep::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(110deg, transparent 20%, rgb(var(--cyan) / .55) 50%, transparent 80%);
+    transform: translateX(-110%); transition: transform 450ms cubic-bezier(.16,1,.3,1); }
+  .btn-sweep:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 0 30px -6px rgb(var(--lime) / .75); }
+  .btn-sweep:hover::before { transform: translateX(110%); }
+
+  .fx-check > span:first-child { transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+  .fx-check { transition: color 160ms ease; }
+  .fx-check:hover { color: rgb(var(--lime)); } .fx-check:hover > span[data-off] { border-color: rgb(var(--lime) / .7); }
+  .fx-sort { transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
+  .fx-sort:hover { border-color: rgb(var(--lime)); background-color: rgb(var(--lime) / .06); box-shadow: 0 0 16px -6px rgb(var(--lime) / .6); }
+
+  .fx-mini a { display: inline-block; transition: transform 180ms ease, color 180ms ease; }
+  .fx-mini:hover a { transform: translateX(4px); color: rgb(var(--cyan)); }
+
+  .fx-aff { transition: border-color 200ms ease, box-shadow 200ms ease; }
+  .fx-aff:hover { border-color: rgb(var(--lime) / .55); box-shadow: 0 0 22px -8px rgb(var(--lime) / .6); }
+
+  .fx-rotate > span { display: inline-block; transition: transform 250ms cubic-bezier(.16,1,.3,1); }
+  .fx-rotate:hover > span { transform: rotate(45deg); }
+}
+html[data-reduce-motion] .card-link:hover .card, html[data-reduce-motion] .btn-sweep:hover, html[data-reduce-motion] .fx-mini:hover a, html[data-reduce-motion] .fx-rotate:hover > span { transform: none !important; }
+html[data-reduce-motion] .btn-sweep::before { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .card-link:hover .card, .btn-sweep:hover, .fx-mini:hover a, .fx-rotate:hover > span { transform: none !important; }
+  .btn-sweep::before { display: none; }
+}
+
+/* ---------- Custom cursor (fine pointers, motion allowed) ---------- */
+.cn-cursor { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 9999; border-radius: 9999px; opacity: 0; transition: opacity 200ms ease; will-change: transform; }
+.cn-cursor.dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: rgb(var(--lime)); box-shadow: 0 0 10px rgb(var(--lime) / .8); }
+.cn-cursor.ring { width: 32px; height: 32px; margin: -16px 0 0 -16px; border: 1px solid rgb(var(--lime) / .6);
+  transition: opacity 200ms ease, width 200ms ease, height 200ms ease, margin 200ms ease, border-color 200ms ease, background-color 200ms ease; }
+html.cursor-on .cn-cursor { opacity: 1; }
+html.cursor-on .cn-cursor.ring.hot { width: 48px; height: 48px; margin: -24px 0 0 -24px; border-color: rgb(var(--cyan)); background: rgb(var(--cyan) / .08); }
+html.cursor-on .cn-cursor.ring.text, html.cursor-on .cn-cursor.dot.text { opacity: 0; }
+html.cursor-on, html.cursor-on a, html.cursor-on button, html.cursor-on select, html.cursor-on label, html.cursor-on [role="checkbox"] { cursor: none; }
+html.cursor-on input, html.cursor-on textarea { cursor: text; }

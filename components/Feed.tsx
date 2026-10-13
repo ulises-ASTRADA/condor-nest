@@ -15,8 +15,8 @@ const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !=
 
 function Check({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" role="checkbox" aria-checked={on} onClick={onClick} className="flex min-h-9 w-full items-center gap-2 rounded py-1.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
-      <span aria-hidden="true" className={`grid h-[18px] w-[18px] place-items-center rounded-[5px] text-xs transition-[background-color,box-shadow] duration-instant ${on ? 'bg-lime text-bg shadow-[0_0_12px_-2px_rgb(var(--lime)/.7)]' : 'border border-border'}`}>{on ? '✓' : ''}</span>
+    <button type="button" role="checkbox" aria-checked={on} onClick={onClick} className="fx-check flex min-h-9 w-full items-center gap-2 rounded py-1.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
+      <span aria-hidden="true" data-off={on ? undefined : ''} className={`grid h-[18px] w-[18px] place-items-center rounded-[5px] text-xs transition-[background-color,box-shadow] duration-instant ${on ? 'bg-lime text-bg shadow-[0_0_12px_-2px_rgb(var(--lime)/.7)]' : 'border border-border'}`}>{on ? '✓' : ''}</span>
       {children}
     </button>
   );
@@ -90,7 +90,7 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
     <label className="block">
       <span className="sr-only">Buscar</span>
       <input type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="⌕  Buscar hackathons, bounties, grants…"
-        className="h-12 w-full rounded-[12px] border border-border bg-surface-2 px-3.5 text-base text-fg placeholder:text-fg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-lime" />
+        className="fx-input h-12 w-full rounded-[12px] border border-border bg-surface-2 px-3.5 text-base text-fg placeholder:text-fg-muted" />
     </label>
   );
   const mobileControls = (
@@ -126,7 +126,7 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
           <div className="lg:hidden">{mobileControls}</div>
           <div className="mt-3.5 flex items-center justify-between gap-2 text-sm">
             <p className="text-sm text-fg-muted"><Counter n={total} still={still} /></p>
-            <label className="relative flex items-center gap-1.5 rounded-[10px] border border-lime/50 px-2.5 py-1.5 text-lime focus-within:ring-2 focus-within:ring-lime">
+            <label className="fx-sort relative flex items-center gap-1.5 rounded-[10px] border border-lime/50 px-2.5 py-1.5 text-lime focus-within:ring-2 focus-within:ring-lime">
               <span aria-hidden="true">⇅</span><span className="sr-only">Ordenar</span>
               <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="cursor-pointer appearance-none bg-transparent pr-4 text-lime focus:outline-none">
                 {SORTS.map((s) => <option key={s.id} value={s.id} className="bg-surface text-fg">{s.label}</option>)}
@@ -180,7 +180,7 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
             <section aria-labelledby="cs">
               <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierran esta semana</h4>
               <ul>{closingWeek.map((l) => { const ms = new Date(effDeadline(l)!).getTime() - tick; return (
-                <li key={l.id} className="border-b border-border py-2.5 text-sm">
+                <li key={l.id} className="fx-mini border-b border-border py-2.5 text-sm">
                   <Link href={`/o/${l.slug}`} className="hover:text-lime" lang={l.titleLang}>{l.title}</Link>
                   <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? 'cerrada' : `en ${rel(ms)}`}</div>
                 </li>); })}</ul>
