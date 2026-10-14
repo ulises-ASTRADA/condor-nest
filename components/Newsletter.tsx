@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 const TS_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useReduceMotionPref } from './Toggles';
-type St = 'idle' | 'submitting' | 'success' | 'already' | 'invalid' | 'error';
-const MSG: Partial<Record<St, string>> = { success: '¡Listo! Te anotamos para el resumen de los lunes.', already: 'Ya estabas suscripto 🙌', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
+type St = 'idle' | 'submitting' | 'success' | 'saved' | 'already' | 'invalid' | 'error';
+const MSG: Partial<Record<St, string>> = { success: '¡Listo! Revisá tu mail para confirmar.', saved: 'Te anotamos, pero no pudimos enviarte el mail de confirmación. Probá de nuevo en un rato.', already: 'Ya estabas suscripto 🙌', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
 
 export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compact' | 'footer' | 'mini' }) {
   const [st, setSt] = useState<St>('idle'); const [email, setEmail] = useState(''); const [shake, setShake] = useState(0);
@@ -14,12 +14,12 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
     const sc = document.createElement('script'); sc.id = 'cf-ts'; sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'; sc.async = true; document.head.appendChild(sc);
   }, []);
   const still = !!useReducedMotion() || useReduceMotionPref();
-  const done = st === 'success' || st === 'already';
+  const done = st === 'success' || st === 'already' || st === 'saved';
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setSt('invalid'); setShake((s) => s + 1); return; }
     setSt('submitting');
-    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: (tsRef.current?.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value }) }); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already'].includes(j.status)) setShake((s) => s + 1); }
+    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: (tsRef.current?.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value }) }); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already', 'saved'].includes(j.status)) setShake((s) => s + 1); }
     catch { setSt('error'); setShake((s) => s + 1); }
   }
   const id = `nl-${variant}`;
