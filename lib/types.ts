@@ -34,6 +34,7 @@ export type Listing = {
   sourcePostUrl: string | null;
   verifiedUrl: string | null;
   curated: boolean;
+  country: string | null;     // ISO of the host/restricted country, 'LATAM', or null
 };
 
 export type Row = Record<string, any>;
@@ -50,6 +51,7 @@ export function fromRow(r: Row): Listing {
     featuredUntil: r.featured_until, disclosureKey: r.disclosure_key, updatedAt: r.updated_at, createdAt: r.created_at,
     titleLang: r.title_lang ?? 'en', applyUrl: u(r.apply_url), sourcePostUrl: u(r.source_post_url),
     verifiedUrl: u(r.verified_url), curated: !!r.curated,
+    country: typeof r.country === 'string' ? r.country.toUpperCase() : null,
   };
 }
 

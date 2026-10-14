@@ -1,5 +1,5 @@
 'use client';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { artDay, artFull, artShort, TZ, tzLabel } from '@/lib/format';
 
 let detected: string | null = null;
@@ -11,10 +11,11 @@ function detect(): string {
   } catch { /* fall through */ }
   detected = TZ; return TZ;
 }
-const noop = () => () => {};
 /** Visitor's IANA zone. SSR and the hydration pass get the Buenos Aires fallback; the client then switches to the detected zone. */
 export function useTz(): string {
-  return useSyncExternalStore(noop, detect, () => TZ);
+  const [tz, setTz] = useState(TZ);
+  useEffect(() => { setTz(detect()); }, []);
+  return tz;
 }
 
 export function LocalTime({ iso, format = 'short', className }: { iso: string; format?: 'short' | 'full' | 'day'; className?: string }) {

@@ -6,9 +6,9 @@ export const SORTS: { id: Sort; label: string }[] = [
   { id: 'menos-competencia', label: 'Menos competencia' }, { id: 'mas-nuevos', label: 'Más nuevos' },
 ];
 export type Modality = 'online' | 'irl';
-export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean };
+export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean; pais: string | null };
 export const ALL_TYPES: ListingType[] = ['hackathon', 'bounty', 'grant'];
-export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false };
+export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null };
 
 /** deadline used for open/closed + ordering: deadline, else IRL start */
 export const effDeadline = (l: Listing) => l.deadlineAt ?? (l.modality !== 'online' ? l.startsAt : null);
@@ -18,6 +18,7 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
   if (!f.showClosed && !isOpen(l, now)) return false;
   if (!f.tipos.includes(l.type)) return false;
   if (f.modalidades.length) { const m: Modality = l.modality === 'online' ? 'online' : 'irl'; if (!f.modalidades.includes(m) && !(l.modality === 'hybrid')) return false; }
+  if (f.pais && !matchesPais(l, f.pais)) return false;
   if (f.ecos.length && !ecosOf(l).some((e) => f.ecos.includes(e))) return false;
   if (f.q) {
     const q = norm(f.q);
@@ -25,6 +26,14 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
     if (!hay.includes(q)) return false;
   }
   return true;
+}
+/** Listing is in / for this country itself (not counting LatAm-wide ones). */
+export const inCountry = (l: Listing, iso: string) => l.country === iso || (iso === 'AR' && l.eligibility === 'ar');
+/** Country view: the country's own listings plus ones open to all of LatAm or online without a country restriction. */
+export function matchesPais(l: Listing, iso: string): boolean {
+  if (inCountry(l, iso)) return true;
+  if (l.eligibility === 'latam' || l.country === 'LATAM') return true;
+  return l.modality === 'online' && l.eligibility !== 'ar' && l.eligibility !== 'restricted' && (!l.country || l.country === 'LATAM');
 }
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
@@ -61,6 +70,7 @@ export function filtersFromSearch(sp: Record<string, string | string[] | undefin
       ecos: list('eco').map((e) => ECOSYSTEMS.find((x) => x.toLowerCase() === e.toLowerCase())).filter(Boolean) as Eco[],
       q: g('q') ?? '',
       showClosed: g('cerradas') === '1',
+      pais: /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null,
     },
     sort: SORTS.some((s) => s.id === orden) ? orden! : 'cierra-pronto',
   };
@@ -72,6 +82,7 @@ export function filtersToSearch(f: Filters, sort: Sort): string {
   if (f.ecos.length) p.set('eco', f.ecos.map((e) => e.toLowerCase()).join(','));
   if (f.q) p.set('q', f.q);
   if (f.showClosed) p.set('cerradas', '1');
+  if (f.pais) p.set('pais', f.pais.toLowerCase());
   if (sort !== 'cierra-pronto') p.set('orden', sort);
   return p.toString();
 }

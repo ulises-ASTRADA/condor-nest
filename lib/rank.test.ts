@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sortListings, competitionScore, matches, DEFAULT_FILTERS } from './rank.ts';
 import { sig2, deadlineInfo } from './format.ts';
-const base: any = { id: 'x', slug: 'x', type: 'bounty', title: 't', organizer: null, source: 'superteam', sourceUrl: 'u', rewardAmount: null, rewardCurrency: 'USD', rewardUsd: null, rewardKind: null, deadlineAt: '2099-01-01T00:00:00Z', startsAt: null, endsAt: null, competitors: null, competitorsKind: 'submissions', eligibility: 'global', eligibilityNote: null, modality: 'online', city: null, ecosystems: [], summaryEs: null, featured: false, featuredUntil: null, disclosureKey: null, updatedAt: '', createdAt: '2026-01-01', titleLang: 'en', applyUrl: null, sourcePostUrl: null, verifiedUrl: null, curated: false };
+const base: any = { country: null, id: 'x', slug: 'x', type: 'bounty', title: 't', organizer: null, source: 'superteam', sourceUrl: 'u', rewardAmount: null, rewardCurrency: 'USD', rewardUsd: null, rewardKind: null, deadlineAt: '2099-01-01T00:00:00Z', startsAt: null, endsAt: null, competitors: null, competitorsKind: 'submissions', eligibility: 'global', eligibilityNote: null, modality: 'online', city: null, ecosystems: [], summaryEs: null, featured: false, featuredUntil: null, disclosureKey: null, updatedAt: '', createdAt: '2026-01-01', titleLang: 'en', applyUrl: null, sourcePostUrl: null, verifiedUrl: null, curated: false };
 const L = (o: any) => ({ ...base, ...o });
 const now = new Date('2026-10-13T00:00:00Z');
 test('score formula', () => {

@@ -9,6 +9,8 @@ import { Newsletter } from './Newsletter';
 import { Affiliate } from './Affiliate';
 import { useReduceMotionPref } from './Toggles';
 import { ECOSYSTEMS, type Eco } from '@/lib/eco';
+import { COUNTRY_ES, PAIS_KEY, countryFromTz, isLatam } from '@/lib/geo';
+import { inCountry } from '@/lib/rank';
 
 const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
 const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -47,8 +49,38 @@ function Counter({ n, still }: { n: number; still: boolean }) {
   );
 }
 
-export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode }) {
-  const [f, setF] = useState<Filters>(initial.f);
+type Geo = { country: string | null; known: boolean; explicit: boolean };
+export function Feed({ listings, now, initial, affUrl, hero, geo }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; geo?: Geo }) {
+  const nowInit = new Date(now);
+  const hasOwn = (iso: string) => listings.some((l) => inCountry(l, iso) && isOpen(l, nowInit));
+  // auto = country came from geo (not from the user); zero = geo country had no open listings of its own
+  const [auto, setAuto] = useState<boolean>(() => !geo?.explicit && !!geo?.country && hasOwn(geo.country));
+  const [zero, setZero] = useState<string | null>(() => (!geo?.explicit && geo?.country && !hasOwn(geo.country) ? geo.country : null));
+  const [f, setF] = useState<Filters>(() => (auto || !geo?.country || geo.explicit ? { ...initial.f, pais: initial.f.pais ?? (!geo?.explicit && geo?.country && hasOwn(geo.country) ? geo.country : null) } : initial.f));
+  useEffect(() => {
+    if (geo?.explicit) return;
+    let saved: string | null = null; try { saved = localStorage.getItem(PAIS_KEY); } catch { /* private mode */ }
+    if (saved === 'todos') { setF((o) => ({ ...o, pais: null })); setAuto(false); setZero(null); return; }
+    if (isLatam(saved)) { setF((o) => ({ ...o, pais: saved })); setAuto(false); setZero(null); return; }
+    if (geo?.known) return; // header present: server already decided
+    let tzC: string | null = null; try { tzC = countryFromTz(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch { /* ignore */ }
+    if (!isLatam(tzC)) return;
+    if (hasOwn(tzC)) { setF((o) => ({ ...o, pais: tzC })); setAuto(true); } else setZero(tzC);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const choosePais = (iso: string | null) => {
+    try { localStorage.setItem(PAIS_KEY, iso ?? 'todos'); } catch { /* ignore */ }
+    setAuto(false); setZero(null); setF((o) => ({ ...o, pais: iso })); setLimit(PAGE);
+  };
+  const paises = useMemo(() => Object.keys(COUNTRY_ES).filter((c) => listings.some((l) => inCountry(l, c))).sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es')), [listings]);
+  const paisSelect = (cls: string) => (
+    <label className={cls}><span className="sr-only">País</span>
+      <select value={f.pais ?? ''} onChange={(e) => choosePais(e.target.value || null)} className="fx-input h-9 w-full cursor-pointer rounded-[10px] border border-border bg-surface-2 px-2.5 text-sm text-fg">
+        <option value="">Toda LatAm</option>
+        {[...new Set([...(f.pais ? [f.pais] : []), ...paises])].map((c) => <option key={c} value={c}>{COUNTRY_ES[c] ?? c}</option>)}
+      </select>
+    </label>
+  );
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
   const still = !!useReducedMotion() || useReduceMotionPref();
@@ -63,9 +95,9 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
   }, []);
   useEffect(() => {
     if (first.current) { first.current = false; return; }
-    const qs = filtersToSearch(f, sort);
+    const qs = filtersToSearch(auto ? { ...f, pais: null } : f, sort);
     window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
-  }, [f, sort]);
+  }, [f, sort, auto]);
 
   const featured = useMemo(() => listings.filter((l) => l.featured && matches(l, f, nowD)).slice(0, 1), [listings, f, nowD]);
   const organic = useMemo(() => sortListings(listings.filter((l) => !l.featured && matches(l, f, nowD)), sort, nowD), [listings, f, sort, nowD]);
@@ -95,6 +127,7 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
   );
   const mobileControls = (
     <div className="mt-3">
+      {paisSelect('mb-2 block')}
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
         {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Chip>)}
@@ -105,6 +138,8 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
   );
   const sideControls = (
     <div className="text-sm">
+      <H4>País</H4>
+      {paisSelect('block')}
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
       <H4>Modalidad</H4>
@@ -123,6 +158,19 @@ export function Feed({ listings, now, initial, affUrl, hero }: { listings: Listi
         <section aria-label="Oportunidades" className="min-w-0">
           {hero}
           <div className="mt-4">{search}</div>
+          {f.pais && (
+            <div role="status" className="mt-3 inline-flex max-w-full items-center gap-2 rounded-pill border border-cyan/40 bg-surface-2 py-1 pl-3 pr-1 text-sm">
+              <span>📍 Mostrando oportunidades para {COUNTRY_ES[f.pais] ?? f.pais}</span><span aria-hidden="true" className="text-fg-muted">·</span>
+              <button type="button" onClick={() => choosePais(null)} className="text-cyan underline-offset-4 hover:underline">Ver todo LatAm</button>
+              <button type="button" aria-label="Quitar filtro de país" onClick={() => choosePais(null)} className="grid h-7 w-7 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
+            </div>
+          )}
+          {!f.pais && zero && (
+            <div role="status" className="mt-3 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-surface-2 py-1 pl-3 pr-1 text-sm text-fg-muted">
+              <span>📍 Todavía no hay oportunidades abiertas en {COUNTRY_ES[zero] ?? zero}. Te mostramos toda LatAm.</span>
+              <button type="button" aria-label="Cerrar aviso" onClick={() => setZero(null)} className="grid h-7 w-7 place-items-center rounded-pill hover:text-fg">✕</button>
+            </div>
+          )}
           <div className="lg:hidden">{mobileControls}</div>
           <div className="mt-3.5 flex items-center justify-between gap-2 text-sm">
             <p className="text-sm text-fg-muted"><Counter n={total} still={still} /></p>
