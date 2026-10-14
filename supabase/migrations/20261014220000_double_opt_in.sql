@@ -11,14 +11,15 @@ create unique index if not exists newsletter_unsub_idx on public.newsletter_subs
 -- returns 'invalid' | 'send' (mail the confirm link) | 'confirmed' (already active, don't mail)
 create or replace function public.cn_subscribe_v2(email text, confirm_hash text, unsub text) returns text
 language plpgsql security definer set search_path = public as $$
-declare st text;
+#variable_conflict use_column
+declare st text; e text := lower(cn_subscribe_v2.email);
 begin
-  if email is null or length(email) > 254 or email !~ '^[^\s@]+@[^\s@]+\.[^\s@]{2,}$'
+  if e is null or length(e) > 254 or e !~ '^[^\s@]+@[^\s@]+\.[^\s@]{2,}$'
      or confirm_hash !~ '^[0-9a-f]{64}$' or unsub !~ '^[0-9a-f]{64}$' then return 'invalid'; end if;
-  select s.status into st from newsletter_subscribers s where s.email = lower(cn_subscribe_v2.email);
+  select s.status into st from newsletter_subscribers s where s.email = e;
   if st = 'confirmed' then return 'confirmed'; end if;
   insert into newsletter_subscribers(email, status, confirm_token_hash, confirm_expires_at, unsub_token)
-  values (lower(email), 'pending', confirm_hash, now() + interval '48 hours', unsub)
+  values (e, 'pending', confirm_hash, now() + interval '48 hours', unsub)
   on conflict (email) do update set status = 'pending', confirm_token_hash = excluded.confirm_token_hash,
     confirm_expires_at = excluded.confirm_expires_at, unsubscribed_at = null,
     unsub_token = coalesce(newsletter_subscribers.unsub_token, excluded.unsub_token);
