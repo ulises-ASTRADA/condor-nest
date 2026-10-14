@@ -47,7 +47,7 @@ export default async function Detail({ params }: P) {
   const keyData = (
     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
       <dt className="text-fg-muted">Premio</dt>
-      <dd className={`font-mono tabular ${r.missing ? 'text-fg-muted' : 'text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}</dd>
+      <dd className={`font-mono tabular ${r.missing ? 'text-fg-muted' : 'text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
       <dt className="text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
       <dd><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell>{(l.deadlineAt ?? l.startsAt) && <span className="block font-mono text-xs text-fg-muted"><LocalTime iso={(l.deadlineAt ?? l.startsAt)!} /></span>}</dd>
       <dt className="text-fg-muted">Compiten</dt><dd className="font-mono tabular">{c.count}</dd>
@@ -73,6 +73,8 @@ export default async function Detail({ params }: P) {
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
+          {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
+          {r.missing && l.rewardText && <p className="mt-6 rounded-card border border-lime/40 bg-surface-2 p-4 text-lg"><span className="font-mono text-xs uppercase tracking-[.08em] text-lime">Premios</span><span className="mt-1 block">{l.rewardText}</span></p>}
           <section className="mt-6 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
           <section className="mt-8">
             <h2 className="font-medium text-lg">Resumen en español</h2>

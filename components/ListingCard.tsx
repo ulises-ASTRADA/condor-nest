@@ -28,7 +28,7 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
         <div className="mt-auto pt-2">
         {variant !== 'compact' && (
-          <p className={`font-mono tabular ${r.missing ? 'text-sm text-fg-muted' : 'text-xl'}`}>
+          <p className={`font-mono tabular ${r.missing ? (l.rewardText ? 'line-clamp-2 text-sm text-fg' : 'text-sm text-fg-muted') : 'text-xl'}`}>
             {r.prefix && <span className="mr-1.5 text-xs uppercase tracking-[.08em] text-fg-muted">{r.prefix}</span>}
             {r.main}{r.approx && <span className="ml-2 text-sm text-fg-muted">{r.approx}</span>}
           </p>

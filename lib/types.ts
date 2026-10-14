@@ -14,6 +14,7 @@ export type Listing = {
   rewardAmount: number | null;
   rewardCurrency: string | null;
   rewardUsd: number | null;
+  rewardText: string | null;  // prize description from the official page (credits, jobs, 'a anunciar'...)
   rewardKind: 'total_pool' | 'top_prize' | 'per_winner' | 'range' | 'non_monetary' | null;
   deadlineAt: string | null;
   startsAt: string | null; endsAt: string | null;
@@ -44,7 +45,7 @@ export function fromRow(r: Row): Listing {
   return {
     id: r.id, slug: r.slug, type: r.type, title: r.title, organizer: r.organizer, source: r.source,
     sourceUrl: u(r.source_url) ?? '', rewardAmount: n(r.reward_amount), rewardCurrency: r.reward_currency,
-    rewardUsd: n(r.reward_usd), rewardKind: r.reward_kind, deadlineAt: r.deadline_at, startsAt: r.starts_at,
+    rewardUsd: n(r.reward_usd), rewardText: typeof r.reward_text === 'string' && r.reward_text.trim() ? r.reward_text.trim() : null, rewardKind: r.reward_kind, deadlineAt: r.deadline_at, startsAt: r.starts_at,
     endsAt: r.ends_at, competitors: n(r.competitors), competitorsKind: r.competitors_kind, eligibility: r.eligibility,
     eligibilityNote: r.eligibility_note, modality: r.modality, city: r.city, ecosystems: r.ecosystems ?? [],
     summaryEs: r.summary_es, featured: !!r.featured && (!r.featured_until || new Date(r.featured_until) > new Date()),

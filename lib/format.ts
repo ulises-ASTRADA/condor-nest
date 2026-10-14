@@ -10,15 +10,20 @@ export function sig2(v: number): number {
 }
 
 const STABLE_USD = new Set(['USD', 'USDC', 'USDT', 'USDG', 'UXD', 'PYUSD']);
-export function rewardText(l: Listing): { main: string; prefix: string | null; approx: string | null; missing: boolean } {
-  if (l.rewardKind === 'non_monetary') return { main: 'Premio no monetario', prefix: null, approx: null, missing: false };
-  if (l.rewardAmount == null || l.rewardAmount <= 0) return { main: 'Premio: sin dato', prefix: null, approx: null, missing: true };
+// Honest prize labels: never claim "no prize" unless the official page says so (rewardKind 'non_monetary').
+// No amount but a described prize -> "Premios: <descripción>"; nothing published -> "Premio sin monto publicado".
+export function rewardText(l: Listing): { main: string; prefix: string | null; approx: string | null; missing: boolean; detail: string | null } {
+  if (l.rewardAmount == null || l.rewardAmount <= 0) {
+    if (l.rewardText) return { main: `Premios: ${l.rewardText}`, prefix: null, approx: null, missing: true, detail: null };
+    if (l.rewardKind === 'non_monetary') return { main: 'Sin premio en dinero', prefix: null, approx: null, missing: true, detail: null };
+    return { main: 'Premio sin monto publicado', prefix: null, approx: null, missing: true, detail: null };
+  }
   const cur = (l.rewardCurrency ?? 'USD').toUpperCase();
   const main = cur === 'USD' ? `USD ${num(l.rewardAmount)}` : `${num(l.rewardAmount)} ${cur}`;
   const prefix = l.rewardKind === 'total_pool' ? 'Pozo' : l.rewardKind === 'top_prize' ? '1er premio' : null;
   const suffix = l.rewardKind === 'per_winner' ? ' por ganador' : '';
   const approx = cur !== 'USD' && l.rewardUsd != null ? `≈ USD ${num(l.rewardUsd)}` : null;
-  return { main: main + suffix, prefix, approx, missing: false };
+  return { main: main + suffix, prefix, approx, missing: false, detail: l.rewardText };
 }
 export { STABLE_USD };
 

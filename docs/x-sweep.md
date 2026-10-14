@@ -4,6 +4,14 @@ Sources: x namespace tools (search_posts_all, get_posts_by_ids) · https://inter
 
 Summary: X is a discovery source, not a source of truth. Find posts with ~4 searches, open the link in each post, and list an event only after its official page confirms the date, place and who can join. Store the post in `source_post_url` and the official page in `verified_url` (DB check requires verified_url when curated=true).
 
+## Prizes (required on every curated listing, added 2026-10-14)
+Copy the prize from the **official page**, never from the X post alone. Render JS-heavy pages headless (`google-chrome --headless=new --dump-dom`) and look for Premios / Prizes / Prêmios / Estímulos.
+- Stated amount: set `reward_amount`, `reward_currency` (MXN, USD, USDG…), `reward_usd` when it's a stablecoin or USD, `reward_kind` (`total_pool`, `top_prize`, `per_winner`), and put the breakdown in `reward_text` (for example "1° USD 1.000 + mentoría · 2° USD 500").
+- Prize exists but has no amount (credits, devices, jobs, "a anunciar"): leave the amount null and copy the description into `reward_text` in Spanish. The site shows "Premios: <reward_text>".
+- Nothing published: leave everything null. The site shows "Premio sin monto publicado".
+- Use `reward_kind = 'non_monetary'` **only** when the official page explicitly says there's no prize. Never use it as a stand-in for "unknown" (the 2026-10-13 belo and OpenAI São Paulo rows did that by mistake).
+- Placeholder amounts like "$0.00 MXN" mean the amount isn't published yet: treat them as no amount and re-check later.
+
 ## Steps v2 (upgraded 2026-10-13 · about 6–8 x calls per sweep; limits 30/min, 1000/day, 25 results/call)
 Use `search_posts_all` with `start_time` = 30 days ago, `max_results` 25, `post.fields=created_at,entities,note_tweet,author_id`, `expansions=author_id`, `user.fields=username`, `write_to_file: true`, then parse the file with python (print date, @user, id, 150 chars, expanded URLs).
 
