@@ -55,6 +55,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
               <m.span className={st === 'success' ? 'text-gradient' : ''} initial={still ? false : { clipPath: 'inset(0 100% 0 0)' }} animate={{ clipPath: 'inset(0 0% 0 0)' }} transition={{ duration: 0.6, delay: 0.2 }}>{MSG[st]}</m.span>
             </p>
           )}
+          {st === 'success' && <m.p initial={still ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-1 pl-[30px] text-xs text-fg-muted">¿No lo ves? Revisá la carpeta de spam.</m.p>}
           {err && <m.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-danger">{MSG[st]}</m.p>}
         </div>
         {variant !== 'compact' && !mini && <p className="mt-2.5 text-xs text-fg-muted">Podés darte de baja cuando quieras.</p>}
