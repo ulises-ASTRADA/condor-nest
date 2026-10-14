@@ -209,12 +209,13 @@ export function Feed({ listings, now, initial, affUrl, hero, geo }: { listings: 
                         <ListingCard listing={l} now={now} />
                       </m.li>,
                     );
-                    if (i > 3 && (i + 1) % 10 === 0) out.push(<li key={`af-${i}`} className="col-span-full"><Affiliate url={affUrl} /></li>);
+                    // Single affiliate card on screen: mobile only (desktop has it in the sidebar), once, after the 10th card.
+                    if (i === 9) out.push(<li key="af" className="col-span-full lg:hidden"><Affiliate url={affUrl} /></li>);
                     return out;
                   })}
                 </AnimatePresence>
               </m.ul>
-              <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>
+              {shown.length < 10 && <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>}
               {organic.length > limit && (
                 <div className="mt-6 text-center"><button onClick={() => setLimit((x) => x + PAGE)} className="min-h-tap rounded-pill border border-lime/60 px-6 text-lime hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">Ver más</button></div>
               )}
