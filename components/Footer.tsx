@@ -11,7 +11,7 @@ export function Footer() {
             <Link className="min-h-tap inline-flex items-center hover:text-fg" href="/acerca">Acerca</Link>
             <Link className="min-h-tap inline-flex items-center hover:text-fg" href="/publicar">Publicá tu evento</Link>
           </nav>
-          <p>Hecho en Buenos Aires para builders de LatAm · Datos de Superteam Earn, Devpost, Taikai y curación propia</p>
+          <p>Hecho en Córdoba para builders de LatAm · Datos de Superteam Earn, Devpost, Taikai y curación propia</p>
           <ReduceMotionToggle />
         </div>
       </div>

@@ -98,4 +98,4 @@ La pista de fondo (`public/audio/condor-nest-lofi.mp3`) es un **original de Lo-F
 
 ---
 
-<p align="center"><sub>Hecho en LatAm, para LatAm · <a href="https://condor-nest.vercel.app">condor-nest.vercel.app</a></sub></p>
+<p align="center"><sub>Hecho en Córdoba, para LatAm · <a href="https://condor-nest.vercel.app">condor-nest.vercel.app</a></sub></p>
