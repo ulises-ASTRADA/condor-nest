@@ -22,6 +22,7 @@ export type Listing = {
   competitorsKind: 'submissions' | 'registrations' | null;
   eligibility: Eligibility;
   eligibilityNote: string | null;
+  eligibilityShort: string | null; // card label, <= ~28 chars
   modality: 'online' | 'irl' | 'hybrid'; city: string | null;
   ecosystems: string[];
   summaryEs: string[] | null;
@@ -47,7 +48,7 @@ export function fromRow(r: Row): Listing {
     sourceUrl: u(r.source_url) ?? '', rewardAmount: n(r.reward_amount), rewardCurrency: r.reward_currency,
     rewardUsd: n(r.reward_usd), rewardText: typeof r.reward_text === 'string' && r.reward_text.trim() ? r.reward_text.trim() : null, rewardKind: r.reward_kind, deadlineAt: r.deadline_at, startsAt: r.starts_at,
     endsAt: r.ends_at, competitors: n(r.competitors), competitorsKind: r.competitors_kind, eligibility: r.eligibility,
-    eligibilityNote: r.eligibility_note, modality: r.modality, city: r.city, ecosystems: r.ecosystems ?? [],
+    eligibilityNote: r.eligibility_note, eligibilityShort: typeof r.eligibility_short === 'string' && r.eligibility_short.trim() ? r.eligibility_short.trim() : null, modality: r.modality, city: r.city, ecosystems: r.ecosystems ?? [],
     summaryEs: r.summary_es, featured: !!r.featured && (!r.featured_until || new Date(r.featured_until) > new Date()),
     featuredUntil: r.featured_until, disclosureKey: r.disclosure_key, updatedAt: r.updated_at, createdAt: r.created_at,
     titleLang: r.title_lang ?? 'en', applyUrl: u(r.apply_url), sourcePostUrl: u(r.source_post_url),

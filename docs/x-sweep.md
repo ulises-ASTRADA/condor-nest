@@ -12,6 +12,9 @@ Copy the prize from the **official page**, never from the X post alone. Render J
 - Use `reward_kind = 'non_monetary'` **only** when the official page explicitly says there's no prize. Never use it as a stand-in for "unknown" (the 2026-10-13 belo and OpenAI São Paulo rows did that by mistake).
 - Placeholder amounts like "$0.00 MXN" mean the amount isn't published yet: treat them as no amount and re-check later.
 
+## Eligibility label (required on every curated listing, added 2026-10-14)
+Set `eligibility_short`, a card label of 28 characters or fewer (the DB caps it at 32): "Solo <país/ciudad/grupo> · <edad>" for restricted listings (for example "Solo México · 18–35 años", "Solo CDMX · 12–17 años", "Solo estudiantes EDU HUB", "Solo Brasil"), "Abierto a LatAm" or "Abierto · <dato clave>" for open ones, and "Elegibilidad sin confirmar" when unknown. Put the complete rules in `eligibility_note`: the detail page and the card tooltip show that full text.
+
 ## Steps v2 (upgraded 2026-10-13 · about 6–8 x calls per sweep; limits 30/min, 1000/day, 25 results/call)
 Use `search_posts_all` with `start_time` = 30 days ago, `max_results` 25, `post.fields=created_at,entities,note_tweet,author_id`, `expansions=author_id`, `user.fields=username`, `write_to_file: true`, then parse the file with python (print date, @user, id, 150 chars, expanded URLs).
 

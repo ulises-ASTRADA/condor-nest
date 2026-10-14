@@ -23,7 +23,7 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
           <span data-featured-pill className="featured-pill mb-2 inline-block rounded-pill bg-magenta px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">Destacado</span>
         )}
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
-          <TypeBadge type={l.type} /> <EligBadge l={l} /> <span>· {l.organizer ?? SOURCE_LABEL[l.source]}</span>
+          <TypeBadge type={l.type} /> <EligBadge l={l} short /> <span>· {l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
         <div className="mt-auto pt-2">
