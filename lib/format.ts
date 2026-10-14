@@ -14,7 +14,7 @@ const STABLE_USD = new Set(['USD', 'USDC', 'USDT', 'USDG', 'UXD', 'PYUSD']);
 // No amount but a described prize -> "Premios: <descripción>"; nothing published -> "Premio sin monto publicado".
 export function rewardText(l: Listing): { main: string; prefix: string | null; approx: string | null; missing: boolean; detail: string | null } {
   if (l.rewardAmount == null || l.rewardAmount <= 0) {
-    if (l.rewardText) return { main: `Premios: ${l.rewardText}`, prefix: null, approx: null, missing: true, detail: null };
+    if (l.rewardText) return { main: /^premi/i.test(l.rewardText) ? l.rewardText : `Premios: ${l.rewardText}`, prefix: null, approx: null, missing: true, detail: null };
     if (l.rewardKind === 'non_monetary') return { main: 'Sin premio en dinero', prefix: null, approx: null, missing: true, detail: null };
     return { main: 'Premio sin monto publicado', prefix: null, approx: null, missing: true, detail: null };
   }
