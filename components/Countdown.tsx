@@ -8,17 +8,31 @@ import { useTz } from './LocalTime';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
-function Roll({ text, still }: { text: string; still: boolean }) {
-  if (still) return <span>{text}</span>;
+function RollChars({ word, base }: { word: string; base: number }) {
   return (
-    <span className="inline-flex">
-      {text.split('').map((ch, i) => (
-        <span key={i} className="relative inline-block overflow-hidden">
+    <span className="inline-flex max-w-full">
+      {word.split('').map((ch, i) => (
+        <span key={base + i} className="relative inline-block overflow-hidden">
           <AnimatePresence mode="popLayout" initial={false}>
-            <m.span key={ch + i} className="inline-block whitespace-pre" initial={{ y: '40%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '-40%', opacity: 0 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>{ch}</m.span>
+            <m.span key={ch + (base + i)} className="inline-block whitespace-pre" initial={{ y: '40%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '-40%', opacity: 0 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>{ch}</m.span>
           </AnimatePresence>
         </span>
       ))}
+    </span>
+  );
+}
+
+/** Animate per character, but wrap between words so narrow sidebars never mid-break "Buenos". */
+function Roll({ text, still }: { text: string; still: boolean }) {
+  if (still) return <span className="break-words">{text}</span>;
+  let offset = 0;
+  return (
+    <span className="inline break-words">
+      {text.split(/(\s+)/).map((part, i) => {
+        const base = offset; offset += part.length;
+        if (/^\s+$/.test(part)) return <span key={`s${i}`}>{part}</span>;
+        return <RollChars key={`w${i}-${part}`} word={part} base={base} />;
+      })}
     </span>
   );
 }
@@ -36,9 +50,9 @@ export function Countdown({ l, initialNow, seconds = false }: { l: Pick<Listing,
   const pulse = info.state === 'urgent' ? 'animate-pulse-glow' : info.state === 'closing' ? 'animate-pulse-fast' : '';
   const showDate = info.date && !['normal', 'closed'].includes(info.state);
   return (
-    <div className={`font-mono text-sm tabular transition-colors duration-slow ${COLOR[info.state]}`}>
+    <div className={`min-w-0 break-words font-mono text-sm tabular transition-colors duration-slow ${COLOR[info.state]}`}>
       {info.iso && <span className="sr-only">{srDate(info.iso, info.verb, tz)}</span>}
-      <span aria-hidden="true" className="inline-flex flex-wrap items-center gap-x-1.5">
+      <span aria-hidden="true" className="inline-flex max-w-full flex-wrap items-center gap-x-1.5">
         {showIcon && <span className={`inline-flex items-center gap-1 ${pulse}`}><span className="h-1.5 w-1.5 rounded-pill bg-current shadow-[0_0_8px_currentColor]" />⏰</span>}
         <time dateTime={info.iso ?? undefined}><Roll text={label} still={still} /></time>
         {showDate && <span className="text-fg-muted">· {info.date}</span>}

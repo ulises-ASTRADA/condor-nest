@@ -77,15 +77,15 @@ export default async function Detail({ params }: P) {
   ].filter(Boolean) as { k: string; v: string; iso: string }[];
 
   const keyData = (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
-      <dt className="text-fg-muted">Premio</dt>
-      <dd className={`font-mono tabular ${r.missing ? 'text-fg-muted' : 'text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
-      <dt className="text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
-      <dd><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell>{(l.deadlineAt ?? l.startsAt) && <span className="block font-mono text-xs text-fg-muted"><LocalTime iso={(l.deadlineAt ?? l.startsAt)!} /></span>}</dd>
-      <dt className="text-fg-muted">Compiten</dt><dd className="font-mono tabular">{c.count}</dd>
-      <dt className="text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="font-mono tabular">{c.ratio?.replace(/ por .*/, '') ?? 'Sin dato'}</dd>
-      <dt className="text-fg-muted">Elegibilidad</dt><dd>{ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="block text-fg-muted">{l.eligibilityNote}</span>}</dd>
-      <dt className="text-fg-muted">Modalidad</dt><dd>{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'IRL' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
+    <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
+      <dt className="shrink-0 text-fg-muted">Premio</dt>
+      <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
+      <dt className="shrink-0 text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
+      <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell>{(l.deadlineAt ?? l.startsAt) && <span className="mt-0.5 block font-mono text-xs text-fg-muted"><LocalTime iso={(l.deadlineAt ?? l.startsAt)!} /></span>}</dd>
+      <dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd>
+      <dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio?.replace(/ por .*/, '') ?? 'Sin dato'}</dd>
+      <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
+      <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'IRL' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
     </dl>
   );
 
@@ -113,7 +113,7 @@ export default async function Detail({ params }: P) {
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
           {r.missing && l.rewardText && <p className="mt-6 rounded-card border border-lime/40 bg-surface-2 p-4 text-lg"><span className="font-mono text-xs uppercase tracking-[.08em] text-lime">Premios</span><span className="mt-1 block">{l.rewardText}</span></p>}
-          <section className="mt-6 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
+          <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
           <section className="mt-8">
             <h2 className="font-medium text-lg">Resumen en español</h2>
             {l.summaryEs?.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{l.summaryEs.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="mt-2 text-fg-muted">Sin dato. Mirá la fuente oficial.</p>}
@@ -134,7 +134,7 @@ export default async function Detail({ params }: P) {
           </section>
           <div className="mt-8"><Newsletter variant="inline" /></div>
         </article>
-        <aside className="hidden lg:block"><div className="sticky top-20 space-y-4 rounded-card border border-border bg-surface p-5"><h2 className="font-medium">Datos clave</h2>{keyData}<Cta l={l} /></div></aside>
+        <aside className="hidden min-w-0 lg:block"><div className="sticky top-20 min-w-0 space-y-4 rounded-card border border-border bg-surface p-5"><h2 className="font-medium">Datos clave</h2>{keyData}<Cta l={l} /></div></aside>
       </div>
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden"><Cta l={l} /></div>
     </>
