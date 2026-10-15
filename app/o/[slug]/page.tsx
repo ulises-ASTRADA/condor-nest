@@ -15,6 +15,7 @@ import { Newsletter } from '@/components/Newsletter';
 import { ShareButton, CountdownShell } from '@/components/DetailClient';
 import { eventLd, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
+import { hubsFor } from '@/lib/hubs';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Buenos_Aires';
@@ -128,6 +129,7 @@ export default async function Detail({ params }: P) {
           )}
           <section id="similares" className="mt-10">
             <h2 className="font-medium text-lg">Oportunidades similares{open ? '' : ' abiertas'}</h2>
+            {hubsFor(l).length > 0 && <p className="mt-1 text-sm text-fg-muted">Ver más: {hubsFor(l).map((h, i) => <span key={h.slug}>{i ? ' · ' : ''}<Link href={`/${h.slug}`} className="text-lime hover:underline">{h.label}</Link></span>)}</p>}
             {similar.length ? <ul className="mt-3 grid gap-3">{similar.map((s) => <li key={s.id}><ListingCard listing={s} variant="compact" now={nowIso} /></li>)}</ul> : <p className="mt-2 text-fg-muted">Por ahora no hay otras abiertas parecidas. <Link href="/" className="text-lime hover:underline">Mirá todas las oportunidades</Link>.</p>}
           </section>
           <div className="mt-8"><Newsletter variant="inline" /></div>

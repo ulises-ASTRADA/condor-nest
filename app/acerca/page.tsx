@@ -1,5 +1,17 @@
 import { OG_IMAGE } from '@/lib/site';
 import Link from 'next/link';
+import { FaqList, faqLd } from '@/components/Faq';
+import { ldScript } from '@/lib/jsonld';
+import { HUBS } from '@/lib/hubs';
+
+const FAQS = [
+  { q: '¿Qué es Condor Nest?', a: 'Un feed en español que junta los hackathons, bounties y grants abiertos a builders de Argentina y Latinoamérica, con premio, elegibilidad, competencia y fecha de cierre en tu hora local. Está hecho en Córdoba, Argentina.' },
+  { q: '¿Cada cuánto se actualiza?', a: 'Todos los días. Una carga automática corre cada mañana (entre las 8 y las 9, hora de Argentina) y trae lo nuevo de Superteam Earn, Devpost y Taikai. Los eventos curados de X y Luma se suman después de verificarlos en su página oficial.' },
+  { q: '¿Cómo publico mi evento?', a: 'Entrá a “Publicá tu evento” (/publicar). Listamos gratis cualquier hackathon, bounty o grant abierto a builders de LatAm una vez que lo verificamos en su página oficial. También podés pagar un espacio “Destacado”, que siempre va marcado.' },
+  { q: '¿Es gratis?', a: 'Sí. Ver el feed, filtrar y suscribirte al newsletter es gratis y no hace falta cuenta. Los espacios “Destacado” son pagos y los links “Afiliado” pueden dejarnos una comisión sin cambiarte el precio; los dos están siempre marcados.' },
+  { q: '¿Qué países cubre?', a: 'Toda Latinoamérica: listamos oportunidades que se hacen en LatAm o que están restringidas a LatAm o a un país de LatAm (Argentina, México, Chile, Colombia, Brasil, Perú, Uruguay y el resto de la región). No listamos convocatorias globales que no aclaran desde dónde se puede participar. El feed arranca filtrado por tu país y con un clic ves todo.' },
+  { q: '¿Cómo me suscribo al newsletter?', a: 'Dejá tu mail en el formulario del newsletter (al costado del feed en la home, o al pie de la página en el celular) y confirmá desde el correo que te llega (si no lo ves, revisá spam). Es un mail por semana, los lunes, con lo que cierra pronto y lo que tiene poca competencia. Te podés dar de baja con un clic.' },
+];
 export const metadata = { title: 'Acerca', alternates: { canonical: '/acerca' }, openGraph: { images: [OG_IMAGE], url: '/acerca' } };
 
 const H2 = ({ k, children }: { k: string; children: React.ReactNode }) => (
@@ -103,6 +115,14 @@ export default function Acerca() {
       <section id="musica" className="scroll-mt-24 grid gap-4 sm:grid-cols-2">
         <Tile icon="🏔" title="Hecho en Córdoba" tone="lime">Para builders de toda LatAm.</Tile>
         <Tile icon="♫" title="Música" tone="violet">Lo-fi original de Lo-Fi Mate, hecho para Condor Nest. La podés apagar desde el botón del ecualizador arriba.</Tile>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" aria-labelledby="faq-t" className="scroll-mt-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', ...faqLd(FAQS) })} />
+        <H2 k="06 · Preguntas frecuentes"><span id="faq-t">Preguntas frecuentes</span></H2>
+        <FaqList items={FAQS} />
+        <p className="mt-4 text-sm text-fg-muted">Explorá por país o tema: {HUBS.map((h, i) => <span key={h.slug}>{i ? ' · ' : ''}<Link href={`/${h.slug}`} className="text-lime hover:underline">{h.label}</Link></span>)}</p>
       </section>
 
       {/* 8 · CTA */}
