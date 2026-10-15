@@ -8,21 +8,11 @@ import { useTz } from './LocalTime';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
-function RollChars({ word, base }: { word: string; base: number }) {
-  return (
-    <span className="inline-flex max-w-full">
-      {word.split('').map((ch, i) => (
-        <span key={base + i} className="relative inline-block overflow-hidden">
-          <AnimatePresence mode="popLayout" initial={false}>
-            <m.span key={ch + (base + i)} className="inline-block whitespace-pre" initial={{ y: '40%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '-40%', opacity: 0 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>{ch}</m.span>
-          </AnimatePresence>
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/** Animate per character, but wrap between words so narrow sidebars never mid-break "Buenos". */
+/**
+ * Per-letter roll. A static glyph always stays painted (never opacity 0), and the
+ * motion layer is decorative — if an enter animation stalls, the hour digits remain readable.
+ * Words wrap as units so narrow sidebars don't mid-break city names.
+ */
 function Roll({ text, still }: { text: string; still: boolean }) {
   if (still) return <span className="break-words">{text}</span>;
   let offset = 0;
@@ -30,8 +20,30 @@ function Roll({ text, still }: { text: string; still: boolean }) {
     <span className="inline break-words">
       {text.split(/(\s+)/).map((part, i) => {
         const base = offset; offset += part.length;
-        if (/^\s+$/.test(part)) return <span key={`s${i}`}>{part}</span>;
-        return <RollChars key={`w${i}-${part}`} word={part} base={base} />;
+        if (/^\s+$/.test(part)) return <span key={`s${base}`}>{part}</span>;
+        return (
+          <span key={`w${base}`} className="inline-flex max-w-full">
+            {part.split('').map((ch, j) => {
+              const idx = base + j;
+              return (
+                <span key={idx} className="relative inline-block overflow-hidden">
+                  <span className="whitespace-pre">{ch}</span>
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <m.span
+                      key={`${idx}:${ch}`}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 whitespace-pre"
+                      initial={{ y: '45%', opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: '-45%', opacity: 0 }}
+                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    >{ch}</m.span>
+                  </AnimatePresence>
+                </span>
+              );
+            })}
+          </span>
+        );
       })}
     </span>
   );

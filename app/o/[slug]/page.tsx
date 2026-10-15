@@ -84,7 +84,7 @@ export default async function Detail({ params }: P) {
       <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell>{(l.deadlineAt ?? l.startsAt) && <span className="mt-0.5 block font-mono text-xs text-fg-muted"><LocalTime iso={(l.deadlineAt ?? l.startsAt)!} /></span>}</dd>
       <dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd>
       <dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio?.replace(/ por .*/, '') ?? 'Sin dato'}</dd>
-      <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
+      <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{l.eligibilityShort ?? ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
       <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'IRL' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
     </dl>
   );
@@ -102,7 +102,7 @@ export default async function Detail({ params }: P) {
       )}
       <div className="mt-2 grid gap-8 lg:grid-cols-3">
         <article className="min-w-0 lg:col-span-2">
-          <div className="flex flex-wrap gap-1.5">{!open && <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} /></div>
+          <div className="flex flex-wrap gap-1.5">{!open && <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           <p className="mt-1 font-mono text-xs text-fg-muted">Actualizado el <time dateTime={updated}>{numDate(updated)}</time></p>
