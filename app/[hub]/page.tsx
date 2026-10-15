@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getListings } from '@/lib/supabase';
-import { HUBS, hubBySlug, hubItems, monthYear } from '@/lib/hubs';
+import { HUBS, hubBySlug, hubItems, monthYear, monthDeYear } from '@/lib/hubs';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
 import { ldScript } from '@/lib/jsonld';
@@ -46,9 +46,9 @@ export default async function HubPage({ params }: P) {
         <h1 className="font-display text-[26px] font-semibold leading-8 lg:text-[40px] lg:leading-[46px]"><span className="text-gradient">{h.h1}</span> <span className="text-fg-muted">({m})</span></h1>
         <div className="mt-4 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
           {n ? (
-            <p>Hay <strong>{n} {n === 1 ? h.noun[0] : h.noun[1]} {n === 1 ? ab.slice(0, -1) : ab}</strong> {h.where}: {list(items.map((l) => l.title))}. Están ordenad{masc(h.slug) ? 'os' : 'as'} por fecha de cierre, con premio, quién puede participar y link oficial en cada una.</p>
+            <p>{n === 1 ? 'Esta es' : 'Estas son'} <strong>{n === 1 ? (masc(h.slug) ? 'el' : 'la') : (masc(h.slug) ? 'los' : 'las')} {n} {n === 1 ? h.noun[0] : h.noun[1]} {n === 1 ? ab.slice(0, -1) : ab}</strong> {h.where} en {monthDeYear(now)}: {list(items.map((l) => l.title))}. Están ordenad{masc(h.slug) ? 'os' : 'as'} por fecha de cierre, con premio, quién puede participar y link oficial en cada una.</p>
           ) : (
-            <p>Ahora mismo no hay {h.noun[1]} {ab} {h.where}. La lista se actualiza todos los días a la mañana; mientras tanto, <Link href="/" className="text-lime hover:underline">mirá todas las oportunidades abiertas</Link>.</p>
+            <p>En {monthDeYear(now)} no hay {h.noun[1]} {ab} {h.where} por ahora. La lista se actualiza todos los días a la mañana; mientras tanto, <Link href="/" className="text-lime hover:underline">mirá todas las oportunidades abiertas</Link>.</p>
           )}
         </div>
       </header>

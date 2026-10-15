@@ -31,7 +31,7 @@ export function eventLd(l: Listing): Record<string, unknown> | null {
   if (l.rewardAmount != null && l.rewardAmount > 0 && l.rewardCurrency) {
     const cur = l.rewardCurrency.toUpperCase();
     const iso = STABLE.has(cur) ? 'USD' : /^[A-Z]{3}$/.test(cur) ? cur : null;
-    if (iso) ev.offers = { '@type': 'Offer', name: 'Premio', price: STABLE.has(cur) && l.rewardUsd != null ? l.rewardUsd : l.rewardAmount, priceCurrency: iso, ...(l.applyUrl ? { url: l.applyUrl } : {}) };
+    if (iso) ev.offers = { '@type': 'Offer', name: 'Premio', price: STABLE.has(cur) && l.rewardUsd != null ? l.rewardUsd : l.rewardAmount, priceCurrency: iso, ...(l.applyUrl ? { url: l.applyUrl } : {}), ...(l.deadlineAt ?? l.endsAt ? { validThrough: l.deadlineAt ?? l.endsAt } : {}) };
   }
   return ev;
 }

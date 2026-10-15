@@ -60,3 +60,6 @@ export const hubItems = (h: Hub, all: Listing[], now: Date) => sortListings(all.
 /** Most specific hubs for a listing (for links from /o pages). */
 export const hubsFor = (l: Listing) => HUBS.filter((h) => h.match(l));
 export const monthYear = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', month: 'long', year: 'numeric' }).format(d).replace(' de ', ' ');
+
+/** 'octubre de 2026' in Córdoba time, for dated answer sentences. */
+export const monthDeYear = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', month: 'long', year: 'numeric' }).format(d);
