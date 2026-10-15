@@ -27,7 +27,7 @@ export default function OG() {
           {[['HACKATHONS', violet], ['BOUNTIES', lime], ['GRANTS', cyan]].map(([t, c]) => (
             <div key={t} style={{ display: 'flex', padding: '8px 18px', border: `2px solid ${c}`, color: c, borderRadius: 999 }}>{t}</div>
           ))}
-          <div style={{ display: 'flex', marginLeft: 'auto', color: '#9AA3AE' }}>condor-nest.vercel.app</div>
+          <div style={{ display: 'flex', marginLeft: 'auto', color: '#9AA3AE' }}>condor-nest.lat</div>
         </div>
       </div>
     ),

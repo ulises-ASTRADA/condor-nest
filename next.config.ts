@@ -13,6 +13,10 @@ const csp = [
 const config: NextConfig = {
   poweredByHeader: false,
   experimental: { optimizePackageImports: ['motion'] },
+  async redirects() {
+    // Old production hostname → custom domain (alias redirect also set in Vercel).
+    return [{ source: '/:path*', has: [{ type: 'host', value: 'condor-nest.vercel.app' }], destination: 'https://condor-nest.lat/:path*', permanent: true }];
+  },
   async headers() {
     // Indexing ON in production (Ulises, 2026-10-14). Previews, API routes and newsletter status pages stay noindex.
     const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://condor-nest.vercel.app"><img alt="Live" src="https://img.shields.io/badge/live-condor--nest.vercel.app-C6FF3D?style=for-the-badge&labelColor=07080B"></a>
+  <a href="https://condor-nest.lat"><img alt="Live" src="https://img.shields.io/badge/live-condor--nest.lat-C6FF3D?style=for-the-badge&labelColor=07080B"></a>
   <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-22E1FF?style=for-the-badge&logo=nextdotjs&logoColor=22E1FF&labelColor=07080B">
   <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres-3DFFA2?style=for-the-badge&logo=supabase&logoColor=3DFFA2&labelColor=07080B">
   <img alt="Vercel" src="https://img.shields.io/badge/Vercel-Cron-A78BFA?style=for-the-badge&logo=vercel&logoColor=A78BFA&labelColor=07080B">
@@ -75,6 +75,9 @@ Sólo los **nombres**; los valores viven en `.env.local` y en Vercel.
 | `CRON_SECRET` | server | Autentica las llamadas de Vercel Cron |
 | `AFFILIATE_URL` | server | Link de afiliado (Mercado Libre) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | cliente / server | Anti-bot del newsletter (opcional) |
+| `SITE_URL` | server | Origen público (`https://condor-nest.lat`) para links de confirmación |
+| `RESEND_API_KEY` / `RESEND_FROM` | server | Newsletter y avisos de /publicar. `RESEND_FROM` solo con dominio verificado en Resend |
+| `PUBLICAR_NOTIFY_TO` | server | Destino de avisos de /publicar (default: mail de Ulises) |
 
 ## 🔁 Ingest diario
 
@@ -98,4 +101,4 @@ La pista de fondo (`public/audio/condor-nest-lofi.mp3`) es un **original de Lo-F
 
 ---
 
-<p align="center"><sub>Hecho en Córdoba, para LatAm · <a href="https://condor-nest.vercel.app">condor-nest.vercel.app</a></sub></p>
+<p align="center"><sub>Hecho en Córdoba, para LatAm · <a href="https://condor-nest.lat">condor-nest.lat</a></sub></p>

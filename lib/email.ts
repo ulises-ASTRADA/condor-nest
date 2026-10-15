@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 // RESEND_API_KEY is server-only. Never log recipients or tokens.
-export const SITE_URL = (process.env.SITE_URL || 'https://condor-nest.vercel.app').replace(/\/$/, '');
+export const SITE_URL = (process.env.SITE_URL || 'https://condor-nest.lat').replace(/\/$/, '');
 export const newToken = () => randomBytes(32).toString('hex');
 export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 export const isToken = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f]{64}$/.test(s);
