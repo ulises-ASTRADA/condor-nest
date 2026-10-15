@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'motion/react';
+import { m, useReducedMotion } from 'motion/react';
 import { deadlineInfo, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
 import { useReduceMotionPref } from './Toggles';
@@ -9,9 +9,9 @@ import { useTz } from './LocalTime';
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
 /**
- * Per-letter roll. A static glyph always stays painted (never opacity 0), and the
- * motion layer is decorative — if an enter animation stalls, the hour digits remain readable.
- * Words wrap as units so narrow sidebars don't mid-break city names.
+ * Per-letter roll without opacity:0 or overflow clipping.
+ * If motion stalls, glyphs stay fully visible (just slightly offset).
+ * Wrap between words so narrow layouts don't mid-break city names.
  */
 function Roll({ text, still }: { text: string; still: boolean }) {
   if (still) return <span className="break-words">{text}</span>;
@@ -23,25 +23,15 @@ function Roll({ text, still }: { text: string; still: boolean }) {
         if (/^\s+$/.test(part)) return <span key={`s${base}`}>{part}</span>;
         return (
           <span key={`w${base}`} className="inline-flex max-w-full">
-            {part.split('').map((ch, j) => {
-              const idx = base + j;
-              return (
-                <span key={idx} className="relative inline-block overflow-hidden">
-                  <span className="whitespace-pre">{ch}</span>
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <m.span
-                      key={`${idx}:${ch}`}
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 whitespace-pre"
-                      initial={{ y: '45%', opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: '-45%', opacity: 0 }}
-                      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    >{ch}</m.span>
-                  </AnimatePresence>
-                </span>
-              );
-            })}
+            {part.split('').map((ch, j) => (
+              <m.span
+                key={`${base + j}:${ch}`}
+                className="inline-block whitespace-pre"
+                initial={{ y: '0.35em' }}
+                animate={{ y: 0 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              >{ch}</m.span>
+            ))}
           </span>
         );
       })}
