@@ -18,7 +18,7 @@ export async function GET() {
 - [Sitemap](${SITE}/sitemap.xml)
 
 ## Por país y tema
-${HUBS.map((h) => `- [${h.label}](${SITE}/${h.slug}): ${hubItems(h, all, now).length} abiertas hoy.`).join('\n')}
+${HUBS.map((h) => `- [${h.label}](${SITE}/${h.slug}) (abiertas hoy: ${hubItems(h, all, now).length})`).join('\n')}
 
 ## Oportunidades abiertas
 ${open.map((l) => `- [${l.title}](${SITE}/o/${l.slug})`).join('\n')}
