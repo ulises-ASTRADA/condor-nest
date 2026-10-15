@@ -12,6 +12,8 @@ const csp = [
 ].join('; ');
 const config: NextConfig = {
   poweredByHeader: false,
+  // Always resolve metadata into the initial <head> (no streamed metadata in <body>) so every crawler/AI bot sees description, canonical and OG.
+  htmlLimitedBots: /.*/,
   experimental: { optimizePackageImports: ['motion'] },
   async redirects() {
     // Old production hostname → custom domain (alias redirect also set in Vercel).
