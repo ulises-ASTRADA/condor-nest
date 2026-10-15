@@ -61,7 +61,9 @@ body { background: rgb(var(--bg)); color: rgb(var(--fg)); }
 @media (prefers-reduced-transparency: reduce) { .bg-aurora { display: none; } }
 @keyframes auroraShift { 0%,100% { transform: translate3d(0,0,0) scale(1) } 50% { transform: translate3d(-6%,4%,0) scale(1.08) } }
 /* Phones: keep the backdrop static (the full-screen background-position/blur animations cost seconds of style+paint work on mid-range devices). */
-@media (max-width: 767px) { .bg-grid, .bg-aurora .blob { animation: none; } .bg-aurora .blob { will-change: auto; filter: blur(60px); } }
+@media (max-width: 767px) { .bg-grid, .bg-aurora .blob { animation: none; } .bg-aurora .blob { will-change: auto; filter: none; background: none; }
+  /* Same glow without huge blur filters: cheap radial gradients. */
+  .bg-aurora { background: radial-gradient(60vmax 60vmax at 10% -10%, rgb(var(--lime) / calc(.07 * var(--bg-alpha))), transparent 60%), radial-gradient(60vmax 60vmax at 100% 0%, rgb(var(--violet) / calc(.09 * var(--bg-alpha))), transparent 60%); } }
 @keyframes gridDrift { 0% { background-position: 0 0 } 100% { background-position: 48px 48px } }
 @supports (animation-timeline: scroll()) {
   .bg-aurora { animation: parallax linear both; animation-timeline: scroll(root); animation-range: 0 400px; }

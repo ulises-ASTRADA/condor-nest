@@ -8,7 +8,8 @@ import { Footer } from '@/components/Footer';
 import { ClientBoot } from '@/components/ClientBoot';
 
 // Variable fonts: one file each for Unbounded and Space Grotesk, plus Geist Mono 500.
-const unbounded = Unbounded({ subsets: ['latin', 'latin-ext'], display: 'swap', variable: '--font-unbounded' });
+// Display face uses 'optional': the hero H1 is the mobile LCP; no late swap means LCP lands on first paint (fallback metrics are adjusted).
+const unbounded = Unbounded({ subsets: ['latin', 'latin-ext'], display: 'optional', variable: '--font-unbounded' });
 const grotesk = Space_Grotesk({ subsets: ['latin', 'latin-ext'], display: 'swap', variable: '--font-space-grotesk' });
 const mono = Geist_Mono({ subsets: ['latin', 'latin-ext'], weight: '500', display: 'swap', variable: '--font-geist-mono' });
 
