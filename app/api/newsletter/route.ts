@@ -31,7 +31,12 @@ export async function POST(req: Request) {
     if (res === 'confirmed') return NextResponse.json({ status: 'success' });
     const unsubToken = (await serverRpc('cn_unsub_token', { confirm_hash: sha256(confirm) })) ?? unsub;
     const sent = await sendConfirmation(email, confirm, unsubToken);
-    return NextResponse.json({ status: sent ? 'success' : 'saved' });
+    if (!sent.ok) {
+      // keep the pending row; record why so the confirm mail can be re-sent later (no PII in the reason)
+      await serverRpc('cn_confirm_mail', { confirm_hash: sha256(confirm), err: sent.reason }).catch(() => {});
+      return NextResponse.json({ status: 'saved' });
+    }
+    return NextResponse.json({ status: 'success' });
   } catch {
     return NextResponse.json({ status: 'error' }, { status: 500 });
   }
