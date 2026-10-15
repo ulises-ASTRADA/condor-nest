@@ -1,3 +1,4 @@
+import { OG_IMAGE } from '@/lib/site';
 import { getListings, lastIngest } from '@/lib/supabase';
 import { filtersFromSearch } from '@/lib/rank';
 import { Feed } from '@/components/Feed';
@@ -6,7 +7,7 @@ import { UpdatedStamp } from '@/components/UpdatedStamp';
 import { isOpen, sortListings } from '@/lib/rank';
 import { ORG, WEBSITE, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
-export const metadata = { alternates: { canonical: '/' }, openGraph: { url: '/' } };
+export const metadata = { alternates: { canonical: '/' }, openGraph: { images: [OG_IMAGE], url: '/' } };
 import { headers } from 'next/headers';
 import { isLatam } from '@/lib/geo';
 export const revalidate = 300;

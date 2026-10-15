@@ -1,4 +1,5 @@
-export const metadata = { title: 'Publicá tu evento', alternates: { canonical: '/publicar' }, openGraph: { url: '/publicar' } };
+import { OG_IMAGE } from '@/lib/site';
+export const metadata = { title: 'Publicá tu evento', alternates: { canonical: '/publicar' }, openGraph: { images: [OG_IMAGE], url: '/publicar' } };
 export default function Publicar() {
   return (
     <article className="mx-auto max-w-2xl space-y-4 py-10">

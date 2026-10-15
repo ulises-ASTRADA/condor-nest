@@ -1,3 +1,4 @@
+import { OG_IMAGE } from '@/lib/site';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -18,7 +19,7 @@ export const revalidate = 300;
 type P = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
-  return l ? { title: l.title, description: l.summaryEs?.[0] ?? undefined, alternates: { canonical: `/o/${l.slug}` }, openGraph: { title: `${l.title} · Condor Nest`, siteName: 'Condor Nest', url: `/o/${l.slug}`, locale: 'es_AR', type: 'website' } } : { title: 'No encontrado', robots: { index: false } };
+  return l ? { title: l.title, description: l.summaryEs?.[0] ?? undefined, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title: `${l.title} · Condor Nest`, siteName: 'Condor Nest', url: `/o/${l.slug}`, locale: 'es_AR', type: 'website' } } : { title: 'No encontrado', robots: { index: false } };
 }
 
 function Cta({ l, className = '' }: { l: Listing; className?: string }) {

@@ -1,5 +1,6 @@
+import { OG_IMAGE } from '@/lib/site';
 import Link from 'next/link';
-export const metadata = { title: 'Acerca', alternates: { canonical: '/acerca' }, openGraph: { url: '/acerca' } };
+export const metadata = { title: 'Acerca', alternates: { canonical: '/acerca' }, openGraph: { images: [OG_IMAGE], url: '/acerca' } };
 
 const H2 = ({ k, children }: { k: string; children: React.ReactNode }) => (
   <div className="mb-5">
