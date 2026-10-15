@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { SOURCES } from '@/lib/ingest';
+import { pingIndexNow } from '@/lib/indexnow';
+import { SITE } from '@/lib/site';
 import { safeHttpsUrl } from '@/lib/types';
 const clean = (r: any) => ({ ...r, source_url: safeHttpsUrl(r.source_url), apply_url: safeHttpsUrl(r.apply_url) });
 import { serverRpc as rpc } from '@/lib/server-supabase';
@@ -26,5 +28,13 @@ export async function GET(req: Request) {
     }
   }));
   revalidateTag('listings');
-  return NextResponse.json({ ok: true, results });
+  let indexnow: number | null = null;
+  try {
+    const since = Date.now() - 3 * 3.6e6;
+    const r = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listings?select=slug,updated_at,created_at&in_latam=eq.true`, { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '' }, cache: 'no-store' });
+    const rows: { slug: string; updated_at: string; created_at: string }[] = r.ok ? await r.json() : [];
+    const urls = rows.filter((x) => new Date(x.updated_at || x.created_at).getTime() > since).map((x) => `${SITE}/o/${x.slug}`);
+    if (urls.length) indexnow = await pingIndexNow([SITE, `${SITE}/sitemap.xml`, ...urls]);
+  } catch {}
+  return NextResponse.json({ ok: true, results, indexnow });
 }

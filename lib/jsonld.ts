@@ -2,9 +2,10 @@ import type { Listing } from './types';
 import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 
+const orgUrl = (l: Listing) => { const u = l.verifiedUrl; try { return u ? new URL(u).origin : null; } catch { return null; } };
 const STABLE = new Set(['USD', 'USDC', 'USDT', 'USDG', 'PYUSD']);
 export const ORG = {
-  '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Condor Nest', url: SITE, logo: `${SITE}/icon.svg`,
+  '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Condor Nest', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/icon.svg` }, image: `${SITE}/opengraph-image`,
   areaServed: 'Latinoamérica', foundingLocation: { '@type': 'Place', name: 'Córdoba, Argentina' },
 };
 export const WEBSITE = { '@type': 'WebSite', '@id': `${SITE}/#website`, name: 'Condor Nest', url: SITE, inLanguage: 'es-AR', publisher: { '@id': `${SITE}/#org` } };
@@ -20,9 +21,9 @@ export function eventLd(l: Listing): Record<string, unknown> | null {
   const ev: Record<string, unknown> = {
     '@type': 'Event', name: l.title, url: `${SITE}/o/${l.slug}`, startDate: start, ...(l.endsAt ? { endDate: l.endsAt } : {}),
     eventAttendanceMode: `https://schema.org/${online ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`,
-    eventStatus: 'https://schema.org/EventScheduled', inLanguage: l.titleLang === 'en' ? 'en' : 'es',
+    eventStatus: 'https://schema.org/EventScheduled', inLanguage: l.titleLang === 'en' ? 'en' : 'es-AR',
     ...(location ? { location } : {}),
-    ...(l.organizer ? { organizer: { '@type': 'Organization', name: l.organizer } } : {}),
+    ...(l.organizer ? { organizer: { '@type': 'Organization', name: l.organizer, ...(orgUrl(l) ? { url: orgUrl(l) } : {}) } } : {}),
     ...(l.summaryEs?.length ? { description: l.summaryEs.join(' ') } : {}),
   };
   if (l.rewardAmount != null && l.rewardAmount > 0 && l.rewardCurrency) {
