@@ -25,7 +25,7 @@ const numDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR
 function prizePhrase(l: Listing): string | null {
   const r = rewardText(l);
   if (!r.missing) return `${r.prefix ? r.prefix.toLowerCase() + ' ' : ''}${r.main}`;
-  if (l.rewardText && l.rewardText.length <= 40) return l.rewardText.replace(/^premios?:?\s*/i, '');
+  if (l.rewardText && l.rewardText.length <= 40 && !/anunciar|confirmar|sin dato/i.test(l.rewardText)) return l.rewardText.replace(/^premios?:?\s*/i, '');
   return null;
 }
 const closeIso = (l: Listing) => l.deadlineAt ?? l.endsAt ?? null;

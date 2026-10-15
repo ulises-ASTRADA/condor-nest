@@ -2,7 +2,9 @@ import type { Listing } from './types';
 import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 
-const orgUrl = (l: Listing) => { const u = l.verifiedUrl; try { return u ? new URL(u).origin : null; } catch { return null; } };
+const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
+/** Organizer's own site (origin of the verified official page), skipping event platforms. */
+const orgUrl = (l: Listing) => { try { const u = l.verifiedUrl ? new URL(l.verifiedUrl) : null; return u && !PLATFORMS.test(u.hostname) ? u.origin : null; } catch { return null; } };
 const STABLE = new Set(['USD', 'USDC', 'USDT', 'USDG', 'PYUSD']);
 export const ORG = {
   '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Condor Nest', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/icon.svg` }, image: `${SITE}/opengraph-image`,
