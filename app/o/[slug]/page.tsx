@@ -93,7 +93,7 @@ export default async function Detail({ params }: P) {
       <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
       <div className="reading-progress fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-grad-brand" aria-hidden="true" />
       <div className="flex items-center justify-between pt-3">
-        <nav aria-label="Migas de pan" className="min-w-0 text-sm text-fg-muted"><ol className="flex min-h-tap items-center gap-1.5"><li><Link href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
+        <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
         <ShareButton title={l.title} />
       </div>
       {!open && (
