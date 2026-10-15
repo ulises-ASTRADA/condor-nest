@@ -2,6 +2,7 @@ import { Cursor } from '@/components/Cursor';
 import type { Metadata, Viewport } from 'next';
 import { Unbounded, Space_Grotesk, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { SITE } from '@/lib/site';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ClientBoot } from '@/components/ClientBoot';
@@ -14,11 +15,12 @@ const mono = Geist_Mono({ subsets: ['latin', 'latin-ext'], weight: '500', displa
 const TITLE = 'Condor Nest · Hackathons, bounties y grants para builders LatAm';
 const DESC = 'Hackathons, bounties y grants abiertos a Argentina y LatAm, en español y actualizados todos los días. Deadlines en tu hora local.';
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE),
   title: { default: TITLE, template: '%s · Condor Nest' },
   description: DESC,
-  openGraph: { title: TITLE, description: DESC, siteName: 'Condor Nest', locale: 'es_AR', type: 'website' },
+  openGraph: { title: TITLE, description: DESC, siteName: 'Condor Nest', locale: 'es_AR', type: 'website', url: '/' },
   twitter: { card: 'summary_large_image', title: TITLE, description: DESC },
-  robots: { index: false, follow: false }, // preview only until Ulises approves
+  robots: { index: true, follow: true }, // indexing ON by Ulises's decision (2026-10-14)
 };
 export const viewport: Viewport = { themeColor: '#07080B', colorScheme: 'dark light', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 

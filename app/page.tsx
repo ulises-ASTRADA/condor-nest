@@ -3,7 +3,10 @@ import { filtersFromSearch } from '@/lib/rank';
 import { Feed } from '@/components/Feed';
 import { affiliateUrl } from '@/components/Affiliate';
 import { UpdatedStamp } from '@/components/UpdatedStamp';
-import { isOpen } from '@/lib/rank';
+import { isOpen, sortListings } from '@/lib/rank';
+import { ORG, WEBSITE, ldScript } from '@/lib/jsonld';
+import { SITE } from '@/lib/site';
+export const metadata = { alternates: { canonical: '/' }, openGraph: { url: '/' } };
 import { headers } from 'next/headers';
 import { isLatam } from '@/lib/geo';
 export const revalidate = 300;
@@ -19,8 +22,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   const raw = (forced ?? hdr ?? '').toUpperCase();
   const geo = { country: isLatam(raw) ? raw : null, known: !!raw, explicit: sp.pais !== undefined };
   const open = listings.filter((l) => isOpen(l, now)).length;
+  const openList = sortListings(listings.filter((l) => isOpen(l, now)), 'cierra-pronto', now);
+  const ld = { '@context': 'https://schema.org', '@graph': [WEBSITE, ORG, {
+    '@type': 'ItemList', name: 'Oportunidades abiertas para builders LatAm', numberOfItems: openList.length,
+    itemListElement: openList.map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title })),
+  }] };
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript(ld)} />
       <Feed listings={listings} now={now.toISOString()} initial={{ f, sort }} geo={geo} affUrl={affiliateUrl()} hero={<>
         <h1 className="font-display text-[26px] font-semibold leading-8 tracking-[-.01em] lg:text-[44px] lg:font-extrabold lg:leading-[48px]"><span className="text-gradient">Oportunidades</span> para builders LatAm</h1>
         <UpdatedStamp iso={updated} open={open} now={now.toISOString()} />

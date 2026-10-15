@@ -14,16 +14,21 @@ const config: NextConfig = {
   poweredByHeader: false,
   experimental: { optimizePackageImports: ['motion'] },
   async headers() {
-    return [{ source: '/:path*', headers: [
-      // Keep search engines out until Ulises decides to launch publicly in search.
-      { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+    // Indexing ON in production (Ulises, 2026-10-14). Previews, API routes and newsletter status pages stay noindex.
+    const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
+    return [
+      ...(process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production' ? [{ source: '/:path*', headers: noindex }] : []),
+      { source: '/api/:path*', headers: noindex },
+      { source: '/newsletter/:path*', headers: noindex },
+      { source: '/:path*', headers: [
       { key: 'Content-Security-Policy', value: csp },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-Frame-Options', value: 'DENY' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-    ] }];
+      ] },
+    ];
   },
 };
 export default config;

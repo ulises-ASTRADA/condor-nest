@@ -86,7 +86,7 @@ Sólo los **nombres**; los valores viven en `.env.local` y en Vercel.
 
 ## 🔐 Seguridad
 
-Headers estrictos (CSP, X-Frame-Options, nosniff), grants mínimos en la base, token de ingest en Supabase Vault y `noindex` mientras el sitio está en v1.
+Headers estrictos (CSP, X-Frame-Options, nosniff), grants mínimos en la base, token de ingest en Supabase Vault e indexación activada (robots.txt, sitemap.xml, llms.txt y JSON-LD) desde el 14/10/2026; `noindex` solo en /api, /newsletter y previews.
 
 ## 🤝 Transparencia
 

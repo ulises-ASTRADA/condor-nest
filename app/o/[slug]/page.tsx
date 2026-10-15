@@ -11,12 +11,14 @@ import { Countdown } from '@/components/Countdown';
 import { ListingCard } from '@/components/ListingCard';
 import { Newsletter } from '@/components/Newsletter';
 import { ShareButton, CountdownShell } from '@/components/DetailClient';
+import { eventLd, ldScript } from '@/lib/jsonld';
+import { SITE } from '@/lib/site';
 export const revalidate = 300;
 
 type P = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
-  return l ? { title: l.title, openGraph: { title: `${l.title} · Condor Nest`, siteName: 'Condor Nest' } } : { title: 'No encontrado' };
+  return l ? { title: l.title, description: l.summaryEs?.[0] ?? undefined, alternates: { canonical: `/o/${l.slug}` }, openGraph: { title: `${l.title} · Condor Nest`, siteName: 'Condor Nest', url: `/o/${l.slug}`, locale: 'es_AR', type: 'website' } } : { title: 'No encontrado', robots: { index: false } };
 }
 
 function Cta({ l, className = '' }: { l: Listing; className?: string }) {
@@ -59,6 +61,7 @@ export default async function Detail({ params }: P) {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
       <div className="reading-progress fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-grad-brand" aria-hidden="true" />
       <div className="flex items-center justify-between pt-3">
         <Link href="/" className="inline-flex min-h-tap items-center text-sm text-fg-muted hover:text-lime">← Volver</Link>

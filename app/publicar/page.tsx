@@ -1,4 +1,4 @@
-export const metadata = { title: 'Publicá tu evento' };
+export const metadata = { title: 'Publicá tu evento', alternates: { canonical: '/publicar' }, openGraph: { url: '/publicar' } };
 export default function Publicar() {
   return (
     <article className="mx-auto max-w-2xl space-y-4 py-10">
