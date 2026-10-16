@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { m, useReducedMotion } from 'motion/react';
 import { deadlineInfo, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
 import { useReduceMotionPref } from './Toggles';
@@ -24,13 +23,7 @@ function Roll({ text, still }: { text: string; still: boolean }) {
         return (
           <span key={`w${base}`} className="inline-flex max-w-full">
             {part.split('').map((ch, j) => (
-              <m.span
-                key={`${base + j}:${ch}`}
-                className="inline-block whitespace-pre"
-                initial={{ y: '0.35em' }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-              >{ch}</m.span>
+              <span key={`${base + j}:${ch}`} className="cn-roll inline-block whitespace-pre">{ch}</span>
             ))}
           </span>
         );
@@ -41,7 +34,7 @@ function Roll({ text, still }: { text: string; still: boolean }) {
 
 export function Countdown({ l, initialNow, seconds = false }: { l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>; initialNow: string; seconds?: boolean }) {
   const [now, setNow] = useState(() => new Date(initialNow));
-  const sys = useReducedMotion(); const pref = useReduceMotionPref(); const still = !!sys || pref;
+  const still = useReduceMotionPref(); // system reduced-motion is handled in CSS
   const tz = useTz();
   const info = deadlineInfo(l, now, tz);
   const fast = seconds && info.state === 'closing';

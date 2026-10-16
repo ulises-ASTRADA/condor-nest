@@ -1,4 +1,3 @@
-'use client';
 import Link from 'next/link';
 import type { Listing } from '@/lib/types';
 import { SOURCE_LABEL } from '@/lib/types';
