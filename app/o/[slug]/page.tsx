@@ -18,6 +18,7 @@ import { SITE } from '@/lib/site';
 import { hubsFor } from '@/lib/hubs';
 import { getOrgAbout } from '@/lib/organizer';
 import { OrgAbout } from '@/components/OrgAbout';
+import { Location } from '@/components/Location';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Cordoba';
@@ -114,7 +115,7 @@ export default async function Detail({ params }: P) {
       {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
       {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
       <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{l.eligibilityShort ?? ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
-      <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'IRL' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
+      <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'Presencial' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
     </dl>
   );
 
@@ -144,6 +145,7 @@ export default async function Detail({ params }: P) {
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
           <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
+          {l.modality !== 'online' && l.venue && <Location name={l.venue} address={[l.venueLocality, l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} />}
           <section className="mt-8">
             <h2 className="font-medium text-lg">Resumen en español</h2>
             {summary.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{summary.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="mt-2 text-fg-muted">Sin dato. Mirá la fuente oficial.</p>}

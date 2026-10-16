@@ -7,7 +7,7 @@ const csp = [
   "font-src 'self' data:",
   "media-src 'self'",
   `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} https://challenges.cloudflare.com`.trim(),
-  "frame-src https://challenges.cloudflare.com",
+  "frame-src https://challenges.cloudflare.com https://www.google.com",
   "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "upgrade-insecure-requests",
 ].join('; ');
 const config: NextConfig = {
