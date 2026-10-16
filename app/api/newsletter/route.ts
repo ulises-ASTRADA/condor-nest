@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server';
 import { serverRpc } from '@/lib/server-supabase';
 import { rateLimit } from '@/lib/rate-limit';
+import { turnstileOk } from '@/lib/turnstile';
 import { newToken, sha256, sendConfirmation } from '@/lib/email';
 // Double opt-in: stores the address as 'pending' with a hashed 48h confirm token and mails the link via Resend.
 // Only rows with status 'confirmed' may receive the newsletter.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-async function turnstileOk(token: unknown, ip: string) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true; // Turnstile disabled when unset
-  if (typeof token !== 'string' || !token || token.length > 2048) return false;
-  try {
-    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: new URLSearchParams({ secret, response: token, remoteip: ip }), signal: AbortSignal.timeout(5000) });
-    return !!(await r.json()).success;
-  } catch { return false; }
-}
 export async function POST(req: Request) {
   const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
   if (!rateLimit(`nl:${ip}`)) return NextResponse.json({ status: 'error' }, { status: 429 });

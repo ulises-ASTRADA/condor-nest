@@ -1,22 +1,18 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-const TS_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+import { useRef, useState } from 'react';
+import { Turnstile, type TurnstileHandle } from './Turnstile';
 type St = 'idle' | 'submitting' | 'success' | 'saved' | 'already' | 'invalid' | 'error';
 const MSG: Partial<Record<St, string>> = { success: '¡Listo! Revisá tu mail para confirmar.', saved: 'Te anotamos. El mail de confirmación todavía no salió: te lo reenviamos en cuanto se active el envío, sin que hagas nada.', already: 'Ya estabas suscripto 🙌', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
 
 export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compact' | 'footer' | 'mini' }) {
   const [st, setSt] = useState<St>('idle'); const [email, setEmail] = useState(''); const [shake, setShake] = useState(0);
-  const tsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!TS_KEY || document.getElementById('cf-ts')) return;
-    const sc = document.createElement('script'); sc.id = 'cf-ts'; sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'; sc.async = true; document.head.appendChild(sc);
-  }, []);
+  const ts = useRef<TurnstileHandle>(null);
   const done = st === 'success' || st === 'already' || st === 'saved';
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setSt('invalid'); setShake((s) => s + 1); return; }
     setSt('submitting');
-    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: (tsRef.current?.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value }) }); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already', 'saved'].includes(j.status)) setShake((s) => s + 1); }
+    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: await ts.current?.token() }) }); ts.current?.reset(); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already', 'saved'].includes(j.status)) setShake((s) => s + 1); }
     catch { setSt('error'); setShake((s) => s + 1); }
   }
   const id = `nl-${variant}`;
@@ -39,7 +35,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
                   {st === 'submitting' ? <span className="h-5 w-5 animate-spin rounded-pill border-2 border-primary-fg/30 border-t-primary-fg [animation-duration:800ms]" /> : 'Suscribirme'}
                 </button>
               </div>
-              {TS_KEY && <div ref={tsRef} className="cf-turnstile mt-2" data-sitekey={TS_KEY} />}
+              <Turnstile ref={ts} />
             </form>
           )}
         <div id={`${id}-m`} aria-live="polite" className={`text-sm ${done || err ? 'mt-2' : ''}`}>

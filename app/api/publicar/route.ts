@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { serverRpc } from '@/lib/server-supabase';
 import { rateLimit } from '@/lib/rate-limit';
 import { sendSubmissionNotice } from '@/lib/email';
+import { turnstileOk } from '@/lib/turnstile';
 // /publicar submissions: always stored in Supabase (cn_submissions), then an email notice is attempted via Resend.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const KINDS = ['hackathon', 'bounty', 'grant'] as const;
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
   if (!f.url || f.url.length > 500) errors.url = 'Necesitamos el link oficial con https:// (no aceptamos http://).';
   if (f.notes.length > 2000) errors.notes = 'Máximo 2000 caracteres.';
   if (Object.keys(errors).length) return NextResponse.json({ status: 'invalid', errors }, { status: 400 });
+  if (!(await turnstileOk(b.turnstileToken, ip))) return NextResponse.json({ status: 'bot' }, { status: 403 });
   let id: number;
   try { id = Number(await serverRpc('cn_submit', { p: f })); } catch { console.error('publicar: insert failed'); return NextResponse.json({ status: 'error' }, { status: 500 }); }
   if (id === -1) return NextResponse.json({ status: 'rate' }, { status: 429 }); // DB-backed hourly caps

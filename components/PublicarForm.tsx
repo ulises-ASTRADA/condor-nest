@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Turnstile, type TurnstileHandle } from './Turnstile';
 type St = 'idle' | 'sending' | 'ok' | 'invalid' | 'rate' | 'error';
 type Errs = Partial<Record<string, string>>;
 const inputCls = (bad?: boolean) => `fx-input h-12 w-full min-w-0 rounded-[12px] border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted ${bad ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6)]' : 'border-border'}`;
@@ -15,7 +16,7 @@ function Field({ id, label, hint, err, req, children }: { id: string; label: str
 }
 
 export function PublicarForm() {
-  const [st, setSt] = useState<St>('idle');
+  const [st, setSt] = useState<St>('idle'); const ts = useRef<TurnstileHandle>(null);
   const [errs, setErrs] = useState<Errs>({});
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,7 +34,7 @@ export function PublicarForm() {
     if (Object.keys(local).length) { setErrs(local); setSt('invalid'); return; }
     setSt('sending'); setErrs({});
     try {
-      const r = await fetch('/api/publicar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const r = await fetch('/api/publicar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, turnstileToken: await ts.current?.token() }) }); ts.current?.reset();
       const j = await r.json().catch(() => ({}));
       if (j.status === 'ok') { setSt('ok'); return; }
       if (j.status === 'invalid') { setErrs(j.errors ?? {}); setSt('invalid'); return; }
@@ -88,6 +89,7 @@ export function PublicarForm() {
         {st === 'rate' && <p className="text-sm text-danger">Mandaste varios seguidos. Esperá unos minutos y probá de nuevo.</p>}
         {st === 'error' && <p className="text-sm text-danger">No pudimos guardar tu evento. Probá de nuevo en un rato.</p>}
       </div>
+      <Turnstile ref={ts} />
       <button type="submit" disabled={st === 'sending'} className="btn-sweep grid h-12 w-full place-items-center rounded-[12px] bg-lime font-bold text-primary-fg shadow-[0_0_24px_-6px_rgb(var(--lime)/.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-70 sm:w-auto sm:px-8">
         {st === 'sending' ? 'Enviando…' : 'Enviar evento'}
       </button>
