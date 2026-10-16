@@ -22,14 +22,14 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
         </div>
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
         <div className="mt-auto pt-2">
-        {variant !== 'compact' && l.competitors != null && (
+        {variant !== 'compact' && (
           <p className={`font-mono tabular ${r.missing ? (l.rewardText ? 'line-clamp-2 text-sm text-fg' : 'text-sm text-fg-muted') : 'text-xl'}`}>
             {r.prefix && <span className="mr-1.5 text-xs uppercase tracking-[.08em] text-fg-muted">{r.prefix}</span>}
             {r.main}{r.approx && <span className="ml-2 text-sm text-fg-muted">{r.approx}</span>}
           </p>
         )}
         <div className="mt-2"><Countdown l={l} initialNow={now} /></div>
-        {variant !== 'compact' && (
+        {variant !== 'compact' && l.competitors != null && (
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-sm tabular text-fg-muted">
             <span aria-hidden="true">👥</span><span>{c.count}</span>
             {c.ratio && <span className="ml-1.5 whitespace-nowrap">{c.ratio}</span>}
