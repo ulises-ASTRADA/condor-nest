@@ -5,7 +5,9 @@ import { COUNTRY_ES } from './geo';
 const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
 /** Organizer's own site (origin of the verified official page), skipping event platforms. */
 const orgUrl = (l: Listing) => { try { const u = l.verifiedUrl ? new URL(l.verifiedUrl) : null; return u && !PLATFORMS.test(u.hostname) ? u.origin : null; } catch { return null; } };
-const STABLE = new Set(['USD', 'USDC', 'USDT', 'USDG', 'PYUSD']);
+/** Fallback for organizer.url: origin of the official link (verified > apply > source). */
+const officialUrl = (l: Listing) => l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl ?? null;
+const originOf = (u: string | null) => { try { return u ? new URL(u).origin : null; } catch { return null; } };
 export const ORG = {
   '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Condor Nest', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/icon.svg` }, image: `${SITE}/opengraph-image`,
   areaServed: 'Latinoamérica', foundingLocation: { '@type': 'Place', name: 'Córdoba, Argentina' },
@@ -25,14 +27,23 @@ export function eventLd(l: Listing): Record<string, unknown> | null {
     eventAttendanceMode: `https://schema.org/${online ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`,
     eventStatus: 'https://schema.org/EventScheduled', inLanguage: l.titleLang === 'en' ? 'en' : 'es-AR',
     ...(location ? { location } : {}),
-    ...(l.organizer ? { organizer: { '@type': 'Organization', name: l.organizer, ...(orgUrl(l) ? { url: orgUrl(l) } : {}) } } : {}),
     ...(l.summaryEs?.length ? { description: l.summaryEs.join(' ') } : {}),
+    // No per-listing image in the DB: use the site OG image (same one the page's og:image uses).
+    image: [`${SITE}/opengraph-image`],
   };
-  if (l.rewardAmount != null && l.rewardAmount > 0 && l.rewardCurrency) {
-    const cur = l.rewardCurrency.toUpperCase();
-    const iso = STABLE.has(cur) ? 'USD' : /^[A-Z]{3}$/.test(cur) ? cur : null;
-    if (iso) ev.offers = { '@type': 'Offer', name: 'Premio', price: STABLE.has(cur) && l.rewardUsd != null ? l.rewardUsd : l.rewardAmount, priceCurrency: iso, ...(l.applyUrl ? { url: l.applyUrl } : {}), ...(l.deadlineAt ?? l.endsAt ? { validThrough: l.deadlineAt ?? l.endsAt } : {}) };
+  // endDate: real end date; else single-day fallback = startDate (documented in knowledge notes).
+  if (!l.endsAt) ev.endDate = start;
+  // organizer + performer: the organizer, url = own site, else official-link origin. Omitted if DB has no organizer.
+  if (l.organizer) {
+    const url = orgUrl(l) ?? originOf(officialUrl(l));
+    const org = { '@type': 'Organization', name: l.organizer, ...(url ? { url } : {}) };
+    ev.organizer = org; ev.performer = org;
   }
+  // offers = registration (free), not the prize. Availability from open/closed status.
+  const close = l.deadlineAt ?? l.endsAt ?? start;
+  const open = new Date(close).getTime() > Date.now();
+  const offerUrl = l.applyUrl ?? officialUrl(l) ?? `${SITE}/o/${l.slug}`;
+  ev.offers = { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: `https://schema.org/${open ? 'InStock' : 'SoldOut'}`, url: offerUrl, validFrom: l.createdAt, validThrough: close };
   return ev;
 }
 export const ldScript = (data: unknown) => ({ __html: JSON.stringify(data).replace(/</g, '\\u003c') });
