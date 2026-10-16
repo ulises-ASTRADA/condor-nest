@@ -135,7 +135,6 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     <div className="text-sm">
       <H4>País</H4>
       {paisSelect('block')}
-      <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
       <H4>Modalidad</H4>
@@ -144,6 +143,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
       <H4>Estado</H4>
       <Check on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Check>
+      <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>
     </div>
   );
 
