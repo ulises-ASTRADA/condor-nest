@@ -6,9 +6,9 @@ export const SORTS: { id: Sort; label: string }[] = [
   { id: 'menos-competencia', label: 'Menos competencia' }, { id: 'mas-nuevos', label: 'Más nuevos' },
 ];
 export type Modality = 'online' | 'irl';
-export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean; pais: string | null };
+export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean; pais: string | null; abierto: boolean };
 export const ALL_TYPES: ListingType[] = ['hackathon', 'bounty', 'grant'];
-export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null };
+export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null, abierto: true };
 
 /** deadline used for open/closed + ordering: deadline, else IRL start */
 export const effDeadline = (l: Listing) => l.deadlineAt ?? (l.modality !== 'online' ? l.startsAt : null);
@@ -19,6 +19,7 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
   if (!f.tipos.includes(l.type)) return false;
   if (f.modalidades.length) { const m: Modality = l.modality === 'online' ? 'online' : 'irl'; if (!f.modalidades.includes(m) && !(l.modality === 'hybrid')) return false; }
   if (f.pais && !matchesPais(l, f.pais)) return false;
+  if (f.abierto && !openToArLatam(l)) return false;
   if (f.ecos.length && !ecosOf(l).some((e) => f.ecos.includes(e))) return false;
   if (f.q) {
     const q = norm(f.q);
@@ -27,6 +28,8 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
   }
   return true;
 }
+/** "Abierto a AR/LatAm": hides listings restricted to another country (e.g. "Solo México"). */
+export const openToArLatam = (l: Listing) => !(l.eligibility === 'restricted' && l.country !== 'AR');
 /** Listing is in / for this country itself (not counting LatAm-wide ones). */
 export const inCountry = (l: Listing, iso: string) => l.country === iso || (iso === 'AR' && l.eligibility === 'ar');
 /** Country view: the country's own listings plus ones open to all of LatAm or online without a country restriction. */
@@ -70,6 +73,7 @@ export function filtersFromSearch(sp: Record<string, string | string[] | undefin
       ecos: list('eco').map((e) => ECOSYSTEMS.find((x) => x.toLowerCase() === e.toLowerCase())).filter(Boolean) as Eco[],
       q: g('q') ?? '',
       showClosed: g('cerradas') === '1',
+      abierto: g('abierto') !== '0',
       pais: /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null,
     },
     sort: SORTS.some((s) => s.id === orden) ? orden! : 'cierra-pronto',
@@ -83,6 +87,7 @@ export function filtersToSearch(f: Filters, sort: Sort): string {
   if (f.q) p.set('q', f.q);
   if (f.showClosed) p.set('cerradas', '1');
   if (f.pais) p.set('pais', f.pais.toLowerCase());
+  if (!f.abierto) p.set('abierto', '0');
   if (sort !== 'cierra-pronto') p.set('orden', sort);
   return p.toString();
 }

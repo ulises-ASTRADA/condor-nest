@@ -95,7 +95,7 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
 .featured { border: 2px solid transparent; background: linear-gradient(rgb(var(--surface)), rgb(var(--surface))) padding-box, var(--grad-hot) border-box; box-shadow: var(--glow-magenta); }
 .featured-pill { position: relative; overflow: hidden; }
 .featured-pill::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / .12), transparent); transform: translateX(-120%) skewX(-20deg); }
-.featured-pill[data-shimmer='on']::after { animation: shimmer 1.4s cubic-bezier(.65,0,.35,1) 1 both; }
+.featured-pill::after { opacity: 0; pointer-events: none; }
 @keyframes shimmer { 0% { transform: translateX(-120%) skewX(-20deg) } 100% { transform: translateX(220%) skewX(-20deg) } }
 
 .chip-row { scrollbar-width: none; } .chip-row::-webkit-scrollbar { display: none; }
@@ -119,7 +119,7 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
     box-shadow: 0 10px 30px -14px rgb(var(--cyan) / .45); }
   .card-link:hover .card::before { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--cyan) / .12), transparent 60%); }
   .card { transition: transform 200ms cubic-bezier(.16,1,.3,1), box-shadow 200ms ease, border-color 200ms ease; }
-  .card-link:hover .card { transform: translateY(-3px); }
+  .card-link:hover .card { transform: translateY(-2px); }
 
 
   .badge { transition: filter 160ms ease; } .card-link:hover .badge, .badge:hover { filter: brightness(1.3) saturate(1.15); }
@@ -178,3 +178,37 @@ html.cursor-on input, html.cursor-on textarea { cursor: text; }
 @keyframes cnRoll { from { transform: translateY(.35em) } to { transform: none } }
 /* Server-rendered feed list: client island sets visibility/order via a generated <style>. */
 #feed-list > li { display: none; }
+
+/* ---- Pixel Mate review 2026-10-16: CSS-only motion (transform/opacity), guarded by reduced-motion + site toggle ---- */
+@keyframes cn-in { from { opacity: 0; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: none; } }
+/* A. first-6 stagger: the feed island sets --cn-d on the first 6 visible cards (visual order) */
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-reduce-motion]) #feed-list > li > .card-link { animation: var(--cn-anim, none) 320ms cubic-bezier(.16,1,.3,1) both; animation-delay: var(--cn-d, 0ms); }
+}
+/* B. countdown/counter: only changed digits tick */
+.cn-digit { display: inline-block; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-reduce-motion]) .cn-digit[data-changed] { animation: cn-tick 200ms cubic-bezier(.16,1,.3,1); }
+}
+@keyframes cn-tick { from { opacity: 0; transform: translateY(40%); } to { opacity: 1; transform: none; } }
+/* C. press scale (hover lift is above, desktop only) */
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-reduce-motion]) .card-link:active .card { transform: scale(.985); }
+}
+/* D. Destacado shimmer: 3 passes, then stops */
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-reduce-motion]) .featured-pill::after { animation: cn-shimmer 1.4s cubic-bezier(.65,0,.35,1) 600ms 3 both; }
+}
+@keyframes cn-shimmer {
+  0% { opacity: 1; transform: translateX(-120%) skewX(-20deg); }
+  30% { opacity: 1; transform: translateX(320%) skewX(-20deg); }
+  100% { opacity: 0; transform: translateX(320%) skewX(-20deg); }
+}
+/* E. extra metric-adjusted fallbacks (Android has no Arial). Roboto values are estimates (Pixel Mate). */
+@font-face { font-family: "Unbounded Fallback Local"; src: local("Arial"), local("Helvetica"); size-adjust: 134.59%; ascent-override: 73.93%; descent-override: 18.2%; line-gap-override: 0%; }
+@font-face { font-family: "Unbounded Fallback Roboto"; src: local("Roboto"), local("Roboto-Regular"); size-adjust: 135.8%; ascent-override: 73.3%; descent-override: 18.0%; line-gap-override: 0%; }
+@font-face { font-family: "Space Grotesk Fallback Local"; src: local("Arial"), local("Helvetica"); size-adjust: 109.69%; ascent-override: 89.71%; descent-override: 26.62%; line-gap-override: 0%; }
+@font-face { font-family: "Space Grotesk Fallback Roboto"; src: local("Roboto"), local("Roboto-Regular"); size-adjust: 110.7%; ascent-override: 88.9%; descent-override: 26.4%; line-gap-override: 0%; }
+h1, .font-display { text-wrap: balance; }
+/* Skip link: same lime ring as the rest of the UI */
+a[href="#contenido"]:focus-visible { outline: none; box-shadow: 0 0 0 2px rgb(var(--bg)), 0 0 0 4px rgb(var(--lime)); }

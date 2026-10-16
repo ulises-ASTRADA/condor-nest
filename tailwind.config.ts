@@ -15,8 +15,8 @@ export default {
         danger: c('danger'), warning: c('warning'), success: c('success'),
       },
       fontFamily: {
-        display: ['var(--font-unbounded)', 'system-ui', 'sans-serif'],
-        sans: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-unbounded)', '"Unbounded Fallback Local"', '"Unbounded Fallback Roboto"', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-space-grotesk)', '"Space Grotesk Fallback Local"', '"Space Grotesk Fallback Roboto"', 'system-ui', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {

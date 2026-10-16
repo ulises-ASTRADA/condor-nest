@@ -2,39 +2,13 @@
 import { useEffect, useState } from 'react';
 import { deadlineInfo, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
-import { useReduceMotionPref } from './Toggles';
 import { useTz } from './LocalTime';
+import { Ticker } from './Ticker';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
-/**
- * Per-letter roll without opacity:0 or overflow clipping.
- * If motion stalls, glyphs stay fully visible (just slightly offset).
- * Wrap between words so narrow layouts don't mid-break city names.
- */
-function Roll({ text, still }: { text: string; still: boolean }) {
-  if (still) return <span className="break-words">{text}</span>;
-  let offset = 0;
-  return (
-    <span className="inline break-words">
-      {text.split(/(\s+)/).map((part, i) => {
-        const base = offset; offset += part.length;
-        if (/^\s+$/.test(part)) return <span key={`s${base}`}>{part}</span>;
-        return (
-          <span key={`w${base}`} className="inline-flex max-w-full">
-            {part.split('').map((ch, j) => (
-              <span key={`${base + j}:${ch}`} className="cn-roll inline-block whitespace-pre">{ch}</span>
-            ))}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
 export function Countdown({ l, initialNow, seconds = false }: { l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>; initialNow: string; seconds?: boolean }) {
   const [now, setNow] = useState(() => new Date(initialNow));
-  const still = useReduceMotionPref(); // system reduced-motion is handled in CSS
   const tz = useTz();
   const info = deadlineInfo(l, now, tz);
   const fast = seconds && info.state === 'closing';
@@ -49,8 +23,8 @@ export function Countdown({ l, initialNow, seconds = false }: { l: Pick<Listing,
       {info.iso && <span className="sr-only">{srDate(info.iso, info.verb, tz)}</span>}
       <span aria-hidden="true" className="inline-flex max-w-full flex-wrap items-center gap-x-1.5">
         {showIcon && <span className={`inline-flex items-center gap-1 ${pulse}`}><span className="h-1.5 w-1.5 rounded-pill bg-current shadow-[0_0_8px_currentColor]" />⏰</span>}
-        <time dateTime={info.iso ?? undefined}><Roll text={label} still={still} /></time>
-        {showDate && <span className="text-fg-muted">· {info.date}</span>}
+        <time dateTime={info.iso ?? undefined}><Ticker text={label} /></time>
+        {showDate && <span className="basis-full text-fg-muted">{info.date}</span>}
       </span>
       {info.state === 'closing' && info.ms != null && (
         <span aria-hidden="true" className="mt-1 block h-0.5 origin-left bg-danger" style={{ transform: `scaleX(${Math.max(0, info.ms / 3.6e6)})` }} />

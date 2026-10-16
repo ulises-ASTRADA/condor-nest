@@ -6,9 +6,10 @@ import { ALL_TYPES, DEFAULT_FILTERS, SORTS, type Modality, filtersToSearch, matc
 import dynamic from 'next/dynamic';
 const Newsletter = dynamic(() => import('./Newsletter').then((x) => x.Newsletter));
 import { Affiliate } from './Affiliate';
+import { Ticker } from './Ticker';
 import { useReduceMotionPref } from './Toggles';
 import { ECOSYSTEMS, type Eco } from '@/lib/eco';
-import { COUNTRY_ES, PAIS_KEY, countryFromTz, isLatam } from '@/lib/geo';
+import { COUNTRY_ES } from '@/lib/geo';
 import { inCountry } from '@/lib/rank';
 
 const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
@@ -36,32 +37,13 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 }
 
 function Counter({ n }: { n: number }) {
-  return <span aria-live="polite" className="font-mono tabular">{n.toLocaleString('es-AR')} {n === 1 ? 'oportunidad' : 'oportunidades'}</span>;
+  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'oportunidad' : 'oportunidades'}</span>;
 }
 
-type Geo = { country: string | null; known: boolean; explicit: boolean };
-export function Feed({ listings, now, initial, affUrl, hero, geo, cards, featuredCards }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; geo?: Geo; cards: React.ReactNode; featuredCards: React.ReactNode }) {
-  const nowInit = new Date(now);
-  const hasOwn = (iso: string) => listings.some((l) => inCountry(l, iso) && isOpen(l, nowInit));
-  // auto = country came from geo (not from the user); zero = geo country had no open listings of its own
-  const [auto, setAuto] = useState<boolean>(() => !geo?.explicit && !!geo?.country && hasOwn(geo.country));
-  const [zero, setZero] = useState<string | null>(() => (!geo?.explicit && geo?.country && !hasOwn(geo.country) ? geo.country : null));
-  const [f, setF] = useState<Filters>(() => (auto || !geo?.country || geo.explicit ? { ...initial.f, pais: initial.f.pais ?? (!geo?.explicit && geo?.country && hasOwn(geo.country) ? geo.country : null) } : initial.f));
-  useEffect(() => {
-    if (geo?.explicit) return;
-    let saved: string | null = null; try { saved = localStorage.getItem(PAIS_KEY); } catch { /* private mode */ }
-    if (saved === 'todos') { setF((o) => ({ ...o, pais: null })); setAuto(false); setZero(null); return; }
-    if (isLatam(saved)) { setF((o) => ({ ...o, pais: saved })); setAuto(false); setZero(null); return; }
-    if (geo?.known) return; // header present: server already decided
-    let tzC: string | null = null; try { tzC = countryFromTz(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch { /* ignore */ }
-    if (!isLatam(tzC)) return;
-    if (hasOwn(tzC)) { setF((o) => ({ ...o, pais: tzC })); setAuto(true); } else setZero(tzC);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const choosePais = (iso: string | null) => {
-    try { localStorage.setItem(PAIS_KEY, iso ?? 'todos'); } catch { /* ignore */ }
-    setAuto(false); setZero(null); setF((o) => ({ ...o, pais: iso })); setLimit(PAGE);
-  };
+export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCards }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; cards: React.ReactNode; featuredCards: React.ReactNode }) {
+  // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm with "Abierto a AR/LatAm" on.
+  const [f, setF] = useState<Filters>(initial.f);
+  const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso })); setLimit(PAGE); };
   const paises = useMemo(() => Object.keys(COUNTRY_ES).filter((c) => listings.some((l) => inCountry(l, c))).sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es')), [listings]);
   const paisSelect = (cls: string) => (
     <label className={cls}><span className="sr-only">País</span>
@@ -80,9 +62,11 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
 
   useEffect(() => {
     if (first.current) { first.current = false; return; }
-    const qs = filtersToSearch(auto ? { ...f, pais: null } : f, sort);
+    const el = document.getElementById('feed-list');
+    if (el && !document.documentElement.hasAttribute('data-reduce-motion') && !matchMedia('(prefers-reduced-motion: reduce)').matches) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+    const qs = filtersToSearch(f, sort);
     window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
-  }, [f, sort, auto]);
+  }, [f, sort]);
 
   const featured = useMemo(() => listings.filter((l) => l.featured && matches(l, f, nowD)).slice(0, 1), [listings, f, nowD]);
   const organic = useMemo(() => sortListings(listings.filter((l) => !l.featured && matches(l, f, nowD)), sort, nowD), [listings, f, sort, nowD]);
@@ -95,7 +79,7 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
     const esc = (v: string) => v.replace(/["\\]/g, '\\$&');
     const r: string[] = [];
     featured.forEach((l) => r.push(`#feed-featured>[data-id="${esc(l.id)}"]{display:block}`));
-    shown.forEach((l, i) => r.push(`#feed-list>[data-id="${esc(l.id)}"]{display:flex;order:${i * 2 + 2}}`));
+    shown.forEach((l, i) => r.push(`#feed-list>[data-id="${esc(l.id)}"]{display:flex;order:${i * 2 + 2}${i < 6 ? `;--cn-anim:cn-in;--cn-d:${(i + 1) * 40}ms` : ''}}`));
     if (dataless > 0) r.push(`#feed-list>[data-id="dataless"]{display:block;order:${dataless * 2 + 1}}`);
     if (shown.length >= 10) r.push(`@media (max-width:1023.98px){#feed-list>[data-id="af"]{display:block;order:21}}`);
     return r.join('');
@@ -116,6 +100,7 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
     <div className="mt-3">
       {paisSelect('mb-2 block')}
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
+        <Chip on={f.abierto} onClick={() => set({ abierto: !f.abierto })}>Abierto a AR/LatAm</Chip>
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
         {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Chip>)}
         {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
@@ -127,6 +112,7 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
     <div className="text-sm">
       <H4>País</H4>
       {paisSelect('block')}
+      <Check on={f.abierto} onClick={() => set({ abierto: !f.abierto })}>Abierto a AR/LatAm</Check>
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
       <H4>Modalidad</H4>
@@ -153,18 +139,12 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
               <button type="button" aria-label="Quitar filtro de país" onClick={() => choosePais(null)} className="grid h-7 w-7 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
             </div>
           )}
-          {!f.pais && zero && (
-            <div role="status" className="mt-3 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-surface-2 py-1 pl-3 pr-1 text-sm text-fg-muted">
-              <span>📍 Todavía no hay oportunidades abiertas en {COUNTRY_ES[zero] ?? zero}. Te mostramos toda LatAm.</span>
-              <button type="button" aria-label="Cerrar aviso" onClick={() => setZero(null)} className="grid h-7 w-7 place-items-center rounded-pill hover:text-fg">✕</button>
-            </div>
-          )}
           <div className="lg:hidden">{mobileControls}</div>
           <div className="mt-3.5 flex items-center justify-between gap-2 text-sm">
             <p className="text-sm text-fg-muted"><Counter n={total} /></p>
             <label className="fx-sort relative flex items-center gap-1.5 rounded-[10px] border border-lime/50 px-2.5 py-1.5 text-lime focus-within:ring-2 focus-within:ring-lime">
               <span aria-hidden="true">⇅</span><span className="sr-only">Ordenar</span>
-              <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="cursor-pointer appearance-none bg-transparent pr-4 text-lime focus:outline-none">
+              <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="min-h-[28px] cursor-pointer appearance-none bg-transparent pr-4 text-lime focus:outline-none">
                 {SORTS.map((s) => <option key={s.id} value={s.id} className="bg-surface text-fg">{s.label}</option>)}
               </select>
               <span aria-hidden="true" className="pointer-events-none absolute right-2.5">▾</span>
@@ -176,7 +156,7 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
 
           <div id="feed-featured">{featuredCards}</div>
 
-          {total === 0 ? <Empty f={f} set={set} /> : null}
+          {total === 0 ? <Empty f={f} set={set} hidden={f.abierto ? listings.filter((l) => matches(l, { ...f, abierto: false }, nowD)).length : 0} /> : null}
           <ul id="feed-list" className={`mt-4 grid items-stretch gap-3 sm:grid-cols-2 ${total === 0 ? 'hidden' : ''}`}>{cards}</ul>
           {total > 0 && shown.length < 10 && <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>}
           {organic.length > limit && (
@@ -202,10 +182,11 @@ export function Feed({ listings, now, initial, affUrl, hero, geo, cards, feature
   );
 }
 
-function Empty({ f, set }: { f: Filters; set: (p: Partial<Filters>) => void }) {
+function Empty({ f, set, hidden }: { f: Filters; set: (p: Partial<Filters>) => void; hidden: number }) {
   const btn = 'mt-3 min-h-tap rounded-pill bg-lime px-5 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
-  if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
+  if (hidden > 0) { msg = `Hay ${hidden} ${hidden === 1 ? 'resultado' : 'resultados'} con estos filtros, pero ${hidden === 1 ? 'está restringido' : 'están restringidos'} a otro país (no abiertos a AR/LatAm).`; action = <button className={btn} onClick={() => set({ abierto: false })}>Ver igual</button>; }
+  else if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
 }
 
