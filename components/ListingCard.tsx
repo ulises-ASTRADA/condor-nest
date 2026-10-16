@@ -9,13 +9,9 @@ import { Countdown } from './Countdown';
 export function ListingCard({ listing: l, variant = 'default', now }: { listing: Listing; variant?: 'default' | 'featured' | 'compact'; now: string }) {
   const r = rewardText(l); const c = competitionText(l);
   const closed = !isOpen(l, new Date(now));
-  const spot = (e: React.PointerEvent<HTMLElement>) => {
-    const el = e.currentTarget; const b = el.getBoundingClientRect();
-    requestAnimationFrame(() => { el.style.setProperty('--mx', `${e.clientX - b.left}px`); el.style.setProperty('--my', `${e.clientY - b.top}px`); });
-  };
   return (
     <Link href={`/o/${l.slug}`} className="card-link group flex h-full flex-col rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
-      <article onPointerMove={spot}
+      <article
         className={`card flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
         {variant === 'featured' && (
