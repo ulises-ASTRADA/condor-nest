@@ -17,5 +17,5 @@ export function EligBadge({ l, short = false }: { l: Listing; short?: boolean })
 }
 export function ModalityBadge({ l }: { l: Listing }) {
   if (l.modality === 'online') return <span className={`${base} border-border text-fg-muted`}>Online</span>;
-  return <span className={`${base} border-border text-fg-muted`}>{l.modality === 'irl' ? 'IRL' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</span>;
+  return <span className={`${base} border-border text-fg-muted`}>{l.modality === 'irl' ? 'Presencial' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</span>;
 }
