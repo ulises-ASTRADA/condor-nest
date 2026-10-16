@@ -49,9 +49,15 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
   if (!l) return { title: 'No encontrado', robots: { index: false } };
   const prize = prizePhrase(l); const close = closeIso(l); const open = isOpen(l, new Date());
-  const tail = [prize && `premio ${prize}`, close ? `${open ? 'cierra' : 'cerró'} ${shortDate(close)}` : l.startsAt && shortDate(l.startsAt)].filter(Boolean).join(', ');
+  const tail = [prize && (/premio/i.test(prize) ? prize : `premio ${prize}`), close ? `${open ? 'cierra' : 'cerró'} ${shortDate(close)}` : l.startsAt && shortDate(l.startsAt)].filter(Boolean).join(', ');
   const title = `${l.title}${tail ? ` — ${tail}` : ''} | Condor Nest`;
-  const description = [`${TYPE_LABEL[l.type]} ${modalityText(l)}${l.organizer ? ` organizada por ${l.organizer}` : ''}.`, whoSentence(l), prize ? `Premio: ${prize}.` : 'Premio sin monto publicado.', close ? `${open ? 'Cierra' : 'Cerró'} el ${longDate(close)}.` : whenText(l, open), 'Resumen en español, fechas en tu hora y link oficial.'].filter(Boolean).join(' ').slice(0, 300);
+  // ≤155 chars, priority: qué/dónde + quién organiza, quién puede, premio, fecha. Whole sentences only; last-resort cut at a word.
+  const who = l.eligibilityShort ? `${l.eligibilityShort.replace(/\.$/, '')}.` : whoSentence(l).split(/(?<=\.)\s/)[0];
+  const date = close ? `${open ? 'Cierra' : 'Cerró'} el ${shortDate(close)}.` : l.startsAt ? `${new Date(l.startsAt) < new Date() ? 'Empezó' : 'Empieza'} el ${shortDate(l.startsAt)}.` : null;
+  const parts = [`${TYPE_LABEL[l.type]} ${modalityText(l)}${l.organizer ? ` de ${l.organizer}` : ''}.`, who, prize ? `${prize[0].toUpperCase()}${prize.slice(1)}.` : null, date].filter(Boolean) as string[];
+  let description = '';
+  for (const p of parts) { const next = description ? `${description} ${p}` : p; if (next.length <= 155) description = next; }
+  if (!description) description = parts[0].slice(0, 154).replace(/\s+\S*$/, '') + '…';
   return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, siteName: 'Condor Nest', url: `/o/${l.slug}`, locale: 'es_AR', type: 'website' } };
 }
 
@@ -130,7 +136,7 @@ export default async function Detail({ params }: P) {
           <section aria-labelledby="epp" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
             <h2 id="epp" className="mb-1.5 font-mono text-xs uppercase tracking-[.08em] text-lime">En pocas palabras</h2>
             <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'una hackathon'} {modalityText(l)}{l.organizer ? <>, organizad{l.type === 'hackathon' ? 'a' : 'o'} por {l.organizer}</> : null}. {whoSentence(l)}</p>
-            <p className="mt-1">{prize ? <>Premio: {prize}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
+            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
           </section>
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}

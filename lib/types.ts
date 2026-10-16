@@ -37,9 +37,12 @@ export type Listing = {
   verifiedUrl: string | null;
   curated: boolean;
   country: string | null;     // ISO of the host/restricted country, 'LATAM', or null
+  venue: string | null; venueLocality: string | null; // from the official source only
 };
 
 export type Row = Record<string, any>;
+/** Public columns (raw is not readable by anon). */
+export const LISTING_COLS = 'id,slug,source,type,title,title_lang,organizer,source_url,apply_url,reward_amount,reward_currency,reward_usd,reward_kind,reward_text,deadline_at,starts_at,ends_at,competitors,competitors_kind,eligibility,eligibility_note,eligibility_short,modality,city,ecosystems,summary_es,featured,featured_until,curated,disclosure_key,source_post_url,verified_url,created_at,updated_at,in_latam,country,venue,venue_locality';
 export function fromRow(r: Row): Listing {
   const u = (v: any) => safeHttpsUrl(v);
   const n = (v: any) => (v === null || v === undefined ? null : Number(v));
@@ -54,6 +57,7 @@ export function fromRow(r: Row): Listing {
     titleLang: r.title_lang ?? 'en', applyUrl: u(r.apply_url), sourcePostUrl: u(r.source_post_url),
     verifiedUrl: u(r.verified_url), curated: !!r.curated,
     country: typeof r.country === 'string' ? r.country.toUpperCase() : null,
+    venue: r.venue ?? null, venueLocality: r.venue_locality ?? null,
   };
 }
 

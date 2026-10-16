@@ -2,12 +2,22 @@ import type { Listing } from './types';
 import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 
-const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
-/** Organizer's own site (origin of the verified official page), skipping event platforms. */
-const orgUrl = (l: Listing) => { try { const u = l.verifiedUrl ? new URL(l.verifiedUrl) : null; return u && !PLATFORMS.test(u.hostname) ? u.origin : null; } catch { return null; } };
-/** Fallback for organizer.url: origin of the official link (verified > apply > source). */
+const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|microsoft\.com|typeform\.com|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
+const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+const siteOf = (u: string | null) => { try { const x = u ? new URL(u) : null; return x && !PLATFORMS.test(x.hostname) ? x.origin : null; } catch { return null; } };
+/** Real organizer URL, never a generic platform: own site (verified page, else source page), else the X profile
+ *  that posted the source when its handle matches an organizer name; otherwise null (url omitted). */
+const orgUrl = (l: Listing) => {
+  const site = siteOf(l.verifiedUrl) ?? siteOf(l.sourceUrl);
+  if (site) return site;
+  const h = l.sourcePostUrl?.match(/^https:\/\/(?:x|twitter)\.com\/([A-Za-z0-9_]+)\/status\//)?.[1];
+  if (h && l.organizer) {
+    const hn = norm(h);
+    if (l.organizer.split(/[·,&/]| y | and /).map(norm).some((o) => o.length >= 4 && (o.startsWith(hn) || hn.startsWith(o)))) return `https://x.com/${h}`;
+  }
+  return null;
+};
 const officialUrl = (l: Listing) => l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl ?? null;
-const originOf = (u: string | null) => { try { return u ? new URL(u).origin : null; } catch { return null; } };
 export const ORG = {
   '@type': 'Organization', '@id': `${SITE}/#org`, name: 'Condor Nest', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/icon.svg` }, image: `${SITE}/opengraph-image`,
   areaServed: 'Latinoamérica', foundingLocation: { '@type': 'Place', name: 'Córdoba, Argentina' },
@@ -19,7 +29,7 @@ export function eventLd(l: Listing): Record<string, unknown> | null {
   const start = l.startsAt;
   if (!start) return null;
   const online = l.modality === 'online';
-  const place = l.city ? { '@type': 'Place', name: l.city, address: { '@type': 'PostalAddress', addressLocality: l.city, ...(l.country && COUNTRY_ES[l.country] ? { addressCountry: l.country } : {}) } } : null;
+  const place = l.city || l.venue ? { '@type': 'Place', name: l.venue ?? l.city, address: { '@type': 'PostalAddress', addressLocality: l.venueLocality ?? l.city, ...(l.country && COUNTRY_ES[l.country] ? { addressCountry: l.country } : {}) } } : null;
   const virt = { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl };
   const location = online ? virt : l.modality === 'hybrid' && place ? [place, virt] : place ?? undefined;
   const ev: Record<string, unknown> = {
@@ -33,9 +43,9 @@ export function eventLd(l: Listing): Record<string, unknown> | null {
   };
   // endDate: real end date; else single-day fallback = startDate (documented in knowledge notes).
   if (!l.endsAt) ev.endDate = start;
-  // organizer + performer: the organizer, url = own site, else official-link origin. Omitted if DB has no organizer.
+  // organizer + performer: the organizer; url only when it's the organizer's own (see orgUrl). Omitted if DB has no organizer.
   if (l.organizer) {
-    const url = orgUrl(l) ?? originOf(officialUrl(l));
+    const url = orgUrl(l);
     const org = { '@type': 'Organization', name: l.organizer, ...(url ? { url } : {}) };
     ev.organizer = org; ev.performer = org;
   }
