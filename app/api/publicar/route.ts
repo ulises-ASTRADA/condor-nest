@@ -43,5 +43,5 @@ export async function POST(req: Request) {
     premio: f.prize || null, link: f.url, notas: f.notes || null, destacado: f.wants_featured ? 'quiere info de Destacado' : null,
   });
   await serverRpc('cn_submission_mail', { sub_id: id, st: sent.ok ? 'sent' : `failed:${sent.reason}` }).catch(() => {});
-  return NextResponse.json({ status: 'ok' }); // stored either way; Ulises sees it in Supabase even if the mail failed
+  return NextResponse.json({ status: 'ok' }); // stored either way; the owner sees it in Supabase even if the mail failed
 }

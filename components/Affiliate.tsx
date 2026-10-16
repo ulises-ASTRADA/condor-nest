@@ -1,6 +1,6 @@
 import { safeHttpsUrl } from '@/lib/types';
 // Affiliate slot (§3.7): Mercado Libre Argentina. URL comes from the AFFILIATE_URL env var (server-side);
-// AFFILIATE_URL = Ulises's Mercado Libre affiliate link (meli.la → his ML social profile with Ledger picks).
+// AFFILIATE_URL = the site's Mercado Libre affiliate link.
 export const AFFILIATE_FALLBACK = 'https://listado.mercadolibre.com.ar/hardware-wallet';
 export function affiliateUrl() { return safeHttpsUrl(process.env.AFFILIATE_URL) ?? AFFILIATE_FALLBACK; }
 export function Affiliate({ url }: { url: string }) {

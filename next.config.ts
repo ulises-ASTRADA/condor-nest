@@ -20,7 +20,7 @@ const config: NextConfig = {
     return [{ source: '/:path*', has: [{ type: 'host', value: 'condor-nest.vercel.app' }], destination: 'https://condor-nest.lat/:path*', permanent: true }];
   },
   async headers() {
-    // Indexing ON in production (Ulises, 2026-10-14). Previews, API routes and newsletter status pages stay noindex.
+    // Indexing ON in production (owner decision, 2026-10-14). Previews, API routes and newsletter status pages stay noindex.
     const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
     return [
       ...(process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production' ? [{ source: '/:path*', headers: noindex }] : []),
