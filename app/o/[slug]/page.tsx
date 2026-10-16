@@ -68,13 +68,13 @@ function Cta({ l, className = '' }: { l: Listing; className?: string }) {
   if (!isOpen(l, new Date())) return (
     <div className={`grid gap-2 ${className}`}>
       <a href="#similares" className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg">Ver similares abiertas</a>
-      {(l.verifiedUrl ?? l.applyUrl) && <a href={(l.verifiedUrl ?? l.applyUrl)!} target="_blank" rel="noopener noreferrer" className="text-center text-sm text-fg-muted hover:text-fg">Ver sitio oficial ↗</a>}
+      {(l.verifiedUrl ?? l.applyUrl) && <a href={(l.verifiedUrl ?? l.applyUrl)!} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} className="text-center text-sm text-fg-muted hover:text-fg">Ver sitio oficial ↗</a>}
     </div>
   );
   if (!l.applyUrl) return <p className={`grid min-h-14 place-items-center rounded-pill border border-border bg-surface-2 px-6 text-center text-sm text-fg-muted ${className}`}>Link de inscripción: a confirmar</p>;
   const label = src ? `Postulate en ${src}` : 'Postulate en el sitio oficial';
   return (
-    <a href={l.applyUrl} target="_blank" rel="noopener noreferrer" aria-label={`${label} (abre sitio externo)`}
+    <a href={l.applyUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`${label} (abre sitio externo)`}
       className={`grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${className}`}>{label} ↗</a>
   );
 }
@@ -133,12 +133,12 @@ export default async function Detail({ params }: P) {
         <article className="min-w-0 lg:col-span-2">
           <div className="flex flex-wrap gap-1.5">{!open && <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
-          <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
+          <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           <p className="mt-1 font-mono text-xs text-fg-muted">Actualizado el <time dateTime={updated}>{numDate(updated)}</time></p>
           <section aria-labelledby="epp" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
             <h2 id="epp" className="mb-1.5 font-mono text-xs uppercase tracking-[.08em] text-lime">En pocas palabras</h2>
             <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'un hackathon'} {modalityText(l)}{l.organizer ? <>, organizado por {l.organizer}</> : null}. {whoSentence(l)}</p>
-            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
+            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
           </section>
           {about && l.organizer && <OrgAbout name={l.organizer} about={about} />}
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
@@ -155,7 +155,7 @@ export default async function Detail({ params }: P) {
             {(l.deadlineAt || l.startsAt) && <a href={`/o/${l.slug}/ics`} className="mt-3 inline-flex min-h-tap items-center rounded-pill border border-lime/60 px-4 text-sm text-lime hover:shadow-glow-lime">Agregar al calendario</a>}
           </section>
           {l.verifiedUrl && (
-            <p className="mt-6 text-xs text-fg-muted">Verificado en la página oficial: <a className="hover:text-lime" href={l.verifiedUrl} target="_blank" rel="noopener noreferrer">{new URL(l.verifiedUrl).hostname} ↗</a>{l.sourcePostUrl && <> · Lo vimos en <a className="hover:text-lime" href={l.sourcePostUrl} target="_blank" rel="noopener noreferrer">este post de X ↗</a></>}</p>
+            <p className="mt-6 text-xs text-fg-muted">Verificado en la página oficial: <a className="hover:text-lime" href={l.verifiedUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"}>{new URL(l.verifiedUrl).hostname} ↗</a>{l.sourcePostUrl && <> · Lo vimos en <a className="hover:text-lime" href={l.sourcePostUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"}>este post de X ↗</a></>}</p>
           )}
           <section id="similares" className="mt-10">
             <h2 className="font-medium text-lg">Oportunidades similares{open ? '' : ' abiertas'}</h2>
