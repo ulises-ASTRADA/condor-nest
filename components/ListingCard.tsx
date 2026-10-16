@@ -32,7 +32,7 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
         {variant !== 'compact' && (
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-sm tabular text-fg-muted">
             <span aria-hidden="true">👥</span><span>{c.count}</span>
-            {c.ratio && <span>· {c.ratio}</span>}
+            {c.ratio && <span className="ml-1.5 whitespace-nowrap">{c.ratio}</span>}
             {c.low && <span className="rounded-pill border border-success/50 px-2 font-mono text-xs uppercase tracking-[.08em] text-success">Poca competencia</span>}
           </p>
         )}
