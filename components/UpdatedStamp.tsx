@@ -2,7 +2,7 @@
 import { artFull, dayKey, hhmm, tzOffset, TZ } from '@/lib/format';
 import { TzLabel } from './LocalTime';
 /** "Actualizado el dd/mm/aaaa" from the real latest data change (newest listing update or ingest run). */
-export function UpdatedStamp({ iso, open, now }: { iso: string | null; open: number; now: string }) {
+export function UpdatedStamp({ iso, open, counts, now }: { iso: string | null; open: number; counts?: { conf: number; unc: number }; now: string }) {
   const tz = TZ; // fixed Córdoba time: identical string on server and client (no hydration jump)
   const stale = !iso || new Date(now).getTime() - new Date(iso).getTime() > 36 * 3.6e6;
   return (
@@ -15,7 +15,10 @@ export function UpdatedStamp({ iso, open, now }: { iso: string | null; open: num
             <span className="max-sm:hidden">Actualizado el {dayKey(iso, tz)} a las {hhmm(iso, tz)} {tzOffset(tz, iso)}</span>
           </time>
         ) : <span>Actualizado: sin dato</span>}
-        <span aria-hidden="true">·</span><span className="whitespace-nowrap"><span className="tabular">{open}</span> abiertas</span>
+        <span aria-hidden="true">·</span>{counts == null ? <span className="whitespace-nowrap"><span className="tabular">{open}</span> abiertas</span> : (
+          // Home: what the list shows with the active filters; the Feed island keeps #cn-conf / #cn-unc in sync.
+          <span className="whitespace-nowrap"><span id="cn-conf" className="tabular">{counts.conf}</span> confirmadas · <span id="cn-unc" className="tabular">{counts.unc}</span> sin confirmar</span>
+        )}
       </p>
       <p className="mt-0.5 text-xs"><TzLabel prefix="Horarios en tu " /></p>
       {stale && <p role="status" className="mt-1 text-warning">Los datos pueden estar desactualizados (última actualización {iso ? artFull(iso, tz) : 'sin dato'}).</p>}

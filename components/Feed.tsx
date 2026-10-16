@@ -60,6 +60,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   // URL → state: logo/breadcrumb Link to "/", back/forward, or any external URL change resets the island to what the URL says.
   const sp = useSearchParams(); const spStr = sp.toString();
   const lastQs = useRef<string | null>(null);
+  const prevF = useRef<{ f: Filters; sort: Sort } | null>(null); const lastQAt = useRef(0);
   useEffect(() => {
     if (lastQs.current === null) { lastQs.current = spStr; return; }
     if (spStr === lastQs.current) return;
@@ -73,12 +74,18 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   useEffect(() => { setTick(Date.now()); const t = setInterval(() => setTick(Date.now()), 30000); return () => clearInterval(t); }, []);
 
   useEffect(() => {
-    if (first.current) { first.current = false; return; }
+    if (first.current) { first.current = false; prevF.current = { f, sort }; return; }
     const el = document.getElementById('feed-list');
     if (el && !document.documentElement.hasAttribute('data-reduce-motion') && !matchMedia('(prefers-reduced-motion: reduce)').matches) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
     const qs = filtersToSearch(f, sort);
+    const prev = prevF.current; prevF.current = { f, sort };
+    if (qs === lastQs.current) return; // URL already says this (back/forward, logo)
     lastQs.current = qs;
-    window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
+    // Discrete changes (país, chips, toggles, sort) push a history entry so Back undoes them one by one.
+    // Typing in search: first keystroke pushes, the rest of the burst replaces (one entry per search).
+    const onlyQ = prev && prev.sort === sort && JSON.stringify({ ...prev.f, q: '' }) === JSON.stringify({ ...f, q: '' });
+    const now2 = Date.now(); const typing = onlyQ && now2 - lastQAt.current < 1200; if (onlyQ) lastQAt.current = now2;
+    window.history[typing ? 'replaceState' : 'pushState'](null, '', qs ? `/?${qs}` : '/');
   }, [f, sort]);
 
   const featured = useMemo(() => listings.filter((l) => l.featured && matches(l, f, nowD)).slice(0, 1), [listings, f, nowD]);
@@ -86,6 +93,9 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const shown = organic.slice(0, limit);
   const total = organic.length + featured.length;
   const dataless = sort === 'menos-competencia' ? shown.findIndex((l) => l.rewardUsd == null || l.competitors == null || !isOpen(l, nowD)) : -1;
+  // Header counter "X confirmadas · Y sin confirmar" follows the active filters (server renders the default state).
+  const vis = useMemo(() => listings.filter((l) => matches(l, f, nowD)), [listings, f, nowD]);
+  useEffect(() => { const u = vis.filter((l) => l.eligibility === 'unknown').length; const a = document.getElementById('cn-conf'), b = document.getElementById('cn-unc'); if (a) a.textContent = String(vis.length - u); if (b) b.textContent = String(u); }, [vis]);
   const closingWeek = useMemo(() => sortListings(listings.filter((l) => { const d = effDeadline(l); return d && isOpen(l, nowD) && new Date(d).getTime() - nowD.getTime() < 7 * 864e5 && matches(l, { ...f, q: '' }, nowD); }), 'cierra-pronto', nowD).slice(0, 5), [listings, f, nowD]);
   // Cards are server-rendered (Server Component) in #feed-list; this island only decides which show and in what order.
   const css = useMemo(() => {
@@ -94,6 +104,8 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     featured.forEach((l) => r.push(`#feed-featured>[data-id="${esc(l.id)}"]{display:block}`));
     shown.forEach((l, i) => r.push(`#feed-list>[data-id="${esc(l.id)}"]{display:flex;order:${i * 2 + 2}${i < 6 ? `;--cn-anim:cn-in;--cn-d:${(i + 1) * 40}ms` : ''}}`));
     if (dataless > 0) r.push(`#feed-list>[data-id="dataless"]{display:block;order:${dataless * 2 + 1}}`);
+    const unc = shown.findIndex((l) => l.eligibility === 'unknown');
+    if (unc >= 0) r.push(`#feed-list>[data-id="unconf"]{display:block;order:${unc * 2 + 1}}`);
     if (shown.length >= 10) r.push(`@media (max-width:1023.98px){#feed-list>[data-id="af"]{display:block;order:21}}`);
     return r.join('');
   }, [featured, shown, dataless]);
@@ -114,7 +126,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       {paisSelect('mb-2 block')}
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
         <Chip on={f.abierto} onClick={() => set({ abierto: !f.abierto })}>Abierto a AR/LatAm</Chip>
-        {f.abierto && <Chip on={f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Incluir sin confirmar</Chip>}
+        {f.abierto && <Chip on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Chip>}
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
         {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Chip>)}
         {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
@@ -127,7 +139,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       <H4>País</H4>
       {paisSelect('block')}
       <Check on={f.abierto} onClick={() => set({ abierto: !f.abierto })}>Abierto a AR/LatAm</Check>
-      {f.abierto && <Check on={f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Incluir sin confirmar</Check>}
+      {f.abierto && <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>}
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
       <H4>Modalidad</H4>
@@ -182,11 +194,11 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
           <Newsletter variant="compact" />
           {closingWeek.length > 0 && (
             <section aria-labelledby="cs">
-              <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierran esta semana</h4>
+              <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Próximas fechas</h4>
               <ul>{closingWeek.map((l) => { const ms = new Date(effDeadline(l)!).getTime() - tick; return (
                 <li key={l.id} className="fx-mini border-b border-border py-2.5 text-sm">
                   <Link href={`/o/${l.slug}`} prefetch={false} className="hover:text-lime" lang={l.titleLang}>{l.title}</Link>
-                  <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? 'cerrada' : `en ${rel(ms)}`}</div>
+                  <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? (l.deadlineAt ? 'cerrada' : 'empezó') : `${l.deadlineAt ? 'Cierra' : 'Empieza'} en ${rel(ms)}`}</div>
                 </li>); })}</ul>
             </section>
           )}
@@ -200,7 +212,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
 function Empty({ f, set, hidden, unconf }: { f: Filters; set: (p: Partial<Filters>) => void; hidden: number; unconf: number }) {
   const btn = 'mt-3 min-h-tap rounded-pill bg-lime px-5 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
-  if (unconf > 0) { msg = `Hay ${unconf} ${unconf === 1 ? 'resultado' : 'resultados'} con estos filtros, pero con elegibilidad sin confirmar.`; action = <button className={btn} onClick={() => set({ sinConfirmar: true })}>Incluir sin confirmar</button>; }
+  if (unconf > 0) { msg = `Hay ${unconf} ${unconf === 1 ? 'resultado' : 'resultados'} con estos filtros, pero con elegibilidad sin confirmar.`; action = <button className={btn} onClick={() => set({ sinConfirmar: true })}>Mostrar sin confirmar</button>; }
   else if (hidden > 0) { msg = `Hay ${hidden} ${hidden === 1 ? 'resultado' : 'resultados'} con estos filtros, pero ${hidden === 1 ? 'está restringido' : 'están restringidos'} a otro país (no ${hidden === 1 ? 'abierto' : 'abiertos'} a AR/LatAm).`; action = <button className={btn} onClick={() => set({ abierto: false })}>Ver igual</button>; }
   else if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;

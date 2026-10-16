@@ -71,7 +71,7 @@ export default async function HubPage({ params }: P) {
       {unconf.length > 0 && (
         <section aria-labelledby="sinconf" className="mt-8">
           <h2 id="sinconf" className="font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Elegibilidad sin confirmar</h2>
-          <p className="mt-1 text-sm text-fg-muted">La fuente no aclara desde dónde se puede participar. Revisá las bases oficiales.</p>
+          <p className="mt-1 text-sm text-fg-muted">Revisá en la fuente si podés participar desde tu país.</p>
           <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{unconf.map((l) => <li key={l.id}><ListingCard listing={l} now={nowIso} /></li>)}</ul>
         </section>
       )}

@@ -8,7 +8,7 @@ export const SORTS: { id: Sort; label: string }[] = [
 export type Modality = 'online' | 'irl';
 export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean; pais: string | null; abierto: boolean; sinConfirmar: boolean };
 export const ALL_TYPES: ListingType[] = ['hackathon', 'bounty', 'grant'];
-export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null, abierto: true, sinConfirmar: false };
+export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null, abierto: true, sinConfirmar: true }; // sinConfirmar = show unknown-eligibility listings (at the end)
 
 /** deadline used for open/closed + ordering: deadline, else IRL start */
 export const effDeadline = (l: Listing) => l.deadlineAt ?? (l.modality !== 'online' ? l.startsAt : null);
@@ -30,7 +30,7 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
   return true;
 }
 /** "Abierto a AR/LatAm": hides listings restricted to another country (e.g. "Solo México"). */
-export const openToArLatam = (l: Listing) => !(l.eligibility === 'restricted' && l.country !== 'AR');
+export const openToArLatam = (l: Listing) => l.eligibility !== 'restricted'; // 'restricted' = non-AR-wide limit (country 'ar' uses eligibility 'ar')
 /** Listing is in / for this country itself (not counting LatAm-wide ones). */
 export const inCountry = (l: Listing, iso: string) => l.country === iso || (iso === 'AR' && l.eligibility === 'ar');
 /** Country view: the country's own listings plus ones open to all of LatAm or online without a country restriction. */
@@ -48,7 +48,12 @@ export function competitionScore(l: Listing): number | null {
 }
 const t = (iso: string | null) => (iso ? new Date(iso).getTime() : Infinity);
 
+/** Any sort: confirmed-eligibility listings first, unknown eligibility always after (stable). */
 export function sortListings(list: Listing[], sort: Sort, now: Date): Listing[] {
+  const s = sortRaw(list, sort, now);
+  return [...s.filter((l) => l.eligibility !== 'unknown'), ...s.filter((l) => l.eligibility === 'unknown')];
+}
+function sortRaw(list: Listing[], sort: Sort, now: Date): Listing[] {
   const a = [...list];
   const byDeadline = (x: Listing, y: Listing) => t(effDeadline(x)) - t(effDeadline(y));
   if (sort === 'cierra-pronto') return a.sort(byDeadline);
@@ -75,7 +80,7 @@ export function filtersFromSearch(sp: Record<string, string | string[] | undefin
       q: g('q') ?? '',
       showClosed: g('cerradas') === '1',
       abierto: g('abierto') !== '0',
-      sinConfirmar: g('sinconfirmar') === '1',
+      sinConfirmar: g('sinconfirmar') !== '0', // old ?sinconfirmar=1 = default (harmless)
       pais: /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null,
     },
     sort: SORTS.some((s) => s.id === orden) ? orden! : 'cierra-pronto',
@@ -90,7 +95,7 @@ export function filtersToSearch(f: Filters, sort: Sort): string {
   if (f.showClosed) p.set('cerradas', '1');
   if (f.pais) p.set('pais', f.pais.toLowerCase());
   if (!f.abierto) p.set('abierto', '0');
-  if (f.abierto && f.sinConfirmar) p.set('sinconfirmar', '1');
+  if (f.abierto && !f.sinConfirmar) p.set('sinconfirmar', '0');
   if (sort !== 'cierra-pronto') p.set('orden', sort);
   return p.toString();
 }
