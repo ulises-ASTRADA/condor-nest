@@ -92,7 +92,7 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
 @media (prefers-reduced-motion: reduce) { .card-link:hover .card { transform: none; } }
 
 /* Featured gradient border (mask trick) + shimmer */
-.featured { border: 2px solid rgb(var(--lime)); background: rgb(var(--surface)); box-shadow: 0 0 24px rgb(var(--lime) / .25); }
+.featured { border: 2px solid rgb(var(--lime)); background: rgb(var(--surface)); box-shadow: 0 0 0 4px rgb(var(--lime) / .12); }
 .featured-pill { position: relative; overflow: hidden; }
 .featured-pill::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / .12), transparent); transform: translateX(-120%) skewX(-20deg); }
 .featured-pill::after { opacity: 0; pointer-events: none; }

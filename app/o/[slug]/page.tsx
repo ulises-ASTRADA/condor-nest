@@ -111,8 +111,8 @@ export default async function Detail({ params }: P) {
       <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
       <dt className="shrink-0 text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
       <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell></dd>
-      <dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd>
-      <dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio?.replace(/ por .*/, '') ?? 'Sin dato'}</dd>
+      {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
+      {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
       <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{l.eligibilityShort ?? ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
       <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'IRL' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
     </dl>
