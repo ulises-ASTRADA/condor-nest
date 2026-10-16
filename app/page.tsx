@@ -46,7 +46,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           {listings.filter((l) => !l.featured).map((l) => <li key={l.id} data-id={l.id} className="flex-col"><ListingCard listing={l} now={now.toISOString()} /></li>)}
         </>} now={now.toISOString()} initial={{ f, sort }} affUrl={affiliateUrl()} hero={<>
         <h1 className="font-display text-[26px] font-semibold leading-8 tracking-[-.01em] lg:text-[44px] lg:font-extrabold lg:leading-[48px]"><span className="text-gradient">Oportunidades</span> para builders LatAm</h1>
-        <UpdatedStamp iso={updated} open={open} counts={{ conf: vis.length - unc, unc }} now={now.toISOString()} />
+        <UpdatedStamp iso={updated} open={open} counts={{ conf: 0, unc: 0 }} now={now.toISOString()} />
       </>} />
     </>
   );

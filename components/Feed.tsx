@@ -93,9 +93,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const shown = organic.slice(0, limit);
   const total = organic.length + featured.length;
   const dataless = sort === 'menos-competencia' ? shown.findIndex((l) => l.rewardUsd == null || l.competitors == null || !isOpen(l, nowD)) : -1;
-  // Header counter "X confirmadas · Y sin confirmar" follows the active filters (server renders the default state).
   const vis = useMemo(() => listings.filter((l) => matches(l, f, nowD)), [listings, f, nowD]);
-  useEffect(() => { const u = vis.filter((l) => l.eligibility === 'unknown').length; const a = document.getElementById('cn-conf'), b = document.getElementById('cn-unc'); if (a) a.textContent = String(vis.length - u); if (b) b.textContent = String(u); }, [vis]);
   const closingWeek = useMemo(() => sortListings(listings.filter((l) => { const d = effDeadline(l); return d && isOpen(l, nowD) && new Date(d).getTime() - nowD.getTime() < 7 * 864e5 && matches(l, { ...f, q: '' }, nowD); }), 'cierra-pronto', nowD).slice(0, 5), [listings, f, nowD]);
   // Cards are server-rendered (Server Component) in #feed-list; this island only decides which show and in what order.
   const css = useMemo(() => {
