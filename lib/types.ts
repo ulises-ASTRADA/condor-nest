@@ -52,7 +52,7 @@ export function fromRow(r: Row): Listing {
     rewardUsd: n(r.reward_usd), rewardText: typeof r.reward_text === 'string' && r.reward_text.trim() ? r.reward_text.trim() : null, rewardKind: r.reward_kind, deadlineAt: r.deadline_at, startsAt: r.starts_at,
     endsAt: r.ends_at, competitors: n(r.competitors), competitorsKind: r.competitors_kind, eligibility: r.eligibility,
     eligibilityNote: r.eligibility_note, eligibilityShort: typeof r.eligibility_short === 'string' && r.eligibility_short.trim() ? r.eligibility_short.trim() : null, modality: r.modality, city: r.city, ecosystems: r.ecosystems ?? [],
-    summaryEs: r.summary_es, featured: (!!r.featured && (!r.featured_until || new Date(r.featured_until) > new Date())) || (process.env.VERCEL_ENV === 'preview' && r.slug === 'hackatwin-2026'), // PREVIEW ONLY: remove before merge
+    summaryEs: r.summary_es, featured: (!!r.featured && (!r.featured_until || new Date(r.featured_until) > new Date())),
     featuredUntil: r.featured_until, disclosureKey: r.disclosure_key, updatedAt: r.updated_at, createdAt: r.created_at,
     titleLang: r.title_lang ?? 'en', applyUrl: u(r.apply_url), sourcePostUrl: u(r.source_post_url),
     verifiedUrl: u(r.verified_url), curated: !!r.curated,
