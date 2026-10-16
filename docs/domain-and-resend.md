@@ -34,3 +34,22 @@ Hasta que hagas eso, `https://condor-nest.lat` hace 308 a `https://www.condor-ne
 - Google: agregá propiedad **URL-prefix** `https://condor-nest.lat` (y/o `https://www.condor-nest.lat` si www sigue siendo el que sirve), verificá (puede reusar la meta tag que ya está), enviá `sitemap.xml`.
 - Bing: importá desde GSC o agregá el dominio nuevo y el sitemap.
 - Los canónicos del sitio apuntan a `https://condor-nest.lat` (ver `lib/site.ts`).
+
+## Agent attempt (2026-10-15 ~14:40 ART)
+
+Tried to complete Ulises's request autonomously:
+
+1. **Apex primary / www→apex redirect**
+   - Current: `condor-nest.lat` → 308 → `www.condor-nest.lat` (serves 200).
+   - Vercel MCP has `list_project_domains`, `add_project_domain`, `get_project_domain`, DNS tools — **no** `update_project_domain` / `remove_project_domain`.
+   - `assign_alias` on apex with `redirect: null` did **not** clear the project-domain redirect.
+   - Vercel CLI on the box is **logged out** (no `VERCEL_TOKEN` / auth.json).
+   - **Blocked:** Ulises must flip in [Domains UI](https://vercel.com/ulisesastrada1-9233s-projects/condor-nest/settings/domains) (apex primary, www → apex 301/308), **or** provide a Vercel token so CLI/API can `PATCH /v9/projects/.../domains/...`.
+
+2. **Resend domain verification**
+   - Box has `RESEND_API_KEY` (present). Calling `GET /domains` returns **401** `restricted_api_key` — "This API key is restricted to only send emails".
+   - Cannot create/verify domains via Resend API with this key.
+   - `RESEND_FROM` left unchanged: `Condor Nest <onboarding@resend.dev>` (correct until Verified).
+   - **Blocked:** Ulises must either (a) Add Domain `condor-nest.lat` in [Resend Domains](https://resend.com/domains) and paste the DNS records here so DNS can be created on Vercel, then click Verify; or (b) create a **full-access** Resend API key, put it in Vercel as `RESEND_API_KEY` (or a separate admin key) and re-run.
+
+Do **not** set `RESEND_FROM=Condor Nest <hola@condor-nest.lat>` until Resend shows Verified.

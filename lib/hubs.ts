@@ -45,7 +45,7 @@ export const HUBS: Hub[] = [
   { slug: 'grants', label: 'Grants', h1: 'Grants para builders LatAm', noun: ['grant', 'grants'], where: 'para builders de LatAm', feed: '/?tipo=grant',
     match: (l) => l.type === 'grant',
     faqs: () => [
-      { q: '¿Qué es un grant?', a: 'Financiamiento no reembolsable para construir un proyecto. A diferencia de una hackathon, no compite en un evento con fecha: se postula con una propuesta.' },
+      { q: '¿Qué es un grant?', a: 'Financiamiento no reembolsable para construir un proyecto. A diferencia de un hackathon, no compite en un evento con fecha: se postula con una propuesta.' },
       { q: '¿Qué grants lista Condor Nest?', a: 'Solo los que están abiertos explícitamente a LatAm o a un país de LatAm. No listamos convocatorias globales ni las que no aclaran desde dónde se puede participar.' },
       ELIG, UPDATED, PUBLISH,
     ] },

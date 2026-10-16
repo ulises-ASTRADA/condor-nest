@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description: DESC,
   openGraph: { title: TITLE, description: DESC, siteName: 'Condor Nest', locale: 'es_AR', type: 'website', url: '/' },
   twitter: { card: 'summary_large_image', title: TITLE, description: DESC },
-  robots: { index: true, follow: true }, // indexing ON by Ulises's decision (2026-10-14)
+  robots: { index: true, follow: true }, // indexing ON by owner decision (2026-10-14)
   verification: { google: 'd3KINZQI8s8konhUVjj6G0Xrn62Bybx0eynzeu4_iC0' },
 };
 export const viewport: Viewport = { themeColor: '#07080B', colorScheme: 'dark light', width: 'device-width', initialScale: 1, viewportFit: 'cover' };

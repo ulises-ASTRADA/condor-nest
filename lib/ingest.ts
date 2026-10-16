@@ -1,5 +1,5 @@
 // Daily ingestion. Eligibility is only set from source data (spec §3.3); otherwise 'unknown'.
-const UA = { 'user-agent': 'Mozilla/5.0 (compatible; CondorNestBot/0.1; +https://github.com/ulises-ASTRADA)' };
+const UA = { 'user-agent': 'Mozilla/5.0 (compatible; CondorNestBot/0.1; +https://condor-nest.lat)' };
 const STABLE = new Set(['USD', 'USDC', 'USDT', 'USDG', 'PYUSD', 'UXD']);
 export type IngestRow = Record<string, unknown> & { external_id: string; slug: string };
 const slugify = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
