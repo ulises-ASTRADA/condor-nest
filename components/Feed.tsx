@@ -185,7 +185,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
 function Empty({ f, set, hidden }: { f: Filters; set: (p: Partial<Filters>) => void; hidden: number }) {
   const btn = 'mt-3 min-h-tap rounded-pill bg-lime px-5 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
-  if (hidden > 0) { msg = `Hay ${hidden} ${hidden === 1 ? 'resultado' : 'resultados'} con estos filtros, pero ${hidden === 1 ? 'está restringido' : 'están restringidos'} a otro país (no abiertos a AR/LatAm).`; action = <button className={btn} onClick={() => set({ abierto: false })}>Ver igual</button>; }
+  if (hidden > 0) { msg = `Hay ${hidden} ${hidden === 1 ? 'resultado' : 'resultados'} con estos filtros, pero ${hidden === 1 ? 'está restringido' : 'están restringidos'} a otro país (no ${hidden === 1 ? 'abierto' : 'abiertos'} a AR/LatAm).`; action = <button className={btn} onClick={() => set({ abierto: false })}>Ver igual</button>; }
   else if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
 }
