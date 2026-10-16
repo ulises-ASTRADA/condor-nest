@@ -24,13 +24,14 @@ export async function POST(req: Request) {
   if (email.length > 254 || !EMAIL_RE.test(email)) return NextResponse.json({ status: 'invalid' }, { status: 400 });
   if (!(await turnstileOk(body?.turnstileToken, ip))) return NextResponse.json({ status: 'error' }, { status: 403 });
   try {
+    // Only hashes are stored; the plain tokens live in the mail. DB enforces: no re-send to the same address within 1 h, global hourly cap.
     const confirm = newToken(), unsub = newToken();
-    const res = await serverRpc('cn_subscribe_v2', { email, confirm_hash: sha256(confirm), unsub });
+    const res = await serverRpc('cn_subscribe_v2', { email, confirm_hash: sha256(confirm), unsub_hash: sha256(unsub) });
     if (res === 'invalid') return NextResponse.json({ status: 'invalid' }, { status: 400 });
-    // Already confirmed: don't mail again; same response so membership isn't revealed.
-    if (res === 'confirmed') return NextResponse.json({ status: 'success' });
-    const unsubToken = (await serverRpc('cn_unsub_token', { confirm_hash: sha256(confirm) })) ?? unsub;
-    const sent = await sendConfirmation(email, confirm, unsubToken);
+    if (res === 'rate') return NextResponse.json({ status: 'error' }, { status: 429 });
+    // Already confirmed, or a confirm mail went out < 1 h ago: don't mail again; same response so membership isn't revealed.
+    if (res === 'confirmed' || res === 'recent') return NextResponse.json({ status: 'success' });
+    const sent = await sendConfirmation(email, confirm, unsub);
     if (!sent.ok) {
       // keep the pending row; record why so the confirm mail can be re-sent later (no PII in the reason)
       await serverRpc('cn_confirm_mail', { confirm_hash: sha256(confirm), err: sent.reason }).catch(() => {});

@@ -51,7 +51,7 @@ export async function resendSend(payload: Record<string, unknown>, idem?: string
 }
 
 export async function sendConfirmation(to: string, confirmToken: string, unsubToken: string): Promise<SendResult> {
-  const confirmUrl = `${SITE_URL}/api/newsletter/confirm?token=${confirmToken}`;
+  const confirmUrl = `${SITE_URL}/newsletter/confirmar?token=${confirmToken}`;
   const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${unsubToken}`;
   const { html, text } = confirmEmail(confirmUrl, unsubUrl);
   return resendSend({
@@ -63,7 +63,8 @@ export async function sendConfirmation(to: string, confirmToken: string, unsubTo
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 /** Internal notice to the site owner about a /publicar submission. */
 export async function sendSubmissionNotice(id: number, f: Record<string, string | boolean | null>): Promise<SendResult> {
-  const to = process.env.PUBLICAR_NOTIFY_TO || 'ulisesastrada1@gmail.com';
+  const to = process.env.PUBLICAR_NOTIFY_TO;
+  if (!to) return { ok: false, reason: 'PUBLICAR_NOTIFY_TO not set' };
   const rows = Object.entries(f).filter(([, v]) => v !== null && v !== '').map(([k, v]) => [k, String(v)]);
   const text = `Nuevo evento para Condor Nest (#${id})\n\n` + rows.map(([k, v]) => `${k}: ${v}`).join('\n') + `\n\nFila en Supabase: cn_submissions id=${id}`;
   const html = `<div style="font-family:Inter,Arial,sans-serif;background:#07070b;color:#ecebf5;padding:24px"><h2 style="color:#c6ff3d;margin:0 0 12px">Nuevo evento #${id}</h2><table style="font-size:14px">` +

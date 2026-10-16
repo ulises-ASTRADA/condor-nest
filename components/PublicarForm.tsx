@@ -4,10 +4,10 @@ type St = 'idle' | 'sending' | 'ok' | 'invalid' | 'rate' | 'error';
 type Errs = Partial<Record<string, string>>;
 const inputCls = (bad?: boolean) => `fx-input h-12 w-full min-w-0 rounded-[12px] border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted ${bad ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6)]' : 'border-border'}`;
 
-function Field({ id, label, hint, err, children }: { id: string; label: string; hint?: string; err?: string; children: React.ReactNode }) {
+function Field({ id, label, hint, err, req, children }: { id: string; label: string; hint?: string; err?: string; req?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-[13px] text-fg-muted">{label}</label>
+      <label htmlFor={id} className="mb-1.5 block text-[13px] text-fg-muted">{label}{req && <span className="text-danger" aria-hidden="true"> *</span>}{req && <span className="sr-only"> (obligatorio)</span>}</label>
       {children}
       {err ? <p id={`${id}-e`} className="mt-1 text-sm text-danger">{err}</p> : hint ? <p className="mt-1 text-xs text-fg-muted">{hint}</p> : null}
     </div>
@@ -23,8 +23,13 @@ export function PublicarForm() {
     const body = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)])) as Record<string, any>;
     body.wants_featured = fd.get('wants_featured') === 'on';
     const local: Errs = {};
-    try { const u = new URL(String(body.url)); if (!/^https?:$/.test(u.protocol)) throw 0; } catch { local.url = 'Necesitamos el link oficial (https://…).'; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(body.email))) local.email = 'Revisá el email.';
+    const t = (k: string) => String(body[k] ?? '').trim();
+    if (t('name').length < 2) local.name = 'Tu nombre es obligatorio (mínimo 2 letras).';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t('email'))) local.email = 'Revisá el email.';
+    if (t('event_name').length < 3) local.event_name = 'El nombre del evento es obligatorio (mínimo 3 caracteres).';
+    if (t('location').length < 2) local.location = 'El país es obligatorio: poné país y ciudad, u “Online”.';
+    if (t('dates').length < 2) local.dates = 'Las fechas son obligatorias.';
+    try { const u = new URL(t('url')); if (u.protocol !== 'https:') throw 0; } catch { local.url = 'Necesitamos el link oficial con https:// (no aceptamos http://).'; }
     if (Object.keys(local).length) { setErrs(local); setSt('invalid'); return; }
     setSt('sending'); setErrs({});
     try {
@@ -45,11 +50,12 @@ export function PublicarForm() {
   const ar = (k: string) => ({ 'aria-invalid': !!errs[k], 'aria-describedby': errs[k] ? `${k}-e` : undefined });
   return (
     <form onSubmit={submit} noValidate className="space-y-5 rounded-card border border-violet/35 p-5 [background:radial-gradient(120%_140%_at_0%_0%,rgb(var(--violet)/.16),transparent_60%),rgb(var(--surface))] sm:p-6">
+      <p className="text-xs text-fg-muted"><span className="text-danger" aria-hidden="true">*</span> Campos obligatorios</p>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="name" label="Tu nombre" err={errs.name}><input id="name" name="name" required maxLength={120} autoComplete="name" className={inputCls(!!errs.name)} {...ar('name')} /></Field>
-        <Field id="email" label="Tu email" err={errs.email}><input id="email" name="email" type="email" required maxLength={254} autoComplete="email" placeholder="vos@ejemplo.com" className={inputCls(!!errs.email)} {...ar('email')} /></Field>
+        <Field req id="name" label="Tu nombre" err={errs.name}><input id="name" name="name" required maxLength={120} autoComplete="name" className={inputCls(!!errs.name)} {...ar('name')} /></Field>
+        <Field req id="email" label="Tu email" err={errs.email}><input id="email" name="email" type="email" required maxLength={254} autoComplete="email" placeholder="vos@ejemplo.com" className={inputCls(!!errs.email)} {...ar('email')} /></Field>
       </div>
-      <Field id="event_name" label="Nombre del evento" err={errs.event_name}><input id="event_name" name="event_name" required maxLength={200} className={inputCls(!!errs.event_name)} {...ar('event_name')} /></Field>
+      <Field req id="event_name" label="Nombre del evento" err={errs.event_name}><input id="event_name" name="event_name" required maxLength={200} className={inputCls(!!errs.event_name)} {...ar('event_name')} /></Field>
       <fieldset>
         <legend className="mb-1.5 text-[13px] text-fg-muted">Tipo</legend>
         <div className="flex flex-wrap gap-2">
@@ -62,12 +68,12 @@ export function PublicarForm() {
         {errs.kind && <p className="mt-1 text-sm text-danger">{errs.kind}</p>}
       </fieldset>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="location" label="País y ciudad, u “Online”" err={errs.location}><input id="location" name="location" required maxLength={160} placeholder="Córdoba, Argentina" className={inputCls(!!errs.location)} {...ar('location')} /></Field>
-        <Field id="dates" label="Fechas" hint="Inicio y cierre de inscripción o entrega." err={errs.dates}><input id="dates" name="dates" required maxLength={160} placeholder="7 al 9 de noviembre de 2026" className={inputCls(!!errs.dates)} {...ar('dates')} /></Field>
+        <Field req id="location" label="País y ciudad, u “Online”" err={errs.location}><input id="location" name="location" required maxLength={160} placeholder="Córdoba, Argentina" className={inputCls(!!errs.location)} {...ar('location')} /></Field>
+        <Field req id="dates" label="Fechas" hint="Inicio y cierre de inscripción o entrega." err={errs.dates}><input id="dates" name="dates" required maxLength={160} placeholder="7 al 9 de noviembre de 2026" className={inputCls(!!errs.dates)} {...ar('dates')} /></Field>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="prize" label="Premio (opcional)" err={errs.prize}><input id="prize" name="prize" maxLength={160} placeholder="USD 5.000 en total" className={inputCls(!!errs.prize)} /></Field>
-        <Field id="url" label="Link oficial" err={errs.url}><input id="url" name="url" type="url" inputMode="url" required maxLength={500} placeholder="https://…" className={inputCls(!!errs.url)} {...ar('url')} /></Field>
+        <Field req id="url" label="Link oficial" err={errs.url}><input id="url" name="url" type="url" inputMode="url" required maxLength={500} placeholder="https://…" className={inputCls(!!errs.url)} {...ar('url')} /></Field>
       </div>
       <Field id="notes" label="Notas (opcional)" hint="Quién puede participar, requisitos, lo que quieras contarnos." err={errs.notes}>
         <textarea id="notes" name="notes" rows={4} maxLength={2000} className={`${inputCls(!!errs.notes)} h-auto py-3`} />
