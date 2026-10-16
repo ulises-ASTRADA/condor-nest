@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { getListing, getListings } from '@/lib/supabase';
 import { SOURCE_LABEL, type Listing } from '@/lib/types';
 import { LocalTime } from '@/components/LocalTime';
-import { competitionText, ELIG_LABEL, rewardText, TYPE_LABEL } from '@/lib/format';
+import { competitionText, ELIG_LABEL, rewardText, TYPE_LABEL, whoSentence } from '@/lib/format';
 import { COUNTRY_ES } from '@/lib/geo';
 import { isOpen, sortListings } from '@/lib/rank';
 import { TypeBadge, ModalityBadge, EligBadge } from '@/components/Badges';
@@ -18,7 +18,7 @@ import { SITE } from '@/lib/site';
 import { hubsFor } from '@/lib/hubs';
 export const revalidate = 300;
 
-const AR = 'America/Argentina/Buenos_Aires';
+const AR = 'America/Argentina/Cordoba';
 const longDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
 const shortDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, day: 'numeric', month: 'long' }).format(new Date(iso));
 const numDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
@@ -29,8 +29,19 @@ function prizePhrase(l: Listing): string | null {
   if (l.rewardText && l.rewardText.length <= 40 && !/anunciar|confirmar|sin dato/i.test(l.rewardText)) return l.rewardText.replace(/^premios?:?\s*/i, '');
   return null;
 }
-const closeIso = (l: Listing) => l.deadlineAt ?? l.endsAt ?? null;
-const whoText = (l: Listing) => l.eligibilityShort ?? (l.eligibility === 'unknown' ? null : ELIG_LABEL[l.eligibility]) ?? (l.country && COUNTRY_ES[l.country] ? COUNTRY_ES[l.country] : null);
+/** Registration close: only a real deadline (never the event's start/end). */
+const closeIso = (l: Listing) => l.deadlineAt ?? null;
+const hm = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
+const weekday = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso)).replace(',', '');
+const sameDay = (a: string, b: string) => shortDate(a) === shortDate(b);
+/** When the event happens, from startsAt/endsAt only. */
+function whenText(l: Listing, open: boolean): string | null {
+  if (!l.startsAt) return null;
+  const past = !open && new Date(l.startsAt) < new Date();
+  if (l.endsAt && sameDay(l.startsAt, l.endsAt)) return `${past ? 'Fue' : 'Es'} el ${weekday(l.startsAt)} de ${hm(l.startsAt)} a ${hm(l.endsAt)} h (hora de Argentina).`;
+  if (l.endsAt) return `${past ? 'Fue' : 'Va'} del ${shortDate(l.startsAt)} al ${longDate(l.endsAt)}.`;
+  return `${past ? 'Empezó' : 'Empieza'} el ${longDate(l.startsAt)}.`;
+}
 const modalityText = (l: Listing) => (l.modality === 'online' ? 'online' : l.modality === 'irl' ? 'presencial' : 'híbrida') + (l.city && l.modality !== 'online' ? ` en ${l.city}` : '');
 
 type P = { params: Promise<{ slug: string }> };
@@ -38,15 +49,20 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
   if (!l) return { title: 'No encontrado', robots: { index: false } };
   const prize = prizePhrase(l); const close = closeIso(l); const open = isOpen(l, new Date());
-  const tail = [prize && `premio ${prize}`, close && `${open ? 'cierra' : 'cerró'} ${shortDate(close)}`].filter(Boolean).join(', ');
+  const tail = [prize && `premio ${prize}`, close ? `${open ? 'cierra' : 'cerró'} ${shortDate(close)}` : l.startsAt && shortDate(l.startsAt)].filter(Boolean).join(', ');
   const title = `${l.title}${tail ? ` — ${tail}` : ''} | Condor Nest`;
-  const who = whoText(l);
-  const description = [`${TYPE_LABEL[l.type]} ${modalityText(l)}${l.organizer ? ` de ${l.organizer}` : ''}.`, who && `Pueden participar: ${who}.`, prize && `Premio: ${prize}.`, close && `${open ? 'Cierra' : 'Cerró'} el ${longDate(close)}.`, 'Resumen en español, fechas en tu hora y link oficial.'].filter(Boolean).join(' ').slice(0, 300);
+  const description = [`${TYPE_LABEL[l.type]} ${modalityText(l)}${l.organizer ? ` organizada por ${l.organizer}` : ''}.`, whoSentence(l), prize ? `Premio: ${prize}.` : 'Premio sin monto publicado.', close ? `${open ? 'Cierra' : 'Cerró'} el ${longDate(close)}.` : whenText(l, open), 'Resumen en español, fechas en tu hora y link oficial.'].filter(Boolean).join(' ').slice(0, 300);
   return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, siteName: 'Condor Nest', url: `/o/${l.slug}`, locale: 'es_AR', type: 'website' } };
 }
 
 function Cta({ l, className = '' }: { l: Listing; className?: string }) {
   const src = l.source === 'superteam' ? 'Superteam' : l.source === 'devpost' ? 'Devpost' : l.source === 'taikai' ? 'Taikai' : l.source === 'luma' ? 'Luma' : null;
+  if (!isOpen(l, new Date())) return (
+    <div className={`grid gap-2 ${className}`}>
+      <a href="#similares" className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg">Ver similares abiertas</a>
+      {(l.verifiedUrl ?? l.applyUrl) && <a href={(l.verifiedUrl ?? l.applyUrl)!} target="_blank" rel="noopener noreferrer" className="text-center text-sm text-fg-muted hover:text-fg">Ver sitio oficial ↗</a>}
+    </div>
+  );
   if (!l.applyUrl) return <p className={`grid min-h-14 place-items-center rounded-pill border border-border bg-surface-2 px-6 text-center text-sm text-fg-muted ${className}`}>Link de inscripción: a confirmar</p>;
   const label = src ? `Postulate en ${src}` : 'Postulate en el sitio oficial';
   return (
@@ -65,10 +81,13 @@ export default async function Detail({ params }: P) {
   const score = (x: Listing) => (l.country && x.country === l.country ? 2 : 0) + (x.type === l.type ? 1 : 0) + (x.ecosystems.some((e) => l.ecosystems.includes(e)) ? 1 : 0);
   const cands = sortListings(all.filter((x) => x.id !== l.id && isOpen(x, now) && score(x) > 0), 'cierra-pronto', now);
   const similar = cands.map((x, i) => ({ x, i, s: score(x) })).sort((a, b) => b.s - a.s || a.i - b.i).slice(0, 4).map((o) => o.x);
-  const prize = prizePhrase(l); const close = closeIso(l); const who = whoText(l);
+  const prize = prizePhrase(l); const close = closeIso(l); const when = whenText(l, open);
   const officialUrl = l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl;
   let officialHost: string | null = null; try { officialHost = officialUrl ? new URL(officialUrl).hostname.replace(/^www\./, '') : null; } catch {}
   const updated = l.updatedAt || l.createdAt;
+  // The intro already states the prize: drop prize-only bullets from the summary (and the big rewardText box) to avoid repeating it.
+  const prizeInIntro = !!prize;
+  const summary = (l.summaryEs ?? []).filter((b) => !(prizeInIntro && /^premios?\b/i.test(b.trim())));
   const srcLabel = SOURCE_LABEL[l.source];
   const dates = [
     l.startsAt && { k: 'Empieza', v: l.startsAt, iso: l.startsAt },
@@ -106,17 +125,18 @@ export default async function Detail({ params }: P) {
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           <p className="mt-1 font-mono text-xs text-fg-muted">Actualizado el <time dateTime={updated}>{numDate(updated)}</time></p>
-          <section aria-label="En pocas palabras" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
-            <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'una hackathon'} {modalityText(l)}{l.organizer ? <> de {l.organizer}</> : null}.{who && <> Pueden participar: {who}.</>}</p>
-            <p className="mt-1">{prize ? <>Premio: {prize}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina).</> : <>Cierre: sin fecha publicada.</>}{officialUrl && officialHost && <> Link oficial: <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
+          <section aria-labelledby="epp" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
+            <h2 id="epp" className="mb-1.5 font-mono text-xs uppercase tracking-[.08em] text-lime">En pocas palabras</h2>
+            <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'una hackathon'} {modalityText(l)}{l.organizer ? <>, organizad{l.type === 'hackathon' ? 'a' : 'o'} por {l.organizer}</> : null}. {whoSentence(l)}</p>
+            <p className="mt-1">{prize ? <>Premio: {prize}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
           </section>
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
-          {r.missing && l.rewardText && <p className="mt-6 rounded-card border border-lime/40 bg-surface-2 p-4 text-lg"><span className="font-mono text-xs uppercase tracking-[.08em] text-lime">Premios</span><span className="mt-1 block">{l.rewardText}</span></p>}
+          {r.missing && l.rewardText && !prize && <p className="mt-6 rounded-card border border-lime/40 bg-surface-2 p-4 text-lg"><span className="font-mono text-xs uppercase tracking-[.08em] text-lime">Premios</span><span className="mt-1 block">{l.rewardText}</span></p>}
           <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
           <section className="mt-8">
             <h2 className="font-medium text-lg">Resumen en español</h2>
-            {l.summaryEs?.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{l.summaryEs.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="mt-2 text-fg-muted">Sin dato. Mirá la fuente oficial.</p>}
+            {summary.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{summary.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="mt-2 text-fg-muted">Sin dato. Mirá la fuente oficial.</p>}
             <p className="mt-2 text-xs text-fg-muted">Resumen automático en español. Revisá siempre la fuente oficial.</p>
           </section>
           <section className="mt-8">

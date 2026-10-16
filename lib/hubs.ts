@@ -16,7 +16,7 @@ const TZ: Faq = { q: '¿En qué horario están las fechas de cierre?', a: 'Las f
 
 const country = (iso: string, name: string, slug: string): Hub => ({
   slug, label: `Hackathons en ${name}`, h1: `Hackathons en ${name}`, noun: ['hackathon', 'hackathons'], where: `en ${name}`,
-  feed: `/?tipo=hackathon&pais=${iso}`,
+  feed: `/?tipo=hackathon&pais=${iso.toLowerCase()}${iso === 'AR' ? '' : '&abierto=0'}`,
   match: (l) => l.type === 'hackathon' && inCountry(l, iso),
   faqs: () => [
     { q: `¿Qué hackathons hay abiertas en ${name}?`, a: `Arriba está la lista completa de hackathons abiertas que se hacen en ${name} o que están restringidas a participantes de ${name}, ordenadas por fecha de cierre.` },

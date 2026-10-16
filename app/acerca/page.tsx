@@ -12,7 +12,7 @@ const FAQS = [
   { q: '¿Qué países cubre?', a: 'Toda Latinoamérica: listamos oportunidades que se hacen en LatAm o que están restringidas a LatAm o a un país de LatAm (Argentina, México, Chile, Colombia, Brasil, Perú, Uruguay y el resto de la región). No listamos convocatorias globales que no aclaran desde dónde se puede participar. El feed arranca filtrado por tu país y con un clic ves todo.' },
   { q: '¿Cómo me suscribo al newsletter?', a: 'Dejá tu mail en el formulario del newsletter (al costado del feed en la home, o al pie de la página en el celular) y confirmá desde el correo que te llega (si no lo ves, revisá spam). Es un mail por semana, los lunes, con lo que cierra pronto y lo que tiene poca competencia. Te podés dar de baja con un clic.' },
 ];
-export const metadata = { title: 'Acerca', alternates: { canonical: '/acerca' }, openGraph: { images: [OG_IMAGE], url: '/acerca' } };
+export const metadata = { title: 'Acerca', description: 'Qué es Condor Nest, cómo elegimos las oportunidades, cada cuánto se actualiza y cómo publicar tu hackathon. Hecho en Córdoba.', alternates: { canonical: '/acerca' }, openGraph: { images: [OG_IMAGE], url: '/acerca', description: 'Qué es Condor Nest, cómo elegimos las oportunidades, cada cuánto se actualiza y cómo publicar tu hackathon. Hecho en Córdoba.' } };
 
 const H2 = ({ k, children }: { k: string; children: React.ReactNode }) => (
   <div className="mb-5">

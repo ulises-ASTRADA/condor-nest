@@ -1,5 +1,6 @@
 import type { Listing } from './types';
-export const TZ = 'America/Argentina/Buenos_Aires';
+import { COUNTRY_ES as _C } from './geo';
+export const TZ = 'America/Argentina/Cordoba'; // same offset as Buenos Aires; site is made in Córdoba
 const nf = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
 export const num = (v: number) => nf.format(v);
 
@@ -38,7 +39,9 @@ const parts = (f: Intl.DateTimeFormat, iso: string) => Object.fromEntries(f.form
 export function tzOffset(tz: string, iso: string = new Date().toISOString()): string {
   try { const p = parts(fmt(tz, { timeZoneName: 'shortOffset' }, 'off'), iso); return String(p.timeZoneName ?? 'GMT').replace('UTC', 'GMT'); } catch { return 'GMT'; }
 }
-export const tzCity = (tz: string) => (tz.split('/').pop() ?? tz).replace(/_/g, ' ');
+const TZ_ES: Record<string, string> = { Sao_Paulo: 'São Paulo', Bogota: 'Bogotá', Mexico_City: 'Ciudad de México', Asuncion: 'Asunción', Panama: 'Panamá' };
+/** Spanish city label; every Argentine zone shows as "Córdoba" so SSR and client always match. */
+export const tzCity = (tz: string) => /^America\/(Argentina\/|Buenos_Aires$|Cordoba$|Catamarca$|Jujuy$|Mendoza$|Rosario$)/.test(tz) ? 'Córdoba' : (TZ_ES[tz.split('/').pop() ?? ''] ?? (tz.split('/').pop() ?? tz).replace(/_/g, ' '));
 /** Human zone label, e.g. "hora de Lima (GMT-5)". */
 export const tzLabel = (tz: string, iso?: string) => tz === 'UTC' || tz === 'Etc/UTC' ? 'hora UTC (GMT)' : `hora de ${tzCity(tz)} (${tzOffset(tz, iso)})`;
 
@@ -90,3 +93,16 @@ export const ELIG_LABEL: Record<Listing['eligibility'], string> = {
   ar: 'Solo Argentina', latam: 'Abierto a LatAm', global: 'Global (incluye AR)', restricted: 'Restringido', unknown: 'Elegibilidad sin confirmar',
 };
 export const TYPE_LABEL = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' } as const;
+
+/** Natural-language eligibility sentence from structured fields only (never inferred). */
+export function whoSentence(l: Pick<Listing, 'eligibility' | 'country' | 'eligibilityNote' | 'type'>): string {
+  const ab = l.type === 'hackathon' ? 'abierta' : 'abierto';
+  const c = l.country && _C[l.country] ? _C[l.country] : null;
+  switch (l.eligibility) {
+    case 'ar': return 'Pueden participar personas de Argentina.';
+    case 'latam': return 'Pueden participar builders de toda Latinoamérica.';
+    case 'global': return `Está ${ab} a participantes de todo el mundo, Argentina incluida.`;
+    case 'restricted': return c ? `Solo pueden participar personas de ${c}${l.eligibilityNote && l.eligibilityNote.length <= 80 ? ` (${l.eligibilityNote.replace(/\.$/, '')})` : ''}.` : (l.eligibilityNote ? `Tiene requisitos de participación: ${l.eligibilityNote.replace(/\.$/, '')}.` : 'Tiene restricciones de participación; revisá las bases oficiales.');
+    default: return l.eligibilityNote ? `La elegibilidad no está confirmada. Según la convocatoria: ${l.eligibilityNote.replace(/\.$/, '')}.` : 'La elegibilidad no está confirmada; revisá las bases oficiales.';
+  }
+}

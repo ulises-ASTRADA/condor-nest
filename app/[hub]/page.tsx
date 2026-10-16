@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getListings } from '@/lib/supabase';
+import { getListings, lastIngest } from '@/lib/supabase';
+const ddmmyyyy = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
 import { HUBS, hubBySlug, hubItems, monthYear, monthDeYear } from '@/lib/hubs';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
@@ -13,7 +14,6 @@ export const generateStaticParams = () => HUBS.map((h) => ({ hub: h.slug }));
 
 type P = { params: Promise<{ hub: string }> };
 const masc = (slug: string) => slug === 'bounties' || slug === 'grants';
-const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
 
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const h = hubBySlug((await params).hub);
@@ -29,11 +29,12 @@ export default async function HubPage({ params }: P) {
   if (!h) notFound();
   const now = new Date(); const nowIso = now.toISOString();
   const items = hubItems(h, await getListings(), now);
-  const n = items.length; const m = monthYear(now); const ab = masc(h.slug) ? 'abiertos' : 'abiertas';
+  const n = items.length; const m = monthYear(now);
+  const updated = [await lastIngest(), ...items.map((l) => l.updatedAt)].filter(Boolean).sort().pop() ?? null; const ab = masc(h.slug) ? 'abiertos' : 'abiertas';
   const faqs = h.faqs(n);
   const url = `${SITE}/${h.slug}`;
   const ld = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'CollectionPage', '@id': url, url, name: `${h.h1} (${m})`, inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` } },
+    { '@type': 'CollectionPage', '@id': url, url, name: `${h.h1} (${m})`, inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` }, ...(updated ? { dateModified: updated } : {}) },
     { '@type': 'ItemList', name: `${h.h1} (${m})`, numberOfItems: n, itemListElement: items.map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title })) },
     faqLd(faqs),
     { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: h.label, item: url }] },
@@ -45,9 +46,12 @@ export default async function HubPage({ params }: P) {
       <header className="mt-2 max-w-3xl">
         <h1 className="font-display text-[26px] font-semibold leading-8 lg:text-[40px] lg:leading-[46px]"><span className="text-gradient">{h.h1}</span> <span className="text-fg-muted">({m})</span></h1>
         <div className="mt-4 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
-          {n ? (
-            <p>{n === 1 ? 'Esta es' : 'Estas son'} <strong>{n === 1 ? (masc(h.slug) ? 'el' : 'la') : (masc(h.slug) ? 'los' : 'las')} {n} {n === 1 ? h.noun[0] : h.noun[1]} {n === 1 ? ab.slice(0, -1) : ab}</strong> {h.where} en {monthDeYear(now)}: {list(items.map((l) => l.title))}. Están ordenad{masc(h.slug) ? 'os' : 'as'} por fecha de cierre, con premio, quién puede participar y link oficial en cada una.</p>
-          ) : (
+          {n ? (<>
+            <p>{n === 1
+              ? <>{masc(h.slug) ? 'Este es el único' : 'Esta es la única'} <strong>{h.noun[0]} {ab.slice(0, -1)}</strong> {h.where} en {monthDeYear(now)}: {items[0].title}.</>
+              : <>{'Estas son'} <strong>{masc(h.slug) ? 'los' : 'las'} {n} {h.noun[1]} {ab}</strong> {h.where} en {monthDeYear(now)}.</>}</p>
+            <p className="mt-1 text-sm text-fg-muted">Ordenad{masc(h.slug) ? 'os' : 'as'} por fecha de cierre, con premio, quién puede participar y link oficial en cada {masc(h.slug) ? 'uno' : 'una'}.{updated && <> Actualizado el <time dateTime={updated}>{ddmmyyyy(updated)}</time>.</>}</p>
+          </>          ) : (
             <p>En {monthDeYear(now)} no hay {h.noun[1]} {ab} {h.where} por ahora. La lista se actualiza todos los días a la mañana; mientras tanto, <Link href="/" className="text-lime hover:underline">mirá todas las oportunidades abiertas</Link>.</p>
           )}
         </div>
