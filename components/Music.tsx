@@ -1,10 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 // Lo-fi background music (basement.studio style). Track: "Condor Nest lo-fi" by Lo-Fi Mate (original, fully synthesized) — see public/audio/LICENSE.md.
-// Starts on load if the browser allows autoplay, otherwise on the first pointerdown/keydown/touchstart.
-// If the user turned it off before (localStorage cn-music=off), it never auto-starts. Audio file is only fetched when playback starts.
+// Never autoplays: audio starts only when the user clicks "Prender música". No AudioContext is created before that click.
+// The audio file is only fetched on that first click.
 const SRC = '/audio/condor-nest-lofi.mp3', VOL = 0.35, KEY = 'cn-music';
-const GESTURES = ['pointerdown', 'keydown', 'touchstart'] as const;
 
 export function MusicToggle() {
   const [on, setOn] = useState(false);
@@ -43,22 +42,6 @@ export function MusicToggle() {
     const vis = () => (document.hidden ? hide() : back());
     document.addEventListener('visibilitychange', vis); window.addEventListener('blur', hide); window.addEventListener('focus', back);
     return () => { document.removeEventListener('visibilitychange', vis); window.removeEventListener('blur', hide); window.removeEventListener('focus', back); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (localStorage.getItem(KEY) === 'off') return;
-    let done = false;
-    const onGesture = (e: Event) => {
-      if (done) return;
-      if (btn.current && e.target instanceof Node && btn.current.contains(e.target)) return; // the toggle handles itself
-      done = true; GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true)); start();
-    };
-    GESTURES.forEach((g) => window.addEventListener(g, onGesture, { capture: true, passive: true }));
-    // Try on load: only if autoplay is allowed (a fresh AudioContext starts 'running'); avoids fetching the file otherwise.
-    const probe = new AudioContext();
-    if (probe.state === 'running' && (!('getAutoplayPolicy' in navigator) || (navigator as unknown as { getAutoplayPolicy: (t: string) => string }).getAutoplayPolicy('audiocontext') === 'allowed')) { probe.close(); start().then((ok) => { if (ok) { done = true; GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true)); } }); } else probe.close();
-    return () => GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
