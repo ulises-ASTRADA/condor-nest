@@ -1,6 +1,7 @@
 import type { Listing } from './types';
 import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
+import type { OrgAbout } from './organizer';
 
 const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|microsoft\.com|typeform\.com|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -25,7 +26,7 @@ export const ORG = {
 export const WEBSITE = { '@type': 'WebSite', '@id': `${SITE}/#website`, name: 'Condor Nest', url: SITE, inLanguage: 'es-AR', publisher: { '@id': `${SITE}/#org` } };
 
 /** Event schema from real listing data only; null when there is no start date to anchor an Event. */
-export function eventLd(l: Listing): Record<string, unknown> | null {
+export function eventLd(l: Listing, about?: OrgAbout | null): Record<string, unknown> | null {
   const start = l.startsAt;
   if (!start) return null;
   const online = l.modality === 'online';
@@ -45,8 +46,9 @@ export function eventLd(l: Listing): Record<string, unknown> | null {
   if (!l.endsAt) ev.endDate = start;
   // organizer + performer: the organizer; url only when it's the organizer's own (see orgUrl). Omitted if DB has no organizer.
   if (l.organizer) {
-    const url = orgUrl(l);
-    const org = { '@type': 'Organization', name: l.organizer, ...(url ? { url } : {}) };
+    const own = about?.website && !PLATFORMS.test(new URL(about.website).hostname.replace(/^www\./, '')) ? about.website : null;
+    const url = own ?? orgUrl(l);
+    const org = { '@type': 'Organization', name: l.organizer, ...(url ? { url } : {}), ...(about?.description ? { description: about.description } : {}) };
     ev.organizer = org; ev.performer = org;
   }
   // offers = registration (free), not the prize. Availability from open/closed status.

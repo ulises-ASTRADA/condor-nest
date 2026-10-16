@@ -16,6 +16,8 @@ import { ShareButton, CountdownShell } from '@/components/DetailClient';
 import { eventLd, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
 import { hubsFor } from '@/lib/hubs';
+import { getOrgAbout } from '@/lib/organizer';
+import { OrgAbout } from '@/components/OrgAbout';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Cordoba';
@@ -83,7 +85,7 @@ export default async function Detail({ params }: P) {
   if (!l) notFound();
   const now = new Date(); const nowIso = now.toISOString();
   const r = rewardText(l); const c = competitionText(l); const open = isOpen(l, now);
-  const all = await getListings();
+  const [all, about] = await Promise.all([getListings(), l.organizer ? getOrgAbout(l.slug) : Promise.resolve(null)]);
   const score = (x: Listing) => (l.country && x.country === l.country ? 2 : 0) + (x.type === l.type ? 1 : 0) + (x.ecosystems.some((e) => l.ecosystems.includes(e)) ? 1 : 0);
   const cands = sortListings(all.filter((x) => x.id !== l.id && isOpen(x, now) && score(x) > 0), 'cierra-pronto', now);
   const similar = cands.map((x, i) => ({ x, i, s: score(x) })).sort((a, b) => b.s - a.s || a.i - b.i).slice(0, 4).map((o) => o.x);
@@ -118,7 +120,7 @@ export default async function Detail({ params }: P) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l, about), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
       <div className="reading-progress fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-grad-brand" aria-hidden="true" />
       <div className="flex items-center justify-between pt-3">
         <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link prefetch={false} href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
@@ -138,6 +140,7 @@ export default async function Detail({ params }: P) {
             <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'una hackathon'} {modalityText(l)}{l.organizer ? <>, organizad{l.type === 'hackathon' ? 'a' : 'o'} por {l.organizer}</> : null}. {whoSentence(l)}</p>
             <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel="noopener noreferrer" className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
           </section>
+          {about && l.organizer && <OrgAbout name={l.organizer} about={about} />}
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
           <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
