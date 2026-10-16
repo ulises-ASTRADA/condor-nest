@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
-import { ALL_TYPES, DEFAULT_FILTERS, SORTS, type Modality, filtersToSearch, matches, sortListings, isOpen, effDeadline, type Filters, type Sort } from '@/lib/rank';
+import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, type Modality, filtersToSearch, matches, sortListings, isOpen, effDeadline, type Filters, type Sort } from '@/lib/rank';
 import dynamic from 'next/dynamic';
 const Newsletter = dynamic(() => import('./Newsletter').then((x) => x.Newsletter));
 import { Affiliate } from './Affiliate';
@@ -56,6 +57,17 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
   const first = useRef(true);
+  // URL → state: logo/breadcrumb Link to "/", back/forward, or any external URL change resets the island to what the URL says.
+  const sp = useSearchParams(); const spStr = sp.toString();
+  const lastQs = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastQs.current === null) { lastQs.current = spStr; return; }
+    if (spStr === lastQs.current) return;
+    lastQs.current = spStr;
+    const next = filtersFromSearch(Object.fromEntries(sp.entries()));
+    setF(next.f); setSort(next.sort); setLimit(PAGE);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spStr]);
   const nowD = useMemo(() => new Date(now), [now]);
   const [tick, setTick] = useState(() => new Date(now).getTime());
   useEffect(() => { setTick(Date.now()); const t = setInterval(() => setTick(Date.now()), 30000); return () => clearInterval(t); }, []);
@@ -65,6 +77,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     const el = document.getElementById('feed-list');
     if (el && !document.documentElement.hasAttribute('data-reduce-motion') && !matchMedia('(prefers-reduced-motion: reduce)').matches) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
     const qs = filtersToSearch(f, sort);
+    lastQs.current = qs;
     window.history.replaceState(null, '', qs ? `/?${qs}` : '/');
   }, [f, sort]);
 
