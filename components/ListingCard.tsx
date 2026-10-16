@@ -15,7 +15,7 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
         className={`card flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
         {variant === 'featured' && (
-          <span data-featured-pill className="featured-pill mb-2 inline-block rounded-pill bg-magenta px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">Destacado</span>
+          <span data-featured-pill className="featured-pill mb-2 inline-block w-fit self-start rounded-pill bg-lime px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">★ Destacado</span>
         )}
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
           <TypeBadge type={l.type} /> <EligBadge l={l} short /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
