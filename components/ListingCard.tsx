@@ -15,14 +15,14 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
         className={`card flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
         {variant === 'featured' && (
-          <span data-featured-pill className="featured-pill mb-2 inline-block rounded-pill bg-magenta px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">Destacado</span>
+          <span data-featured-pill className="featured-pill mb-2 inline-block w-fit self-start rounded-pill bg-lime px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">★ Destacado</span>
         )}
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
           <TypeBadge type={l.type} /> <EligBadge l={l} short /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
         <div className="mt-auto pt-2">
-        {variant !== 'compact' && (
+        {variant !== 'compact' && l.competitors != null && (
           <p className={`font-mono tabular ${r.missing ? (l.rewardText ? 'line-clamp-2 text-sm text-fg' : 'text-sm text-fg-muted') : 'text-xl'}`}>
             {r.prefix && <span className="mr-1.5 text-xs uppercase tracking-[.08em] text-fg-muted">{r.prefix}</span>}
             {r.main}{r.approx && <span className="ml-2 text-sm text-fg-muted">{r.approx}</span>}

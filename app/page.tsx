@@ -36,7 +36,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         featuredCards={listings.filter((l) => l.featured).map((l) => (
           <div key={l.id} data-id={l.id} className="mt-4 hidden">
             <ListingCard listing={l} variant="featured" now={now.toISOString()} />
-            <p className="mt-1 text-xs text-fg-muted"><Link href="/publicar" className="hover:text-fg">Espacio pago · ¿Qué es esto?</Link></p>
+            
           </div>
         ))}
         cards={<>
