@@ -55,7 +55,7 @@ export default async function HubPage({ params }: P) {
             <p className="mt-1 text-sm text-fg-muted">Ordenad{masc(h.slug) ? 'os' : 'as'} por fecha de cierre, con premio, quién puede participar y link oficial en cada {masc(h.slug) ? 'uno' : 'una'}.{updated && <> Actualizado el <time dateTime={updated}>{ddmmyyyy(updated)}</time>.</>}</p>
             {(unconf.length > 0 || restr.length > 0 || (feedN != null && feedN !== n)) && <p className="mt-1 text-sm text-fg-muted">
               {unconf.length > 0 && <>Más abajo, {unconf.length} más con elegibilidad sin confirmar. </>}
-              {restr.length > 0 && <>No contamos {restr.length} {restr.length === 1 ? 'restringid' + (masc(h.slug) ? 'o' : 'a') : 'restringid' + (masc(h.slug) ? 'os' : 'as')} a otro país (<Link prefetch={false} href={`${h.feed}${h.feed.includes('?') ? '&' : '?'}abierto=0`} className="text-lime hover:underline">ver{masc(h.slug) ? 'los' : 'las'} en el feed</Link>). </>}
+              {restr.length > 0 && <>No contamos {restr.length} {restr.length === 1 ? 'restringid' + (masc(h.slug) ? 'o' : 'a') : 'restringid' + (masc(h.slug) ? 'os' : 'as')} a otro país. </>}
               {h.iso && feedN != null && feedN !== n && <>Contando bounties, grants y convocatorias abiertas a toda LatAm, hay <Link prefetch={false} href={`/?pais=${h.iso.toLowerCase()}`} className="text-lime hover:underline">{feedN} oportunidades para {h.where.replace(/^en /, '')}</Link>.</>}
             </p>}
           </>          ) : (

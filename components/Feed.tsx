@@ -42,7 +42,7 @@ function Counter({ n }: { n: number }) {
 }
 
 export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCards }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; cards: React.ReactNode; featuredCards: React.ReactNode }) {
-  // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm with "Abierto a AR/LatAm" on.
+  // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm (listings restricted to another country are always hidden).
   const [f, setF] = useState<Filters>(initial.f);
   const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso })); setLimit(PAGE); };
   const paises = useMemo(() => Object.keys(COUNTRY_ES).filter((c) => listings.some((l) => inCountry(l, c))).sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es')), [listings]);
@@ -123,8 +123,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     <div className="mt-3">
       {paisSelect('mb-2 block')}
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
-        <Chip on={f.abierto} onClick={() => set({ abierto: !f.abierto })}>Abierto a AR/LatAm</Chip>
-        {f.abierto && <Chip on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Chip>}
+        <Chip on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Chip>
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
         {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'IRL' : 'Online'}</Chip>)}
         {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
@@ -136,8 +135,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     <div className="text-sm">
       <H4>País</H4>
       {paisSelect('block')}
-      <Check on={f.abierto} onClick={() => set({ abierto: !f.abierto })}>Abierto a AR/LatAm</Check>
-      {f.abierto && <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>}
+      <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
       <H4>Modalidad</H4>
@@ -181,7 +179,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
 
           <div id="feed-featured">{featuredCards}</div>
 
-          {total === 0 ? <Empty f={f} set={set} hidden={f.abierto ? listings.filter((l) => matches(l, { ...f, abierto: false }, nowD)).length : 0} unconf={f.abierto && !f.sinConfirmar ? listings.filter((l) => matches(l, { ...f, sinConfirmar: true }, nowD)).length : 0} /> : null}
+          {total === 0 ? <Empty f={f} set={set} unconf={!f.sinConfirmar ? listings.filter((l) => matches(l, { ...f, sinConfirmar: true }, nowD)).length : 0} /> : null}
           <ul id="feed-list" className={`mt-4 grid items-stretch gap-3 sm:grid-cols-2 ${total === 0 ? 'hidden' : ''}`}>{cards}</ul>
           {total > 0 && shown.length < 10 && <div className="mt-3 lg:hidden"><Affiliate url={affUrl} /></div>}
           {organic.length > limit && (
@@ -207,11 +205,10 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   );
 }
 
-function Empty({ f, set, hidden, unconf }: { f: Filters; set: (p: Partial<Filters>) => void; hidden: number; unconf: number }) {
+function Empty({ f, set, unconf }: { f: Filters; set: (p: Partial<Filters>) => void; unconf: number }) {
   const btn = 'mt-3 min-h-tap rounded-pill bg-lime px-5 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
   if (unconf > 0) { msg = `Hay ${unconf} ${unconf === 1 ? 'resultado' : 'resultados'} con estos filtros, pero con elegibilidad sin confirmar.`; action = <button className={btn} onClick={() => set({ sinConfirmar: true })}>Mostrar sin confirmar</button>; }
-  else if (hidden > 0) { msg = `Hay ${hidden} ${hidden === 1 ? 'resultado' : 'resultados'} con estos filtros, pero ${hidden === 1 ? 'está restringido' : 'están restringidos'} a otro país (no ${hidden === 1 ? 'abierto' : 'abiertos'} a AR/LatAm).`; action = <button className={btn} onClick={() => set({ abierto: false })}>Ver igual</button>; }
   else if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
   return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
 }
