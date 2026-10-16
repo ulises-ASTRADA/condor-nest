@@ -1,11 +1,12 @@
 import type { Listing } from './types';
 import { ecosOf } from './eco';
-import { inCountry, isOpen, sortListings } from './rank';
+import { DEFAULT_FILTERS, inCountry, isOpen, matches, openToArLatam, sortListings } from './rank';
 
 export type Faq = { q: string; a: string };
 export type Hub = {
   slug: string; label: string; h1: string; noun: [string, string]; // singular, plural
   where: string; feed: string; match: (l: Listing) => boolean; faqs: (n: number) => Faq[];
+  iso?: string; // country hubs: listings restricted to this country count as open here
 };
 
 const UPDATED: Faq = { q: '¿Cada cuánto se actualiza esta lista?', a: 'Todos los días a la mañana (hora de Argentina) corre una carga automática desde Superteam Earn, Devpost y Taikai, y sumamos eventos curados de X y Luma después de verificarlos en su página oficial. La página se regenera sola con esos datos.' };
@@ -15,8 +16,8 @@ const ELIG: Faq = { q: '¿Cómo sé si puedo participar?', a: 'Cada tarjeta mues
 const TZ: Faq = { q: '¿En qué horario están las fechas de cierre?', a: 'Las fechas y cuentas regresivas se muestran en la zona horaria de tu dispositivo, así no tenés que convertir horarios.' };
 
 const country = (iso: string, name: string, slug: string): Hub => ({
-  slug, label: `Hackathons en ${name}`, h1: `Hackathons en ${name}`, noun: ['hackathon', 'hackathons'], where: `en ${name}`,
-  feed: `/?tipo=hackathon&pais=${iso.toLowerCase()}${iso === 'AR' ? '' : '&abierto=0'}`,
+  iso, slug, label: `Hackathons en ${name}`, h1: `Hackathons en ${name}`, noun: ['hackathon', 'hackathons'], where: `en ${name}`,
+  feed: `/?tipo=hackathon&pais=${iso.toLowerCase()}`,
   match: (l) => l.type === 'hackathon' && inCountry(l, iso),
   faqs: () => [
     { q: `¿Qué hackathons hay abiertas en ${name}?`, a: `Arriba está la lista completa de hackathons abiertas que se hacen en ${name} o que están restringidas a participantes de ${name}, ordenadas por fecha de cierre.` },
@@ -56,7 +57,15 @@ export const HUBS: Hub[] = [
     ] },
 ];
 export const hubBySlug = (s: string) => HUBS.find((h) => h.slug === s) ?? null;
-export const hubItems = (h: Hub, all: Listing[], now: Date) => sortListings(all.filter((l) => h.match(l) && isOpen(l, now)), 'cierra-pronto', now);
+/** Same "abierto" definition as the home feed's default chip: open, and open to AR/LatAm (country hubs also accept their own country). */
+const eligibleHere = (h: Hub, l: Listing) => openToArLatam(l) || (!!h.iso && l.country === h.iso);
+export const hubItems = (h: Hub, all: Listing[], now: Date) => sortListings(all.filter((l) => h.match(l) && isOpen(l, now) && eligibleHere(h, l) && l.eligibility !== 'unknown'), 'cierra-pronto', now);
+/** Open, but with eligibility not confirmed by the source: shown separately and labeled. */
+export const hubUnconfirmed = (h: Hub, all: Listing[], now: Date) => sortListings(all.filter((l) => h.match(l) && isOpen(l, now) && l.eligibility === 'unknown'), 'cierra-pronto', now);
+/** Open but restricted to another country (excluded from the hub, counted for transparency). */
+export const hubRestricted = (h: Hub, all: Listing[], now: Date) => all.filter((l) => h.match(l) && isOpen(l, now) && !eligibleHere(h, l) && l.eligibility !== 'unknown');
+/** What the home feed shows for ?pais=<iso> with default filters (all types). */
+export const countryFeedCount = (iso: string, all: Listing[], now: Date) => all.filter((l) => matches(l, { ...DEFAULT_FILTERS, pais: iso }, now)).length;
 /** Most specific hubs for a listing (for links from /o pages). */
 export const hubsFor = (l: Listing) => HUBS.filter((h) => h.match(l));
 export const monthYear = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', month: 'long', year: 'numeric' }).format(d).replace(' de ', ' ');

@@ -102,7 +102,15 @@ export function whoSentence(l: Pick<Listing, 'eligibility' | 'country' | 'eligib
     case 'ar': return 'Pueden participar personas de Argentina.';
     case 'latam': return 'Pueden participar builders de toda Latinoamérica.';
     case 'global': return `Está ${ab} a participantes de todo el mundo, Argentina incluida.`;
-    case 'restricted': return c ? `Solo pueden participar personas de ${c}${l.eligibilityNote && l.eligibilityNote.length <= 80 ? ` (${l.eligibilityNote.replace(/\.$/, '')})` : ''}.` : (l.eligibilityNote ? `Tiene requisitos de participación: ${l.eligibilityNote.replace(/\.$/, '')}.` : 'Tiene restricciones de participación; revisá las bases oficiales.');
+    // Restricted: quote the source's own requirement (the country field can be just the venue, so never claim "solo <país>" from it).
+    case 'restricted': return l.eligibilityNote ? `Requisitos para participar, según la convocatoria: ${firstSentence(l.eligibilityNote)}.` : c ? `Solo pueden participar personas de ${c}.` : 'Tiene restricciones de participación; revisá las bases oficiales.';
     default: return l.eligibilityNote ? `La elegibilidad no está confirmada. Según la convocatoria: ${l.eligibilityNote.replace(/\.$/, '')}.` : 'La elegibilidad no está confirmada; revisá las bases oficiales.';
   }
+}
+const firstSentence = (t: string) => { const m = t.match(/^(.+?[.!?])(\s|$)/); return (m ? m[1] : t).replace(/[.!?]$/, ''); };
+/** Prize in prose: "USD 850 en premios" / "1er premio de USD 500" / "USD 500". */
+export function prizeProse(l: Listing): string | null {
+  const r = rewardText(l);
+  if (r.missing) return null;
+  return l.rewardKind === 'total_pool' ? `${r.main} en premios` : l.rewardKind === 'top_prize' ? `1er premio de ${r.main}` : r.main;
 }

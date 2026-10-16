@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { getListing, getListings } from '@/lib/supabase';
 import { SOURCE_LABEL, type Listing } from '@/lib/types';
 import { LocalTime } from '@/components/LocalTime';
-import { competitionText, ELIG_LABEL, rewardText, TYPE_LABEL, whoSentence } from '@/lib/format';
+import { competitionText, ELIG_LABEL, rewardText, TYPE_LABEL, whoSentence, prizeProse } from '@/lib/format';
 import { COUNTRY_ES } from '@/lib/geo';
 import { isOpen, sortListings } from '@/lib/rank';
 import { TypeBadge, ModalityBadge, EligBadge } from '@/components/Badges';
@@ -25,7 +25,7 @@ const numDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR
 /** Prize phrase from real data only, or null. */
 function prizePhrase(l: Listing): string | null {
   const r = rewardText(l);
-  if (!r.missing) return `${r.prefix ? r.prefix.toLowerCase() + ' ' : ''}${r.main}`;
+  if (!r.missing) return prizeProse(l);
   if (l.rewardText && l.rewardText.length <= 40 && !/anunciar|confirmar|sin dato/i.test(l.rewardText)) return l.rewardText.replace(/^premios?:?\s*/i, '');
   return null;
 }
@@ -87,7 +87,9 @@ export default async function Detail({ params }: P) {
   const updated = l.updatedAt || l.createdAt;
   // The intro already states the prize: drop prize-only bullets from the summary (and the big rewardText box) to avoid repeating it.
   const prizeInIntro = !!prize;
-  const summary = (l.summaryEs ?? []).filter((b) => !(prizeInIntro && /^premios?\b/i.test(b.trim())));
+  const prizeShown = prizeInIntro || (r.missing && !!l.rewardText);
+  const rt = (l.rewardText ?? '').toLowerCase().slice(0, 30);
+  const summary = (l.summaryEs ?? []).filter((b) => !(prizeShown && (/^\s*(premios?|pozo|pool)\b/i.test(b) || /\ben premios\b/i.test(b) || (rt.length > 10 && b.toLowerCase().includes(rt)))));
   const srcLabel = SOURCE_LABEL[l.source];
   const dates = [
     l.startsAt && { k: 'Empieza', v: l.startsAt, iso: l.startsAt },
@@ -100,7 +102,7 @@ export default async function Detail({ params }: P) {
       <dt className="shrink-0 text-fg-muted">Premio</dt>
       <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
       <dt className="shrink-0 text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
-      <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell>{(l.deadlineAt ?? l.startsAt) && <span className="mt-0.5 block font-mono text-xs text-fg-muted"><LocalTime iso={(l.deadlineAt ?? l.startsAt)!} /></span>}</dd>
+      <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell></dd>
       <dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd>
       <dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio?.replace(/ por .*/, '') ?? 'Sin dato'}</dd>
       <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{l.eligibilityShort ?? ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
@@ -113,7 +115,7 @@ export default async function Detail({ params }: P) {
       <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
       <div className="reading-progress fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-grad-brand" aria-hidden="true" />
       <div className="flex items-center justify-between pt-3">
-        <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
+        <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link prefetch={false} href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
         <ShareButton title={l.title} />
       </div>
       {!open && (
@@ -132,7 +134,6 @@ export default async function Detail({ params }: P) {
           </section>
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
-          {r.missing && l.rewardText && !prize && <p className="mt-6 rounded-card border border-lime/40 bg-surface-2 p-4 text-lg"><span className="font-mono text-xs uppercase tracking-[.08em] text-lime">Premios</span><span className="mt-1 block">{l.rewardText}</span></p>}
           <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
           <section className="mt-8">
             <h2 className="font-medium text-lg">Resumen en español</h2>
@@ -149,8 +150,8 @@ export default async function Detail({ params }: P) {
           )}
           <section id="similares" className="mt-10">
             <h2 className="font-medium text-lg">Oportunidades similares{open ? '' : ' abiertas'}</h2>
-            {hubsFor(l).length > 0 && <p className="mt-1 text-sm text-fg-muted">Ver más: {hubsFor(l).map((h, i) => <span key={h.slug}>{i ? ' · ' : ''}<Link href={`/${h.slug}`} className="text-lime hover:underline">{h.label}</Link></span>)}</p>}
-            {similar.length ? <ul className="mt-3 grid gap-3">{similar.map((s) => <li key={s.id}><ListingCard listing={s} variant="compact" now={nowIso} /></li>)}</ul> : <p className="mt-2 text-fg-muted">Por ahora no hay otras abiertas parecidas. <Link href="/" className="text-lime hover:underline">Mirá todas las oportunidades</Link>.</p>}
+            {hubsFor(l).length > 0 && <p className="mt-1 text-sm text-fg-muted">Ver más: {hubsFor(l).map((h, i) => <span key={h.slug}>{i ? ' · ' : ''}<Link prefetch={false} href={`/${h.slug}`} className="text-lime hover:underline">{h.label}</Link></span>)}</p>}
+            {similar.length ? <ul className="mt-3 grid gap-3">{similar.map((s) => <li key={s.id}><ListingCard listing={s} variant="compact" now={nowIso} /></li>)}</ul> : <p className="mt-2 text-fg-muted">Por ahora no hay otras abiertas parecidas. <Link prefetch={false} href="/" className="text-lime hover:underline">Mirá todas las oportunidades</Link>.</p>}
           </section>
           <div className="mt-8"><Newsletter variant="inline" /></div>
         </article>

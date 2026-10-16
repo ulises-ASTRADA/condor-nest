@@ -1,18 +1,17 @@
 'use client';
-import { artFull, dayKey, hhmm, tzOffset } from '@/lib/format';
-import { TzLabel, useTz } from './LocalTime';
+import { artFull, dayKey, hhmm, tzOffset, TZ } from '@/lib/format';
+import { TzLabel } from './LocalTime';
 /** "Actualizado el dd/mm/aaaa" from the real latest data change (newest listing update or ingest run). */
 export function UpdatedStamp({ iso, open, now }: { iso: string | null; open: number; now: string }) {
-  const tz = useTz();
+  const tz = TZ; // fixed Córdoba time: identical string on server and client (no hydration jump)
   const stale = !iso || new Date(now).getTime() - new Date(iso).getTime() > 36 * 3.6e6;
-  const today = iso && dayKey(iso, tz) === dayKey(now, tz);
   return (
     <div className="mt-1.5 font-mono text-sm text-fg-muted">
       <p className="flex flex-wrap items-center gap-x-2">
         <span aria-hidden="true" className="h-2 w-2 rounded-pill bg-cyan shadow-glow-cyan" />
         {iso ? (
           <time dateTime={iso} title={artFull(iso, tz)} className="whitespace-nowrap">
-            <span className="sm:hidden">Actualizado {today ? 'hoy' : dayKey(iso, tz).slice(0, 5)} {hhmm(iso, tz)}</span>
+            <span className="sm:hidden">Actualizado {dayKey(iso, tz).slice(0, 5)} {hhmm(iso, tz)}</span>
             <span className="max-sm:hidden">Actualizado el {dayKey(iso, tz)} a las {hhmm(iso, tz)} {tzOffset(tz, iso)}</span>
           </time>
         ) : <span>Actualizado: sin dato</span>}

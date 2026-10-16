@@ -6,9 +6,9 @@ export const SORTS: { id: Sort; label: string }[] = [
   { id: 'menos-competencia', label: 'Menos competencia' }, { id: 'mas-nuevos', label: 'Más nuevos' },
 ];
 export type Modality = 'online' | 'irl';
-export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean; pais: string | null; abierto: boolean };
+export type Filters = { tipos: ListingType[]; modalidades: Modality[]; ecos: Eco[]; q: string; showClosed: boolean; pais: string | null; abierto: boolean; sinConfirmar: boolean };
 export const ALL_TYPES: ListingType[] = ['hackathon', 'bounty', 'grant'];
-export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null, abierto: true };
+export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], modalidades: [], ecos: [], q: '', showClosed: false, pais: null, abierto: true, sinConfirmar: false };
 
 /** deadline used for open/closed + ordering: deadline, else IRL start */
 export const effDeadline = (l: Listing) => l.deadlineAt ?? (l.modality !== 'online' ? l.startsAt : null);
@@ -19,7 +19,8 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
   if (!f.tipos.includes(l.type)) return false;
   if (f.modalidades.length) { const m: Modality = l.modality === 'online' ? 'online' : 'irl'; if (!f.modalidades.includes(m) && !(l.modality === 'hybrid')) return false; }
   if (f.pais && !matchesPais(l, f.pais)) return false;
-  if (f.abierto && !openToArLatam(l)) return false;
+  if (f.abierto && !openToArLatam(l) && !(f.pais && l.country === f.pais)) return false;
+  if (f.abierto && !f.sinConfirmar && l.eligibility === 'unknown') return false;
   if (f.ecos.length && !ecosOf(l).some((e) => f.ecos.includes(e))) return false;
   if (f.q) {
     const q = norm(f.q);
@@ -74,6 +75,7 @@ export function filtersFromSearch(sp: Record<string, string | string[] | undefin
       q: g('q') ?? '',
       showClosed: g('cerradas') === '1',
       abierto: g('abierto') !== '0',
+      sinConfirmar: g('sinconfirmar') === '1',
       pais: /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null,
     },
     sort: SORTS.some((s) => s.id === orden) ? orden! : 'cierra-pronto',
@@ -88,6 +90,7 @@ export function filtersToSearch(f: Filters, sort: Sort): string {
   if (f.showClosed) p.set('cerradas', '1');
   if (f.pais) p.set('pais', f.pais.toLowerCase());
   if (!f.abierto) p.set('abierto', '0');
+  if (f.abierto && f.sinConfirmar) p.set('sinconfirmar', '1');
   if (sort !== 'cierra-pronto') p.set('orden', sort);
   return p.toString();
 }
