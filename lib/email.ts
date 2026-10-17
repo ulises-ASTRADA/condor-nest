@@ -7,18 +7,22 @@ export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex'
 export const isToken = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f]{64}$/.test(s);
 
 export function confirmEmail(confirmUrl: string, unsubUrl: string) {
-  const html = `<!doctype html><html lang="es"><body style="margin:0;background:#07070b;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:#ecebf5">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#07070b;padding:32px 12px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#101018;border:1px solid #2a2540;border-radius:18px;overflow:hidden">
-<tr><td style="height:4px;background:linear-gradient(90deg,#c6ff3d,#8b5cf6,#22d3ee);background-color:#c6ff3d"></td></tr>
-<tr><td style="padding:32px 32px 8px"><div style="font-family:'Geist Mono',Menlo,monospace;font-size:12px;letter-spacing:.18em;color:#c6ff3d">CONDOR NEST</div>
-<h1 style="margin:14px 0 10px;font-size:24px;line-height:30px;color:#ffffff">Confirmá tu suscripción</h1>
-<p style="margin:0 0 22px;font-size:15px;line-height:23px;color:#a9a6bf">Cada lunes te mandamos los hackathons, bounties y grants de LatAm que cierran pronto y los que tienen poca competencia. Tocá el botón para activar tu suscripción.</p>
-<a href="${confirmUrl}" style="display:inline-block;background:#c6ff3d;color:#0b0b10;font-weight:700;text-decoration:none;padding:13px 26px;border-radius:12px;font-size:15px">Confirmar suscripción</a>
-<p style="margin:22px 0 0;font-size:12px;line-height:18px;color:#7d7a94">El link vence en 48 horas. Si no fuiste vos, ignorá este mail y no te vamos a escribir.</p></td></tr>
-<tr><td style="padding:24px 32px 28px;border-top:1px solid #1f1b30;margin-top:24px;font-size:12px;color:#6d6a84">Hecho en Córdoba · <a href="${unsubUrl}" style="color:#8b8aa6">Darme de baja</a></td></tr>
-</table></td></tr></table></body></html>`;
-  const text = `Confirmá tu suscripción a Condor Nest\n\nAbrí este link para activarla (vence en 48 horas):\n${confirmUrl}\n\nSi no fuiste vos, ignorá este mail.\nDarme de baja: ${unsubUrl}`;
+  // Compact on purpose: on a phone the button must be visible without scrolling. Fixed px sizes so Gmail doesn't upscale.
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Confirmá tu suscripción</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Helvetica,Arial,sans-serif;color:#18181b">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5"><tr><td align="center" style="padding:16px 8px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px">
+<tr><td style="padding:24px">
+<div style="font-size:12px;line-height:16px;letter-spacing:.12em;font-weight:700;color:#52525b">CONDOR NEST</div>
+<h1 style="margin:8px 0 8px;font-size:22px;line-height:28px;font-weight:700;color:#18181b">Confirmá tu suscripción</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:22px;color:#3f3f46">Un toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#c6ff3d" style="border-radius:10px;background:#c6ff3d">
+<a href="${confirmUrl}" style="display:block;height:48px;line-height:48px;font-size:16px;font-weight:700;color:#0b0b10;text-decoration:none;white-space:nowrap;border-radius:10px">Confirmar</a>
+</td></tr></table>
+<p style="margin:16px 0 0;font-size:13px;line-height:19px;color:#71717a">El link vence en 48 h. Si no fuiste vos, ignorá este mail.</p>
+<p style="margin:8px 0 0;font-size:13px;line-height:19px;color:#71717a">Hecho en Córdoba · <a href="${unsubUrl}" style="color:#71717a;text-decoration:underline">Darme de baja</a></p>
+</td></tr></table></td></tr></table></body></html>`;
+  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba · Darme de baja: ${unsubUrl}`;
   return { html, text };
 }
 

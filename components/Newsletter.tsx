@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import { Turnstile, type TurnstileHandle } from './Turnstile';
 type St = 'idle' | 'submitting' | 'success' | 'saved' | 'already' | 'invalid' | 'error';
-const MSG: Partial<Record<St, string>> = { success: '¡Listo! Revisá tu mail para confirmar.', saved: 'Te anotamos. El mail de confirmación todavía no salió: te lo reenviamos en cuanto se active el envío, sin que hagas nada.', already: 'Ya estabas suscripto 🙌', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
+const MSG: Partial<Record<St, string>> = { success: '¡Listo! Te mandamos un mail para confirmar.', saved: 'Te anotamos. El mail de confirmación todavía no salió: te lo reenviamos en cuanto se active el envío, sin que hagas nada.', already: 'Ya estabas suscripto 🙌', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
 
 export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compact' | 'footer' | 'mini' }) {
   const [st, setSt] = useState<St>('idle'); const [email, setEmail] = useState(''); const [shake, setShake] = useState(0);
@@ -45,7 +45,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
               <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{MSG[st]}</span>
             </p>
           )}
-          {st === 'success' && <p className="cn-fade mt-1 pl-[30px] text-xs text-fg-muted">¿No lo ves? Revisá la carpeta de spam.</p>}
+          {st === 'success' && <p className="cn-fade mt-1 pl-[30px] text-xs text-fg-muted">Si no lo ves en un par de minutos, revisá Spam o Promociones y marcalo como "No es spam".</p>}
           {err && <p className="cn-fade text-danger">{MSG[st]}</p>}
         </div>
         {variant !== 'compact' && !mini && <p className="mt-2.5 text-xs text-fg-muted">Podés darte de baja cuando quieras.</p>}
