@@ -1,104 +1,77 @@
-<p align="center">
-  <img src="docs/banner.svg" alt="Condor Nest — Hackathons, bounties y grants para builders de LatAm" width="100%">
-</p>
+# Condor Nest
 
-<p align="center">
-  <a href="https://condor-nest.lat"><img alt="Live" src="https://img.shields.io/badge/live-condor--nest.lat-C6FF3D?style=for-the-badge&labelColor=07080B"></a>
-  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-22E1FF?style=for-the-badge&logo=nextdotjs&logoColor=22E1FF&labelColor=07080B">
-  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres-3DFFA2?style=for-the-badge&logo=supabase&logoColor=3DFFA2&labelColor=07080B">
-  <img alt="Vercel" src="https://img.shields.io/badge/Vercel-Cron-A78BFA?style=for-the-badge&logo=vercel&logoColor=A78BFA&labelColor=07080B">
-  <img alt="Español primero" src="https://img.shields.io/badge/UI-español-FF4FD8?style=for-the-badge&labelColor=07080B">
-</p>
+A Spanish-first opportunity discovery platform for Latin American builders. Condor Nest brings hackathons, bounties, and grants into one searchable feed, with eligibility, deadlines, and ranking signals that help visitors decide where to spend their time.
 
-<p align="center"><code>Un solo feed · menos competencia · deadlines en tu hora local</code></p>
+[Live site](https://condor-nest.lat)
 
----
+![Condor Nest desktop interface](docs/screenshot-desktop.png)
 
-## ◆ Qué es
+## Product and engineering scope
 
-**Condor Nest** junta en un solo feed los **hackathons, bounties y grants** abiertos para builders de Latinoamérica. Español primero, dark-first y pensado para encontrar rápido dónde tenés más chances de ganar.
+- Aggregate opportunities from Superteam Earn, Devpost, and Taikai, alongside manually verified listings.
+- Filter by opportunity type, modality, and ecosystem; show deadlines in the visitor's local time zone.
+- Rank opportunities using reward and participation data. These signals are heuristics, not predictions of winning.
+- Provide detail pages, calendar exports, organizer information, newsletter signup, and an opportunity submission flow.
+- Support discoverability with metadata, JSON-LD, sitemaps, and IndexNow notifications.
 
-<p align="center">
-  <img src="docs/screenshot-desktop.png" alt="Condor Nest en desktop" width="72%">
-  &nbsp;
-  <img src="docs/screenshot-mobile.png" alt="Condor Nest en mobile" width="22%">
-</p>
+## Architecture
 
-## ⚡ Features
+```text
+External opportunity sources → scheduled ingestion → Supabase Postgres
+                                                        ↓
+Visitors → Next.js pages / route handlers → filtered and ranked listings
+                       ↓
+             Newsletter and submission flows → Resend
+```
 
-| | |
-|---|---|
-| 🌎 **Filtro LatAm** | Sólo oportunidades abiertas a builders de LatAm, con elegibilidad marcada en cada card. |
-| 🎯 **Orden "menos competencia"** | Rankea por pozo vs. envíos/inscriptos (≈ USD por envío). |
-| ⏰ **Deadlines en tu hora** | Las fechas se muestran en la zona horaria del visitante (detectada en el navegador, con fallback a Buenos Aires), con "cierra en…" en vivo. |
-| 🛰️ **Fuentes** | Superteam Earn API · Devpost · Taikai · eventos curados desde X (verificados en su página oficial y con el post de origen citado). |
-| 🔎 **Filtros** | Tipo, modalidad (online / IRL), ecosistema (Solana, IA, Ethereum) y "Ver cerradas". |
-| 🎧 **Lo-fi de fondo** | Con fade-in al iniciar y fade-out al pausar o cambiar de pestaña. |
-| 📬 **Newsletter** | "Cada lunes, en tu mail": lo que cierra pronto y lo que tiene poca competencia. |
+**Stack:** Next.js 15 App Router, React 19, TypeScript, Tailwind CSS, Motion, Supabase/Postgres, Resend, and Vercel Cron.
 
-## 🧱 Stack
+| Area | Where to review |
+| --- | --- |
+| Ingestion and source normalization | `lib/ingest.ts`, `app/api/cron/ingest/route.ts` |
+| Ranking logic and tests | `lib/rank.ts`, `lib/rank.test.ts` |
+| Browsing and detail experience | `components/Feed.tsx`, `app/o/[slug]/page.tsx` |
+| Newsletter and submissions | `app/api/newsletter/`, `app/api/publicar/` |
+| Database access and security changes | `lib/server-supabase.ts`, `supabase/migrations/` |
 
-- **Next.js 15** (App Router, TypeScript) + Tailwind + Motion
-- **Supabase** (Postgres + RLS + Vault): tablas `listings`, `ingest_runs`, `newsletter_subscribers`
-- **Vercel**: hosting + Vercel Cron
-- Tipografías **Geist** / **Geist Mono**; tokens de color en `app/globals.css`
+The database migrations document changes to row-level security, confirmation flows, unsubscribe tokens, and durable rate limits. Those files describe the intended database configuration; a deployment must apply them to receive those protections.
 
-<table><tr>
-<td><img src="https://img.shields.io/badge/-%23C6FF3D-C6FF3D?style=flat-square" alt=""> lime</td>
-<td><img src="https://img.shields.io/badge/-%2322E1FF-22E1FF?style=flat-square" alt=""> cyan</td>
-<td><img src="https://img.shields.io/badge/-%23A78BFA-A78BFA?style=flat-square" alt=""> violet</td>
-<td><img src="https://img.shields.io/badge/-%23FF4FD8-FF4FD8?style=flat-square" alt=""> magenta</td>
-<td><img src="https://img.shields.io/badge/-%2307080B-07080B?style=flat-square" alt=""> bg</td>
-</tr></table>
-
-## 🛠️ Setup local
+## Run locally
 
 ```bash
 git clone https://github.com/ulises-ASTRADA/condor-nest.git
 cd condor-nest
-npm install
-cp .env.example .env.local   # completá los valores (nunca los commitees)
-npm run dev                  # http://localhost:3000
-npm test                     # tests del ranking
+npm ci
+cp .env.example .env.local
+# Supply your own Supabase and service credentials.
+npm run dev
 ```
 
-### Variables de entorno
+Open `http://localhost:3000`. A working Supabase project and the expected database schema are required for data-backed features. The migration directory contains incremental changes rather than a guaranteed one-command bootstrap of a new database.
 
-Sólo los **nombres**; los valores viven en `.env.local` y en Vercel.
+| Configuration | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public Supabase client configuration |
+| `SUPABASE_SERVICE_ROLE_KEY`, `INGEST_TOKEN` | Server ingestion and database operations |
+| `CRON_SECRET` | Scheduled route authorization |
+| `SITE_URL` | Canonical site origin and email links |
+| `RESEND_API_KEY`, `RESEND_FROM`, `PUBLICAR_NOTIFY_TO` | Email delivery and submission notifications |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional anti-bot integration |
+| `AFFILIATE_URL` | Optional affiliate destination |
 
-| Variable | Dónde | Para qué |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | cliente | URL del proyecto Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | cliente | Key pública (anon) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **sólo server** | Escrituras del ingest. Nunca con prefijo `NEXT_PUBLIC_`. |
-| `INGEST_TOKEN` | server | Autoriza `cn_ingest` en la base |
-| `CRON_SECRET` | server | Autentica las llamadas de Vercel Cron |
-| `AFFILIATE_URL` | server | Link de afiliado (Mercado Libre) |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | cliente / server | Anti-bot del newsletter (opcional) |
-| `SITE_URL` | server | Origen público (`https://condor-nest.lat`) para links de confirmación |
-| `RESEND_API_KEY` / `RESEND_FROM` | server | Newsletter y avisos de /publicar. `RESEND_FROM` solo con dominio verificado en Resend |
-| `PUBLICAR_NOTIFY_TO` | server | Destino de avisos de /publicar (default: mail de Ulises) |
+Keep server credentials outside version control and never prefix them with `NEXT_PUBLIC_`. The IndexNow key and its verification file are intentionally public.
 
-## 🔁 Ingest diario
+## Validation and operations
 
-`vercel.json` programa `GET /api/cron/ingest` con `0 11 * * *` → **08:00 ART**. En el plan Hobby, Vercel puede dispararlo en cualquier momento dentro de esa hora (08:00–08:59 ART).
+```bash
+npm test         # Ranking tests
+npm run build    # Production build
+```
 
-- Trae Superteam Earn, Devpost y Taikai; deduplica por `(source, external_id)`.
-- Cada corrida queda registrada en `ingest_runs`.
-- Los eventos curados (Luma / X) se cargan sólo después de verificarlos en la página oficial (`verified_url`). Ver [`docs/x-sweep.md`](docs/x-sweep.md).
+`vercel.json` schedules ingestion daily at 11:00 UTC. Source availability and platform scheduling behavior affect freshness. Curated listings should be checked against their official source; see [the curation procedure](docs/x-sweep.md).
 
-## 🔐 Seguridad
+Newsletter delivery requires verified Resend configuration. Affiliate links may generate a commission. The background audio has a separate [license note](public/audio/LICENSE.md).
 
-Headers estrictos (CSP, X-Frame-Options, nosniff), grants mínimos en la base, token de ingest en Supabase Vault e indexación activada (robots.txt, sitemap.xml, llms.txt y JSON-LD) desde el 14/10/2026; `noindex` solo en /api, /newsletter y previews.
+## Review focus
 
-## 🤝 Transparencia
-
-El link de Mercado Libre es de afiliado: Condor Nest recibe comisión y no cambia el precio.
-
-## 🎵 Música
-
-La pista de fondo (`public/audio/condor-nest-lofi.mp3`) es un **original de Lo-Fi Mate** hecho para Condor Nest.
-
----
-
-<p align="center"><sub>Hecho en Córdoba, para LatAm · <a href="https://condor-nest.lat">condor-nest.lat</a></sub></p>
+This project demonstrates full-stack product development: API ingestion, relational data modeling, ranking, user-facing discovery, email workflows, and deployment configuration. Production traffic, conversion, and uptime claims are intentionally omitted because they are not established by the source code.
