@@ -3,7 +3,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
-import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, type Modality, filtersToSearch, matches, sortListings, isOpen, effDeadline, type Filters, type Sort } from '@/lib/rank';
+import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, cityOptions, type Filters, type Sort } from '@/lib/rank';
+import { citySlug } from '@/lib/city';
 import dynamic from 'next/dynamic';
 const Newsletter = dynamic(() => import('./Newsletter').then((x) => x.Newsletter));
 import { Affiliate } from './Affiliate';
@@ -38,13 +39,23 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 }
 
 function Counter({ n }: { n: number }) {
-  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'oportunidad' : 'oportunidades'}</span>;
+  // Two instances (mobile row / desktop filter row); the hidden one is display:none, so only one is announced.
+  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'convocatoria' : 'convocatorias'}</span>;
+}
+/** Quick-filter pill (spec: 36px visual, 44px touch target, lime when on). */
+function FChip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" aria-pressed={on} onClick={onClick} className="fchip-btn flex min-h-tap shrink-0 items-center focus-visible:outline-none">
+      <span className={`fchip${on ? ' on' : ''}`}>{children}</span>
+    </button>
+  );
 }
 
 export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCards }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; cards: React.ReactNode; featuredCards: React.ReactNode }) {
   // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm (listings restricted to another country are always hidden).
   const [f, setF] = useState<Filters>(initial.f);
-  const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso })); setLimit(PAGE); };
+  const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso, ciudad: null })); setLimit(PAGE); }; // changing country resets the city
+  const cityOpts = useMemo(() => cityOptions(listings), [listings]);
   const paises = useMemo(() => Object.keys(COUNTRY_ES).filter((c) => listings.some((l) => inCountry(l, c))).sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es')), [listings]);
   const paisSelect = (cls: string) => (
     <label className={cls}><span className="sr-only">País</span>
@@ -65,7 +76,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     if (lastQs.current === null) { lastQs.current = spStr; return; }
     if (spStr === lastQs.current) return;
     lastQs.current = spStr;
-    const next = filtersFromSearch(Object.fromEntries(sp.entries()));
+    const next = filtersFromSearch(Object.fromEntries(sp.entries()), cityOpts);
     setF(next.f); setSort(next.sort); setLimit(PAGE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spStr]);
@@ -94,6 +105,13 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const total = organic.length + featured.length;
   const dataless = sort === 'menos-competencia' ? shown.findIndex((l) => l.rewardUsd == null || l.competitors == null || !isOpen(l, nowD)) : -1;
   const vis = useMemo(() => listings.filter((l) => matches(l, f, nowD)), [listings, f, nowD]);
+  // City select: cities of the selected country (all LatAm otherwise), counted with every other active filter.
+  const cityCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of listings) if (l.modality !== 'online' && l.city && matches(l, { ...f, ciudad: null }, nowD)) { const k = citySlug(l.city); m.set(k, (m.get(k) ?? 0) + 1); }
+    return m;
+  }, [listings, f, nowD]);
+  const cityList = cityOpts.filter((c) => (!f.pais || c.countries.includes(f.pais)) && ((cityCounts.get(c.slug) ?? 0) > 0 || c.slug === f.ciudad));
   const closingWeek = useMemo(() => sortListings(listings.filter((l) => { const d = effDeadline(l); return d && isOpen(l, nowD) && new Date(d).getTime() - nowD.getTime() < 7 * 864e5 && matches(l, { ...f, q: '' }, nowD); }), 'cierra-pronto', nowD).slice(0, 5), [listings, f, nowD]);
   // Cards are server-rendered (Server Component) in #feed-list; this island only decides which show and in what order.
   const css = useMemo(() => {
@@ -125,10 +143,30 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
         <Chip on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Chip>
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
-        {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'Presencial' : 'Online'}</Chip>)}
         {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
         <Chip on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Chip>
       </div>
+    </div>
+  );
+  const anyFilter = !!(f.ciudad || f.virtual || f.abiertoTodos || f.pais || f.ecos.length || f.showClosed || !f.sinConfirmar || f.tipos.length !== ALL_TYPES.length);
+  const clearAll = () => { setF({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES], q: f.q }); setLimit(PAGE); };
+  // Quick filters above the feed (not sticky). Replaces the old Online/Presencial controls: "Virtual" = ?virtual=1 (legacy ?modalidad=online maps to it).
+  const filterRow = (
+    <div className="mt-3 flex items-center gap-3">
+      <div role="group" aria-label="Filtros rápidos" className="chip-row -mx-4 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0">
+        <label className="relative flex min-h-tap shrink-0 items-center">
+          <span className="sr-only">Ciudad</span>
+          <select value={f.ciudad ?? ''} onChange={(e) => set({ ciudad: e.target.value || null })} className={`fchip cursor-pointer appearance-none pr-7${f.ciudad ? ' on' : ''}`}>
+            <option value="" className="bg-surface text-fg">Ciudad: Todas</option>
+            {cityList.map((c) => <option key={c.slug} value={c.slug} className="bg-surface text-fg">{c.name} ({cityCounts.get(c.slug) ?? 0})</option>)}
+          </select>
+          <span aria-hidden="true" className={`pointer-events-none absolute right-3 text-xs ${f.ciudad ? 'text-[#07080B]' : 'text-fg-muted'}`}>▾</span>
+        </label>
+        <FChip on={f.virtual} onClick={() => set({ virtual: !f.virtual })}>Virtual</FChip>
+        <FChip on={f.abiertoTodos} onClick={() => set({ abiertoTodos: !f.abiertoTodos })}>Abierto a todos</FChip>
+        {anyFilter && <button type="button" onClick={clearAll} className="min-h-tap shrink-0 px-1 text-sm text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime">Limpiar filtros</button>}
+      </div>
+      <p className="hidden shrink-0 text-sm text-fg-muted lg:block"><Counter n={total} /></p>
     </div>
   );
   const sideControls = (
@@ -137,8 +175,6 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       {paisSelect('block')}
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
-      <H4>Modalidad</H4>
-      {(['online', 'irl'] as Modality[]).map((m) => <Check key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'Presencial' : 'Online'}</Check>)}
       <H4>Ecosistema</H4>
       {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
       <H4>Estado</H4>
@@ -163,8 +199,9 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
             </div>
           )}
           <div className="lg:hidden">{mobileControls}</div>
-          <div className="mt-3.5 flex items-center justify-between gap-2 text-sm">
-            <p className="text-sm text-fg-muted"><Counter n={total} /></p>
+          {filterRow}
+          <div className="mt-2 flex items-center justify-between gap-2 text-sm lg:justify-end">
+            <p className="text-sm text-fg-muted lg:hidden"><Counter n={total} /></p>
             <label className="fx-sort relative flex items-center gap-1.5 rounded-[10px] border border-lime/50 px-2.5 py-1.5 text-lime focus-within:ring-2 focus-within:ring-lime">
               <span aria-hidden="true">⇅</span><span className="sr-only">Ordenar</span>
               <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="min-h-[28px] cursor-pointer appearance-none bg-transparent pr-4 text-lime focus:outline-none">
@@ -210,7 +247,12 @@ function Empty({ f, set, unconf }: { f: Filters; set: (p: Partial<Filters>) => v
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
   if (unconf > 0) { msg = `Hay ${unconf} ${unconf === 1 ? 'resultado' : 'resultados'} con estos filtros, pero con elegibilidad sin confirmar.`; action = <button className={btn} onClick={() => set({ sinConfirmar: true })}>Mostrar sin confirmar</button>; }
   else if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
-  return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
+  return (
+    <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center">
+      <p>{msg}</p>{action}
+      <p className="mt-4 text-sm text-fg-muted">¿Organizás uno que no está acá? <Link href="/publicar" prefetch={false} className="text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan">Publicalo gratis</Link></p>
+    </div>
+  );
 }
 
 function rel(ms: number) {

@@ -1,5 +1,6 @@
 import type { Listing } from './types';
 import { ecosOf } from './eco';
+import { normCity } from './city';
 import { DEFAULT_FILTERS, effDeadline, inCountry, isOpen, matches, openToArLatam, sortListings } from './rank';
 
 export type Faq = { q: string; a: string };
@@ -58,7 +59,7 @@ export const HUBS: Hub[] = [
       { q: '¿Qué grants lista Condor Nest?', a: 'Los que están abiertos explícitamente a LatAm o a un país de LatAm. También listamos convocatorias globales abiertas a participantes de Latinoamérica. No listamos las que no aclaran desde dónde se puede participar.' },
       ELIG, UPDATED, PUBLISH,
     ] },
-  { slug: 'hackathons-online', label: 'Hackathons online', h1: 'Hackathons online para LatAm', noun: ['hackathon online', 'hackathons online'], where: 'para participar desde LatAm', feed: '/?tipo=hackathon&modalidad=online',
+  { slug: 'hackathons-online', label: 'Hackathons online', h1: 'Hackathons online para LatAm', noun: ['hackathon online', 'hackathons online'], where: 'para participar desde LatAm', feed: '/?tipo=hackathon&virtual=1',
     match: (l) => l.type === 'hackathon' && l.modality === 'online',
     faqs: () => [
       { q: '¿Puedo participar desde cualquier país?', a: 'Depende de cada uno: algunos son online pero restringidos a un país. La etiqueta de elegibilidad de cada tarjeta lo indica según la fuente oficial.' },
@@ -119,7 +120,6 @@ export function answerLine(h: Hub, items: Listing[], now: Date): string {
 }
 const STUDENT_ONLY = /^solo estudiantes/i;
 export const studentOnly = (l: Listing) => STUDENT_ONLY.test(l.eligibilityShort ?? '') || STUDENT_ONLY.test(l.eligibilityNote ?? '');
-const normCity = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
 /** In-person items grouped by DB city: pinned cities (even if empty) plus any other city present; cities with events first. */
 export function cityGroups(h: Hub, items: Listing[]): { city: string; items: Listing[]; pinned: boolean }[] {
   const irl = items.filter((l) => l.modality !== 'online' && l.city);

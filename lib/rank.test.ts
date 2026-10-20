@@ -14,10 +14,10 @@ test('menos competencia: eligible first, then score, data-less last by deadline'
   const r = sortListings([L({ id: 'a' }), L({ id: 'b', rewardUsd: 100, competitors: 0 }), L({ id: 'c', rewardUsd: 1000, competitors: 99 }), L({ id: 'd', deadlineAt: '2098-01-01T00:00:00Z' })], 'menos-competencia', now);
   assert.deepEqual(r.map((x) => x.id), ['b', 'c', 'd', 'a']);
 });
-test('type + IRL filters', () => {
+test('type + virtual filters', () => {
   assert.equal(matches(L({}), { ...DEFAULT_FILTERS, tipos: ['hackathon'] }, now), false);
-  assert.equal(matches(L({ modality: 'irl' }), { ...DEFAULT_FILTERS, modalidades: ['irl'] }, now), true);
-  assert.equal(matches(L({ modality: 'online' }), { ...DEFAULT_FILTERS, modalidades: ['irl'] }, now), false);
+  assert.equal(matches(L({ modality: 'irl' }), { ...DEFAULT_FILTERS, virtual: true }, now), false);
+  assert.equal(matches(L({ modality: 'online' }), { ...DEFAULT_FILTERS, virtual: true }, now), true);
   assert.equal(matches(L({ title: 'Agentic Banking MCP' }), { ...DEFAULT_FILTERS, ecos: ['IA'] }, now), true);
   assert.equal(matches(L({ title: 'Write a thread' }), { ...DEFAULT_FILTERS, ecos: ['Ethereum'] }, now), false);
 });
@@ -59,4 +59,54 @@ test('venueLines: all-or-none per list, only DB venues', async () => {
   assert.deepEqual(venueLines([irl('UTN'), { ...irl('Somewhere'), modality: 'online' }]), [null, null]);
   assert.deepEqual(venueLines([irl('UTN')]), ['UTN']);
   assert.deepEqual(venueLines([]), []);
+});
+
+// ---- feed-filters: ?ciudad / ?virtual / ?abierto + access rule ----
+import { filtersFromSearch, filtersToSearch, cityOptions, access, hasRequirements } from './rank.ts';
+const cityRows = [L({ id: 'c1', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'c2', modality: 'hybrid', city: 'Cordoba', country: 'AR' }), L({ id: 'c3', modality: 'irl', city: 'Ciudad de México', country: 'MX' }), L({ id: 'o1', modality: 'online', city: 'Rosario' })];
+const opts = cityOptions(cityRows);
+test('cityOptions: in-person/hybrid only, accent-insensitive slugs', () => {
+  assert.deepEqual(opts.map((c) => c.slug), ['ciudad-de-mexico', 'cordoba']);
+  assert.deepEqual(opts.find((c) => c.slug === 'cordoba')!.countries, ['AR']);
+});
+test('parse ciudad/virtual/abierto; invalid values ignored', () => {
+  const p = (q: Record<string, string>) => filtersFromSearch(q, opts).f;
+  assert.equal(p({ ciudad: 'cordoba' }).ciudad, 'cordoba');
+  assert.equal(p({ ciudad: 'CORDOBA' }).ciudad, 'cordoba');
+  assert.equal(p({ ciudad: 'xx' }).ciudad, null);
+  assert.equal(p({ ciudad: 'rosario' }).ciudad, null); // only an online listing has it
+  assert.equal(p({ ciudad: '<script>' }).ciudad, null);
+  assert.equal(filtersFromSearch({ ciudad: 'cordoba' }).f.ciudad, null); // no derived list -> nothing accepted
+  assert.equal(p({ ciudad: 'cordoba', pais: 'mx' }).ciudad, null); // city outside the selected country
+  assert.equal(p({ virtual: '1' }).virtual, true);
+  for (const v of ['true', '0', 'yes', '']) { assert.equal(p({ virtual: v }).virtual, false); assert.equal(p({ abierto: v }).abiertoTodos, false); }
+  assert.equal(p({ abierto: '1' }).abiertoTodos, true);
+  assert.equal(p({ modalidad: 'online' }).virtual, true); // legacy URL
+  assert.equal(p({ modalidad: 'online,irl' }).virtual, false);
+});
+test('filtersToSearch round-trip', () => {
+  const { f, sort } = filtersFromSearch({ ciudad: 'cordoba', virtual: '1', abierto: '1', pais: 'ar' }, opts);
+  assert.equal(filtersToSearch(f, sort), 'pais=ar&ciudad=cordoba&virtual=1&abierto=1');
+  assert.equal(filtersToSearch(filtersFromSearch({ modalidad: 'online' }, opts).f, 'cierra-pronto'), 'virtual=1');
+});
+test('access rule: restricted/ar, age, student-only; listing who is welcome is not a requirement', () => {
+  assert.equal(access(L({ eligibility: 'restricted' })), 'requisitos');
+  assert.equal(access(L({ eligibility: 'ar' })), 'requisitos');
+  assert.equal(access(L({ eligibility: 'unknown' })), 'confirmar');
+  assert.equal(access(L({ eligibilityShort: 'Abierto · +18 años' })), 'requisitos');
+  assert.equal(access(L({ eligibilityShort: 'Abierto · desde 13 años' })), 'requisitos');
+  assert.equal(access(L({ eligibilityNote: 'Solo alumnos de la UNAM mayores de edad' })), 'requisitos');
+  assert.equal(hasRequirements(L({ eligibilityNote: 'Estudiantes de Ingeniería en Sistemas o afines.' })), true);
+  assert.equal(access(L({ eligibilityShort: 'Abierto a todos · presencial BA', eligibilityNote: 'Developers, diseñadores, founders, estudiantes y cualquier persona con ganas de construir. Equipos de hasta 4 personas.' })), 'todos');
+  assert.equal(access(L({ eligibilityNote: 'La página oficial no publica restricciones de edad ni de residencia.' })), 'todos');
+  assert.equal(access(L({ eligibility: 'latam' })), 'todos');
+});
+test('combined filters: city + virtual + abierto', () => {
+  const rows = [L({ id: 'a', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'b', modality: 'hybrid', city: 'Córdoba', country: 'AR' }), L({ id: 'c', modality: 'hybrid', city: 'Córdoba', country: 'AR', eligibilityShort: 'Abierto · +18 años' }), L({ id: 'd', modality: 'online' })];
+  const run = (q: Record<string, string>) => { const f = filtersFromSearch(q, cityOptions(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
+  assert.deepEqual(run({ ciudad: 'cordoba' }), ['a', 'b', 'c']);
+  assert.deepEqual(run({ virtual: '1' }), ['b', 'c', 'd']);
+  assert.deepEqual(run({ ciudad: 'cordoba', virtual: '1' }), ['b', 'c']);
+  assert.deepEqual(run({ ciudad: 'cordoba', virtual: '1', abierto: '1' }), ['b']);
+  assert.deepEqual(run({ ciudad: 'xx', abierto: '1' }), ['a', 'b', 'd']);
 });

@@ -99,6 +99,13 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
 @keyframes shimmer { 0% { transform: translateX(-120%) skewX(-20deg) } 100% { transform: translateX(220%) skewX(-20deg) } }
 
 .chip-row { scrollbar-width: none; } .chip-row::-webkit-scrollbar { display: none; }
+/* Quick filters above the feed (Pixel Mate spec 2026-10-20): 36px pill, 44px touch target (wrapper), lime when on */
+.fchip { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: transparent; color: rgb(var(--fg)); font-size: 14px; line-height: 1; white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+.light .fchip { border-color: rgba(0,0,0,.2); }
+.fchip.on { background: #C6FF3D; border-color: #C6FF3D; color: #07080B; }
+select.fchip { padding-right: 28px; }
+.fchip-btn:focus-visible .fchip, select.fchip:focus-visible { outline: 2px solid rgb(var(--lime)); outline-offset: 2px; }
 .skel { background: linear-gradient(90deg, rgb(var(--surface-2)) 0%, rgb(var(--border)) 50%, rgb(var(--surface-2)) 100%); background-size: 200% 100%; animation: skel 1.2s linear infinite; }
 @keyframes skel { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 @view-transition { navigation: auto; }

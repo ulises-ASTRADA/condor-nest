@@ -1,6 +1,6 @@
 import { OG_IMAGE } from '@/lib/site';
 import { getListings, lastIngest } from '@/lib/supabase';
-import { filtersFromSearch, matches } from '@/lib/rank';
+import { cityOptions, filtersFromSearch, matches } from '@/lib/rank';
 import { Feed } from '@/components/Feed';
 import { ListingCard } from '@/components/ListingCard';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   // Real latest data change: newest listing update, or the last ingest run if more recent.
   const updated = [ingested, ...listings.map((l) => l.updatedAt)].filter(Boolean).sort().pop() ?? null;
   const now = new Date();
-  const { f, sort } = filtersFromSearch(sp);
+  const { f, sort } = filtersFromSearch(sp, cityOptions(listings)); // invalid ?ciudad= is dropped here
   const open = listings.filter((l) => isOpen(l, now)).length;
   const vis = listings.filter((l) => matches(l, f, now)); const unc = vis.filter((l) => l.eligibility === 'unknown').length;
   // ItemList = exactly the cards visible on first paint (same filters/sort as the feed island).
