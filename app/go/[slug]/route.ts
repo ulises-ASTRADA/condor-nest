@@ -1,6 +1,7 @@
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { getListing } from '@/lib/supabase';
 import { serverRpc } from '@/lib/server-supabase';
+import { VALID_SLUG, goFallback, refPath } from '@/lib/go';
 
 // /go/<slug> → 302 to the listing's stored apply_url (never a user-supplied URL), counting the click.
 // What counts as a click (documented for analytics):
@@ -9,7 +10,10 @@ import { serverRpc } from '@/lib/server-supabase';
 //   - Not a known bot/crawler/tool; the User-Agent is checked in memory only and NEVER stored.
 //   - Not a repeat: a first-party cookie per listing (value "1", no identifier, 30 min, Path=/go/) marks
 //     that this browser was already counted; repeats within the window redirect but are not inserted.
-// Stored per click: listing id + slug, timestamp, referrer hostname only. No IP, no UA, no cookie value.
+// Stored per click: listing id + slug, timestamp, referrer hostname, and the condor-nest page PATH the click came from
+// (only when the Referer is this site; pathname only, no query). No IP, no UA, no cookie value.
+// Unknown slug or no apply_url: 302 to same-origin /o/<slug> if that page exists, else / (never off-site, never counted).
+// Malformed slug: 400.
 export const dynamic = 'force-dynamic';
 
 const WINDOW_S = 30 * 60;
@@ -34,9 +38,13 @@ function refDomain(req: NextRequest): string | null {
 }
 
 async function handle(req: NextRequest, slug: string, count: boolean) {
-  const l = slug.length <= 200 ? await getListing(slug).catch(() => null) : null;
+  if (!VALID_SLUG.test(slug)) {
+    return new NextResponse('Solicitud inválida', { status: 400, headers: { ...baseHeaders, 'content-type': 'text/plain; charset=utf-8' } });
+  }
+  const l = await getListing(slug).catch(() => null);
   if (!l || !l.applyUrl || !UUID.test(l.id)) {
-    return new NextResponse('No encontrado', { status: 404, headers: { ...baseHeaders, 'content-type': 'text/plain; charset=utf-8' } });
+    // Relative Location: always same-origin. Nothing is recorded.
+    return new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: goFallback(slug, !!l) } });
   }
   const res = new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: l.applyUrl } });
   const cookie = `cng_${l.id.replace(/-/g, '')}`;
@@ -45,9 +53,10 @@ async function handle(req: NextRequest, slug: string, count: boolean) {
   if (counted) {
     res.cookies.set(cookie, '1', { httpOnly: true, secure: true, sameSite: 'lax', path: '/go/', maxAge: WINDOW_S });
     const ref = refDomain(req);
+    const path = refPath(req.headers.get('referer'), req.headers.get('host'));
     // Non-blocking: runs after the redirect is sent; failures never affect the user.
     after(async () => {
-      try { await serverRpc('cn_record_click', { p_listing: l.id, p_ref: ref }); }
+      try { await serverRpc('cn_record_click', { p_listing: l.id, p_ref: ref, p_path: path }); }
       catch (e) { console.warn('cn_record_click failed', (e as Error).message); }
     });
   }

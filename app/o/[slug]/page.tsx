@@ -100,6 +100,9 @@ export default async function Detail({ params }: P) {
   const prize = prizePhrase(l); const close = closeIso(l); const when = whenText(l, open);
   const officialUrl = l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl;
   let officialHost: string | null = null; try { officialHost = officialUrl ? new URL(officialUrl).hostname.replace(/^www\./, '') : null; } catch {}
+  // Through /go/ (counted) only when /go/ lands on the same site the visible text names: /go/ always redirects to
+  // apply_url, so if the official link shown is on another host (verified_url ≠ apply_url host), keep it direct.
+  const officialViaGo = !!l.applyUrl && !!officialHost && bareHost(l.applyUrl) === bareHost(officialUrl);
   const updated = l.updatedAt || l.createdAt;
   // The intro already states the prize: drop prize-only bullets from the summary (and the big rewardText box) to avoid repeating it.
   const prizeInIntro = !!prize;
@@ -146,7 +149,7 @@ export default async function Detail({ params }: P) {
           <section aria-labelledby="epp" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
             <h2 id="epp" className="mb-1.5 font-mono text-xs uppercase tracking-[.08em] text-lime">En pocas palabras</h2>
             <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'un hackathon'} {modalityText(l)}{l.organizer ? <>, organizado por {l.organizer}</> : null}. {whoSentence(l)}</p>
-            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
+            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialViaGo ? goPath(l.slug) : officialUrl} target="_blank" rel={officialViaGo ? (l.featured ? "sponsored nofollow noopener" : "nofollow noopener") : (l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer")} className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
           </section>
           {about && l.organizer && <OrgAbout name={l.organizer} about={about} />}
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
