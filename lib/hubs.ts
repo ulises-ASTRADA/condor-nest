@@ -26,7 +26,7 @@ const country = (iso: string, name: string, slug: string, cities?: string[]): Hu
   feed: `/?tipo=hackathon&pais=${iso.toLowerCase()}`,
   match: (l) => l.type === 'hackathon' && inCountry(l, iso),
   faqs(_n, items, now) { return [
-    { q: `¿Qué hackathons hay abiertas en ${name}?`, a: `${answerLine(this, items, now)} Son las que se hacen en ${name} o están restringidas a participantes de ${name}, ordenadas por fecha de inicio.` },
+    { q: `¿Qué hackathons hay abiertos en ${name}?`, a: `${answerLine(this, items, now)} Son los que se hacen en ${name} o están restringidos a participantes de ${name}.` },
     ELIG, UPDATED, TZ, PUBLISH,
   ]; },
 });
@@ -58,7 +58,7 @@ export const HUBS: Hub[] = [
   { slug: 'hackathons-online', label: 'Hackathons online', h1: 'Hackathons online para LatAm', noun: ['hackathon online', 'hackathons online'], where: 'para participar desde LatAm', feed: '/?tipo=hackathon&modalidad=online',
     match: (l) => l.type === 'hackathon' && l.modality === 'online',
     faqs: () => [
-      { q: '¿Puedo participar desde cualquier país?', a: 'Depende de cada una: algunas son online pero restringidas a un país. La etiqueta de elegibilidad de cada tarjeta lo indica según la fuente oficial.' },
+      { q: '¿Puedo participar desde cualquier país?', a: 'Depende de cada uno: algunos son online pero restringidos a un país. La etiqueta de elegibilidad de cada tarjeta lo indica según la fuente oficial.' },
       UPDATED, TZ, FREE, PUBLISH,
     ] },
 ];
@@ -81,30 +81,49 @@ export const monthDeYear = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZ
 
 const dm = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'numeric' }).format(new Date(iso));
 const dmy = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
-/** "shippear #3 (Rosario, 24/10)": city and start date only when the DB has them. */
-export const shortRef = (l: Listing, withCity = true) => { const bits = [withCity ? (l.modality !== 'online' ? l.city : 'online') : null, l.startsAt ? dm(l.startsAt) : null].filter(Boolean); return bits.length ? `${l.title} (${bits.join(', ')})` : l.title; };
-const joinY = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
-/** Self-contained answer sentence ("Al 20/10/2026 hay 5 hackathons abiertas en Argentina: …"). Up to 5 named; more → 3 + "y N más". */
-export function answerLine(h: Hub, items: Listing[], now: Date): string {
-  const n = items.length; const ab = hubOrder(h) === 'cierre' ? 'abiertos' : 'abiertas';
-  if (!n) return `Al ${dmy(now)} no hay ${h.noun[1]} ${ab} ${h.where}.`;
-  const named = (n > 5 ? items.slice(0, 3) : items).map((l) => shortRef(l));
-  const rest = n > 5 ? [...named, `${n - 3} más`] : named;
+const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** Short display name derived from the DB title only (no new facts): text before ':', "A · B" → "A de B",
+ *  minus a leading "Hackathon/Hackatón", a trailing year and a trailing city that repeats the DB city. Falls back to the title. */
+export function shortName(l: Listing): string {
+  let t = l.title.split(':')[0].trim();
+  t = t.replace(/\s+(19|20)\d{2}$/, '').trim();
+  t = t.replace(/^hackat(h)?[oó]n\s+/i, '').trim();
+  if (l.city) t = t.replace(new RegExp(`\\s+(en\\s+)?${esc(l.city)}$`, 'i'), '').trim();
+  t = t.replace(/\s+·\s+/g, ' de ');
+  return t.length >= 3 ? t : l.title;
+}
+/** "(Buenos Aires, 7/11, Digital House)": city (optional), start date, venue, only when the DB has them. */
+export const refDetails = (l: Listing, { city = true, venue = false } = {}) => {
+  const bits = [city ? (l.modality !== 'online' ? l.city : 'online') : null, l.startsAt ? dm(l.startsAt) : null, venue && l.modality !== 'online' ? l.venue : null].filter(Boolean);
+  return bits.length ? ` (${bits.join(', ')})` : '';
+};
+export const startDm = (l: Listing) => (l.startsAt ? dm(l.startsAt) : null);
+export const shortRef = (l: Listing) => `${shortName(l)}${refDetails(l)}`;
+export const joinY = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
+/** Pieces of the self-contained answer ("Al 20/10/2026 hay 5 hackathons abiertos en Argentina, todos presenciales: …"). Up to 5 named; more → 3 + "y N más". */
+export function answerParts(h: Hub, items: Listing[], now: Date): { lead: string; named: Listing[]; more: number } {
+  const n = items.length;
+  if (!n) return { lead: `Al ${dmy(now)} no hay ${h.noun[1]} abiertos ${h.where}.`, named: [], more: 0 };
+  const named = n > 5 ? items.slice(0, 3) : items;
   const irl = items.filter((l) => l.modality !== 'online').length;
-  const all = irl === n && n > 1 ? ', todas presenciales' : '';
-  return `Al ${dmy(now)} hay ${n} ${n === 1 ? h.noun[0] : h.noun[1]} ${n === 1 ? ab.slice(0, -1) : ab} ${h.where}${all}: ${joinY(rest)}.`;
+  const all = irl === n && n > 1 ? ', todos presenciales' : '';
+  return { lead: `Al ${dmy(now)} hay ${n} ${n === 1 ? h.noun[0] : h.noun[1]} ${n === 1 ? 'abierto' : 'abiertos'} ${h.where}${all}: `, named, more: n > 5 ? n - 3 : 0 };
+}
+export function answerLine(h: Hub, items: Listing[], now: Date): string {
+  const { lead, named, more } = answerParts(h, items, now);
+  if (!named.length) return lead;
+  return `${lead}${joinY([...named.map(shortRef), ...(more ? [`${more} más`] : [])])}.`;
 }
 const STUDENT_ONLY = /^solo estudiantes/i;
 export const studentOnly = (l: Listing) => STUDENT_ONLY.test(l.eligibilityShort ?? '') || STUDENT_ONLY.test(l.eligibilityNote ?? '');
-/** Open to everyone and the official page explicitly mentions students (from the stored eligibility note). */
-export const studentsWelcome = (l: Listing) => !studentOnly(l) && /estudiantes/i.test(l.eligibilityNote ?? '');
 const normCity = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
-/** In-person items grouped by DB city: pinned cities first (even if empty), then any other city present. */
+/** In-person items grouped by DB city: pinned cities (even if empty) plus any other city present; cities with events first. */
 export function cityGroups(h: Hub, items: Listing[]): { city: string; items: Listing[]; pinned: boolean }[] {
   const irl = items.filter((l) => l.modality !== 'online' && l.city);
   const pinned = (h.cities ?? []).map((c) => ({ city: c, pinned: true, items: irl.filter((l) => normCity(l.city!) === normCity(c)) }));
   const seen = new Set((h.cities ?? []).map(normCity));
   const others = new Map<string, Listing[]>();
   for (const l of irl) { const k = normCity(l.city!); if (seen.has(k)) continue; if (!others.has(l.city!)) others.set(l.city!, []); others.get(l.city!)!.push(l); }
-  return [...pinned, ...[...others].map(([city, xs]) => ({ city, items: xs, pinned: false }))];
+  const groups = [...pinned, ...[...others].map(([city, xs]) => ({ city, items: xs, pinned: false }))];
+  return [...groups.filter((g) => g.items.length), ...groups.filter((g) => !g.items.length)]; // cities with events first, empty pinned ones last
 }

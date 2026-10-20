@@ -33,13 +33,18 @@ export function placeLd(l: Listing): Record<string, unknown> | null {
   return { '@type': 'Place', name: l.venue ?? l.city, ...(address ? { address } : {}) };
 }
 const mode = (l: Listing) => `https://schema.org/${l.modality === 'online' ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`;
+/** Short description from DB text only: the first summary bullet, else the first sentence of the eligibility note; null when neither exists. */
+const shortDesc = (l: Listing): string | null => {
+  const t = l.summaryEs?.find((x) => x && x.trim())?.trim() ?? l.eligibilityNote?.match(/^(.+?[.!?])(\s|$)/)?.[1] ?? l.eligibilityNote ?? null;
+  return t ? t : null;
+};
 /** Compact Event for hub ItemLists: real start/end dates and location only (no fallbacks); null without a start date. */
 export function hubEventLd(l: Listing): Record<string, unknown> | null {
   if (!l.startsAt) return null;
   const place = l.modality !== 'online' ? placeLd(l) : null;
   const virt = l.modality !== 'irl' ? { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl } : null;
   const location = place && virt ? [place, virt] : place ?? virt;
-  return { '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: l.startsAt, ...(l.endsAt ? { endDate: l.endsAt } : {}), eventAttendanceMode: mode(l), ...(location ? { location } : {}) };
+  return { '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: l.startsAt, ...(l.endsAt ? { endDate: l.endsAt } : {}), eventAttendanceMode: mode(l), eventStatus: 'https://schema.org/EventScheduled', ...(location ? { location } : {}), ...(shortDesc(l) ? { description: shortDesc(l) } : {}) };
 }
 
 /** Event schema from real listing data only; null when there is no start date to anchor an Event. */

@@ -39,3 +39,14 @@ test('LatAm scope', () => {
   assert.equal(latamCountryOf('Bogotá, Colombia'), 'CO');
   assert.equal(latamCountryOf('São Paulo'), 'BR');
 });
+
+test('shortName: derived from the DB title, no new facts', async () => {
+  const { shortName } = await import('./hubs');
+  const n = (title: string, city: string | null = null) => shortName({ ...base, title, city });
+  assert.equal(n('shippear #3: hackatón de un día en Rosario', 'Rosario'), 'shippear #3');
+  assert.equal(n('belo buildathon: Agentic Banking MCP', 'Buenos Aires'), 'belo buildathon');
+  assert.equal(n('Hackathon EDU HUB · LABITCONF 2026', 'Buenos Aires'), 'EDU HUB de LABITCONF');
+  assert.equal(n('Hackatón Media Party Buenos Aires 2026', 'Buenos Aires'), 'Media Party');
+  assert.equal(n('HackaTwin', 'Buenos Aires'), 'HackaTwin');
+  assert.equal(n('Hackathon', null), 'Hackathon');
+});

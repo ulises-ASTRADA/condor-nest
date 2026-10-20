@@ -96,7 +96,7 @@ export const TYPE_LABEL = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Gr
 
 /** Natural-language eligibility sentence from structured fields only (never inferred). */
 export function whoSentence(l: Pick<Listing, 'eligibility' | 'country' | 'eligibilityNote' | 'type'>): string {
-  const ab = l.type === 'hackathon' ? 'abierta' : 'abierto';
+  const ab = 'abierto'; // hackathon, bounty and grant are all masculine
   const c = l.country && _C[l.country] ? _C[l.country] : null;
   switch (l.eligibility) {
     case 'ar': return 'Pueden participar personas de Argentina.';
