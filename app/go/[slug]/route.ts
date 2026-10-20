@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { getListing } from '@/lib/supabase';
 import { serverRpc } from '@/lib/server-supabase';
-import { GO_GONE_HTML, VALID_SLUG, goFallback, refPath } from '@/lib/go';
+import { VALID_SLUG, goFallback, refPath, noJsPage } from '@/lib/go';
 
 // /go/<slug> → 302 to the listing's stored apply_url (never a user-supplied URL), counting the click.
 // What counts as a click (documented for analytics):
@@ -12,8 +12,8 @@ import { GO_GONE_HTML, VALID_SLUG, goFallback, refPath } from '@/lib/go';
 //     that this browser was already counted; repeats within the window redirect but are not inserted.
 // Stored per click: listing id + slug, timestamp, referrer hostname, and the condor-nest page PATH the click came from
 // (only when the Referer is this site; pathname only, no query). No IP, no UA, no cookie value.
-// No apply_url but the listing page exists: 302 to same-origin /o/<slug>. Nothing exists: styled 404 page
-// ("Esta convocatoria ya no está publicada" + button to /). Never off-site, never counted.
+// No apply_url but the listing page exists: 302 to same-origin /o/<slug>. Nothing exists: 404 with the site's
+// "no publicada" page (app/go-gone, scripts stripped). Never off-site, never counted.
 // Malformed slug: 400.
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +38,20 @@ function refDomain(req: NextRequest): string | null {
   try { const u = new URL(r); return /^https?:$/.test(u.protocol) ? u.hostname.toLowerCase().replace(/^www\./, '').slice(0, 253) : null; } catch { return null; }
 }
 
+// Same-origin fetch of the static /go-gone page. On non-production deployments the visitor's cookies are forwarded so a
+// protected preview (share link / Vercel login) can be read; production is public and gets no cookies.
+async function goneHtml(req: NextRequest): Promise<string | null> {
+  try {
+    const h: Record<string, string> = { accept: 'text/html' };
+    const c = req.headers.get('cookie');
+    if (c && process.env.VERCEL_ENV !== 'production') h.cookie = c;
+    const r = await fetch(new URL('/go-gone', req.nextUrl.origin), { headers: h, redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(3000) });
+    if (r.status !== 200) return null;
+    const html = await r.text();
+    return html.includes('Esta convocatoria ya no está publicada') ? noJsPage(html) : null;
+  } catch { return null; }
+}
+
 async function handle(req: NextRequest, slug: string, count: boolean) {
   if (!VALID_SLUG.test(slug)) {
     return new NextResponse('Solicitud inválida', { status: 400, headers: { ...baseHeaders, 'content-type': 'text/plain; charset=utf-8' } });
@@ -48,7 +62,10 @@ async function handle(req: NextRequest, slug: string, count: boolean) {
     // Nothing is recorded in either case.
     const to = goFallback(slug, !!l);
     if (to) return new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: to } });
-    return new NextResponse(GO_GONE_HTML, { status: 404, headers: { ...baseHeaders, 'content-type': 'text/html; charset=utf-8' } });
+    // Nothing exists: the site's "Esta convocatoria ya no está publicada" page (app/go-gone), scripts stripped, as a 404.
+    const html = await goneHtml(req);
+    if (html) return new NextResponse(html, { status: 404, headers: { ...baseHeaders, 'content-type': 'text/html; charset=utf-8' } });
+    return new NextResponse('Esta convocatoria ya no está publicada.', { status: 404, headers: { ...baseHeaders, 'content-type': 'text/plain; charset=utf-8' } });
   }
   const res = new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: l.applyUrl } });
   const cookie = `cng_${l.id.replace(/-/g, '')}`;
