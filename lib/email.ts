@@ -6,10 +6,12 @@ export const newToken = () => randomBytes(32).toString('hex');
 export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 export const isToken = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f]{64}$/.test(s);
 
-export function confirmEmail(confirmUrl: string, unsubUrl: string) {
+export function confirmEmail(confirmUrl: string) {
+  // No unsubscribe link here: the person is not subscribed until they confirm (List-Unsubscribe header still set).
   // Compact on purpose: on a phone the button must be visible without scrolling. Fixed px sizes so Gmail doesn't upscale.
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Confirmá tu suscripción</title></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:Helvetica,Arial,sans-serif;color:#18181b">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f4f5;opacity:0">Un toque y listo, confirmá tu suscripción.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5"><tr><td align="center" style="padding:16px 8px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px">
 <tr><td style="padding:24px">
@@ -20,9 +22,9 @@ export function confirmEmail(confirmUrl: string, unsubUrl: string) {
 <a href="${confirmUrl}" style="display:block;height:48px;line-height:48px;font-size:16px;font-weight:700;color:#0b0b10;text-decoration:none;white-space:nowrap;border-radius:10px">Confirmar</a>
 </td></tr></table>
 <p style="margin:16px 0 0;font-size:13px;line-height:19px;color:#71717a">El link vence en 48 h. Si no fuiste vos, ignorá este mail.</p>
-<p style="margin:8px 0 0;font-size:13px;line-height:19px;color:#71717a">Hecho en Córdoba · <a href="${unsubUrl}" style="color:#71717a;text-decoration:underline">Darme de baja</a></p>
+<p style="margin:8px 0 0;font-size:13px;line-height:19px;color:#71717a">Hecho en Córdoba</p>
 </td></tr></table></td></tr></table></body></html>`;
-  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba · Darme de baja: ${unsubUrl}`;
+  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba`;
   return { html, text };
 }
 
@@ -57,7 +59,7 @@ export async function resendSend(payload: Record<string, unknown>, idem?: string
 export async function sendConfirmation(to: string, confirmToken: string, unsubToken: string): Promise<SendResult> {
   const confirmUrl = `${SITE_URL}/newsletter/confirmar?token=${confirmToken}`;
   const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${unsubToken}`;
-  const { html, text } = confirmEmail(confirmUrl, unsubUrl);
+  const { html, text } = confirmEmail(confirmUrl);
   return resendSend({
     to: [to], subject: 'Confirmá tu suscripción a Condor Nest', html, text,
     headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },

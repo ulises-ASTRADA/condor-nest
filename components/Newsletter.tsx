@@ -32,7 +32,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
                   style={{ ['--fx-fill' as string]: 'rgb(var(--bg))' }} className={`fx-input ${mini ? 'h-10 text-sm' : 'h-12'} w-full min-w-0 rounded-[12px] border bg-bg px-3.5 ${mini ? '' : 'text-base'} text-fg placeholder:text-fg-muted ${err ? 'border-danger shadow-[0_0_0_1px_rgb(var(--danger)/.6),0_0_16px_-4px_rgb(var(--danger)/.5)]' : 'border-border'}`} />
                 <button type="submit" disabled={st === 'submitting'} aria-label={st === 'submitting' ? 'Enviando…' : undefined}
                   className={`btn-sweep ${mini ? 'h-10 shrink-0 px-4 text-sm' : 'h-12 w-full'} rounded-[12px] bg-lime font-bold text-primary-fg shadow-[0_0_24px_-6px_rgb(var(--lime)/.6)] transition-shadow duration-fast active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg grid place-items-center`}>
-                  {st === 'submitting' ? <span className="h-5 w-5 animate-spin rounded-pill border-2 border-primary-fg/30 border-t-primary-fg [animation-duration:800ms]" /> : 'Suscribirme'}
+                  {st === 'submitting' ? <span className="h-5 w-5 animate-spin rounded-pill border-2 border-primary-fg/30 border-t-primary-fg [animation-duration:800ms]" /> : resub ? 'Mandame un link nuevo' : 'Suscribirme'}
                 </button>
               </div>
               <Turnstile ref={ts} />
@@ -42,7 +42,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
           {done && (
             <p className="flex items-center gap-2 font-medium">
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="text-lime"><path className="cn-check" pathLength={1} d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
-              <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{resub && st !== 'saved' ? 'Si el mail es correcto, te llega uno nuevo. Revisá también spam.' : MSG[st]}</span>
+              <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{resub ? 'Listo. Si ese mail está anotado, en unos minutos te llega un link nuevo. Revisá también Spam o Promociones.' : MSG[st]}</span>
             </p>
           )}
           {st === 'success' && <p className="cn-fade mt-1 pl-[30px] text-xs text-fg-muted">Si no lo ves en un par de minutos, revisá Spam o Promociones y marcalo como "No es spam".</p>}

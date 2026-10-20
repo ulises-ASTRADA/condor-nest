@@ -34,6 +34,8 @@ const config: NextConfig = {
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
       ] },
+      // Token-bearing pages: never send the URL (with the token) as Referer, never cache. Listed last so it overrides the default Referrer-Policy.
+      { source: '/newsletter/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'no-store' }] },
     ];
   },
 };

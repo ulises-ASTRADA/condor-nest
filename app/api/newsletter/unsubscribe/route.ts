@@ -3,12 +3,31 @@ import { serverRpc } from '@/lib/server-supabase';
 import { rateLimit } from '@/lib/rate-limit';
 import { isToken, SITE_URL } from '@/lib/email';
 export const dynamic = 'force-dynamic';
-async function run(req: Request) {
+const NO_STORE = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
+type R = 'ok' | 'invalido' | 'error';
+async function unsubscribe(req: Request, token: unknown): Promise<R> {
   const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
-  const token = new URL(req.url).searchParams.get('token');
   if (!rateLimit(`nlu:${ip}`, 20) || !isToken(token)) return 'invalido';
-  try { return (await serverRpc('cn_unsubscribe', { unsub: token })) === 'unsubscribed' ? 'baja' : 'invalido'; } catch { return 'error'; }
+  try { return (await serverRpc('cn_unsubscribe', { unsub: token })) === 'unsubscribed' ? 'ok' : 'invalido'; } catch { return 'error'; }
 }
-export async function GET(req: Request) { return NextResponse.redirect(`${SITE_URL}/newsletter/${await run(req)}`, 303); }
-// RFC 8058 one-click unsubscribe from mail clients
-export async function POST(req: Request) { const e = await run(req); return new NextResponse(null, { status: e === 'baja' ? 200 : 400 }); }
+// GET never unsubscribes (mail scanners prefetch links): it only forwards to the page with the "Darme de baja" button.
+// Links in already-sent emails point here, so they keep working.
+export async function GET(req: Request) {
+  const token = new URL(req.url).searchParams.get('token');
+  return NextResponse.redirect(`${SITE_URL}/newsletter/baja${isToken(token) ? `?token=${token}` : ''}`, { status: 303, headers: NO_STORE });
+}
+// POST unsubscribes. Two callers:
+// - RFC 8058 one-click from mail clients: token in the URL, body "List-Unsubscribe=One-Click"; single step, status code only.
+// - the /newsletter/baja form (works without JS): token in the body; redirects back to the page with the result.
+export async function POST(req: Request) {
+  const url = new URL(req.url);
+  const form = await req.formData().catch(() => null);
+  if (form?.get('List-Unsubscribe') === 'One-Click') {
+    const r = await unsubscribe(req, url.searchParams.get('token'));
+    return new NextResponse(null, { status: r === 'ok' ? 200 : r === 'error' ? 500 : 400, headers: NO_STORE });
+  }
+  const token = form?.get('token');
+  const r = await unsubscribe(req, token);
+  const q = r === 'error' && isToken(token) ? `estado=error&token=${token}` : `estado=${r}`;
+  return NextResponse.redirect(`${SITE_URL}/newsletter/baja?${q}`, { status: 303, headers: NO_STORE });
+}
