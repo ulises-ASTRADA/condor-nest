@@ -19,6 +19,7 @@ import { hubsFor } from '@/lib/hubs';
 import { getOrgAbout } from '@/lib/organizer';
 import { OrgAbout } from '@/components/OrgAbout';
 import { Location } from '@/components/Location';
+import { bareHost, goPath, hostLabel } from '@/lib/go';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Cordoba';
@@ -65,7 +66,6 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 }
 
 function Cta({ l, className = '' }: { l: Listing; className?: string }) {
-  const src = l.source === 'superteam' ? 'Superteam' : l.source === 'devpost' ? 'Devpost' : l.source === 'taikai' ? 'Taikai' : l.source === 'luma' ? 'Luma' : null;
   if (!isOpen(l, new Date())) return (
     <div className={`grid gap-2 ${className}`}>
       <a href="#similares" className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg">Ver similares abiertas</a>
@@ -73,10 +73,17 @@ function Cta({ l, className = '' }: { l: Listing; className?: string }) {
     </div>
   );
   if (!l.applyUrl) return <p className={`grid min-h-14 place-items-center rounded-pill border border-border bg-surface-2 px-6 text-center text-sm text-fg-muted ${className}`}>Link de inscripción: a confirmar</p>;
-  const label = src ? `Postulate en ${src}` : 'Postulate en el sitio oficial';
+  // Goes through /go/<slug> (click counter, noindex). The label and the gray domain name the real destination,
+  // taken from the stored apply_url, because hover/long-press now shows condor-nest.lat/go/...
+  const host = bareHost(l.applyUrl);
+  const platform = hostLabel(host);
+  const label = platform ? `Inscribirme en ${platform}` : 'Inscribirme';
   return (
-    <a href={l.applyUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`${label} (abre sitio externo)`}
-      className={`grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${className}`}>{label} ↗</a>
+    <div className={`grid gap-1 ${className}`}>
+      <a href={goPath(l.slug)} target="_blank" rel={l.featured ? "sponsored nofollow noopener" : "nofollow noopener"} aria-label={`${label}${host ? ` (${host}, abre sitio externo)` : ' (abre sitio externo)'}`}
+        className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">{label} ↗</a>
+      {host && <p className="text-center text-xs text-fg-muted">{host}</p>}
+    </div>
   );
 }
 
@@ -93,6 +100,9 @@ export default async function Detail({ params }: P) {
   const prize = prizePhrase(l); const close = closeIso(l); const when = whenText(l, open);
   const officialUrl = l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl;
   let officialHost: string | null = null; try { officialHost = officialUrl ? new URL(officialUrl).hostname.replace(/^www\./, '') : null; } catch {}
+  // Through /go/ (counted) only when /go/ lands on the same site the visible text names: /go/ always redirects to
+  // apply_url, so if the official link shown is on another host (verified_url ≠ apply_url host), keep it direct.
+  const officialViaGo = !!l.applyUrl && !!officialHost && bareHost(l.applyUrl) === bareHost(officialUrl);
   const updated = l.updatedAt || l.createdAt;
   // The intro already states the prize: drop prize-only bullets from the summary (and the big rewardText box) to avoid repeating it.
   const prizeInIntro = !!prize;
@@ -139,7 +149,7 @@ export default async function Detail({ params }: P) {
           <section aria-labelledby="epp" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
             <h2 id="epp" className="mb-1.5 font-mono text-xs uppercase tracking-[.08em] text-lime">En pocas palabras</h2>
             <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'un hackathon'} {modalityText(l)}{l.organizer ? <>, organizado por {l.organizer}</> : null}. {whoSentence(l)}</p>
-            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
+            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{officialUrl && officialHost && <>Link oficial: <a href={officialViaGo ? goPath(l.slug) : officialUrl} target="_blank" rel={officialViaGo ? (l.featured ? "sponsored nofollow noopener" : "nofollow noopener") : (l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer")} className="text-lime hover:underline">{officialHost} ↗</a></>}</p>
           </section>
           {about && l.organizer && <OrgAbout name={l.organizer} about={about} />}
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}

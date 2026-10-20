@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/rank.test.ts"
+    "test": "tsx --test lib/rank.test.ts lib/go.test.ts"
   },
   "devDependencies": {
     "@types/node": "22.18.8",

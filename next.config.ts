@@ -26,6 +26,7 @@ const config: NextConfig = {
       ...(process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production' ? [{ source: '/:path*', headers: noindex }] : []),
       { source: '/api/:path*', headers: noindex },
       { source: '/newsletter/:path*', headers: noindex },
+      { source: '/go/:path*', headers: noindex },
       { source: '/:path*', headers: [
       { key: 'Content-Security-Policy', value: csp },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -36,6 +37,8 @@ const config: NextConfig = {
       ] },
       // Token-bearing pages: never send the URL (with the token) as Referer, never cache. Listed last so it overrides the default Referrer-Policy.
       { source: '/newsletter/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'no-store' }] },
+      // /go/ click redirects: the external site gets no referrer (same as the old rel="noreferrer" direct link). Listed last to override the default.
+      { source: '/go/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },
     ];
   },
 };
