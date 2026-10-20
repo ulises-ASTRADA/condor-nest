@@ -145,18 +145,31 @@ test('?pais= validated against derived countries (case-insensitive); unknown ign
   assert.deepEqual(all({ pais: 'xx' }), all({})); assert.deepEqual(all({ pais: '<script>' }), ['a', 'b']);
   assert.equal(filtersToSearch(filtersFromSearch({ pais: 'xx' }, locationContext(rows)).f, 'cierra-pronto'), ''); // nothing active -> no 'Limpiar filtros'
 });
-test('location groups: country + city counts = cards after picking; zero-count options hidden', () => {
+test('location groups: country + city counts = cards after picking; zero-count / no-specific options hidden', () => {
   const rows = [L({ id: 'a', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'b', modality: 'irl', city: 'Rosario', country: 'AR', type: 'grant' }),
     L({ id: 'c', modality: 'online', eligibility: 'latam' }), L({ id: 'd', modality: 'irl', city: 'Lima', country: 'PE', type: 'grant' })];
   const ctx = locationContext(rows);
   const g = locationGroups(rows, ctx, DEFAULT_FILTERS, now);
   assert.deepEqual(g.map((x) => [x.iso, x.n, x.cities.map((c) => [c.slug, c.n])]), [['AR', 3, [['cordoba', 1], ['rosario', 1]]], ['PE', 2, [['lima', 1]]]]);
   for (const x of g) { assert.equal(x.n, feedCount(rows, { ...DEFAULT_FILTERS, pais: x.iso }, now)); for (const c of x.cities) assert.equal(c.n, feedCount(rows, { ...DEFAULT_FILTERS, pais: x.iso, ciudad: c.slug }, now)); }
-  // only bounties: Peru (grant-only city + LatAm online bounty) keeps the online one; Rosario/Lima hidden
+  // only bounties: Peru's only specific listing is a grant -> group hidden (its 1 card would be the LatAm-wide one); Rosario hidden
   const gb = locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['bounty'] }, now);
-  assert.deepEqual(gb.map((x) => [x.iso, x.n, x.cities.map((c) => c.slug)]), [['AR', 2, ['cordoba']], ['PE', 1, []]]);
+  assert.deepEqual(gb.map((x) => [x.iso, x.n, x.cities.map((c) => c.slug)]), [['AR', 2, ['cordoba']]]);
+  assert.deepEqual(locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['bounty'], pais: 'PE' }, now).map((x) => [x.iso, x.n]), [['AR', 2], ['PE', 1]]);
   // a country whose count drops to 0 disappears, unless it is the selected one
   const gv = locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['grant'], virtual: true }, now);
   assert.deepEqual(gv.map((x) => x.iso), []);
   assert.deepEqual(locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['grant'], virtual: true, pais: 'PE' }, now).map((x) => [x.iso, x.n]), [['PE', 0]]);
+});
+
+test('location groups: a country is listed only with a country-specific visible listing; selected one always kept', () => {
+  const rows = [L({ id: 'a', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'c', modality: 'online', eligibility: 'latam' }),
+    L({ id: 'x', modality: 'irl', city: 'Santiago', country: 'CL', deadlineAt: '2020-01-01T00:00:00Z' })]; // CL only has a closed listing
+  const ctx = locationContext(rows);
+  assert.deepEqual(ctx.countries, ['AR', 'CL']); // CL still a valid ?pais=
+  assert.deepEqual(locationGroups(rows, ctx, DEFAULT_FILTERS, now).map((g) => [g.iso, g.n]), [['AR', 2]]); // count includes the LatAm-wide card
+  const f = filtersFromSearch({ pais: 'cl' }, ctx).f;
+  assert.equal(f.pais, 'CL');
+  assert.deepEqual(locationGroups(rows, ctx, f, now).map((g) => [g.iso, g.n, g.cities.length]), [['AR', 2, 1], ['CL', 1, 0]]);
+  assert.equal(feedCount(rows, f, now), 1);
 });

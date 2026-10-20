@@ -71,13 +71,14 @@ export function locationContext(all: Listing[]): LocCtx {
 export const feedCount = (all: Listing[], f: Filters, now: Date) => { let feat = 0, org = 0; for (const l of all) if (matches(l, f, now)) { if (l.featured) feat++; else org++; } return org + Math.min(feat, 1); };
 export type LocGroup = { iso: string; name: string; n: number; cities: (CityOpt & { n: number })[] };
 /** Location select model: one group per country ("Toda <país> (n)" + cities (n)); n = feedCount after picking that option with every
- *  other filter kept. Options with n = 0 are hidden, except the one currently selected. */
+ *  other filter kept (so it includes LatAm-wide/online cards). A country group is listed only if ≥1 of those cards is specific to it
+ *  (held there or restricted to it); cities with n = 0 are hidden. The selected country/city is always kept (?pais=cl stays valid). */
 export function locationGroups(all: Listing[], ctx: LocCtx, f: Filters, now: Date): LocGroup[] {
   return ctx.countries.map((iso) => ({
     iso, name: COUNTRY_ES[iso], n: feedCount(all, { ...f, pais: iso, ciudad: null }, now),
     cities: ctx.cities.filter((c) => c.countries.includes(iso)).map((c) => ({ ...c, n: feedCount(all, { ...f, pais: iso, ciudad: c.slug }, now) }))
       .filter((c) => c.n > 0 || (f.ciudad === c.slug && f.pais === iso)),
-  })).filter((g) => g.n > 0 || g.iso === f.pais);
+  })).filter((g) => g.iso === f.pais || all.some((l) => inCountry(l, g.iso) && matches(l, { ...f, pais: g.iso, ciudad: null }, now)));
 }
 
 /** "Abierto a AR/LatAm": hides listings restricted to another country (e.g. "Solo México"). */
