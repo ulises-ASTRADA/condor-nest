@@ -3,7 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
-import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, type Modality, filtersToSearch, matches, sortListings, isOpen, effDeadline, type Filters, type Sort } from '@/lib/rank';
+import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, locationContext, locationGroups, type Filters, type Sort } from '@/lib/rank';
+import { HUBS } from '@/lib/hubs';
+import { inCountry } from '@/lib/rank';
 import dynamic from 'next/dynamic';
 const Newsletter = dynamic(() => import('./Newsletter').then((x) => x.Newsletter));
 import { Affiliate } from './Affiliate';
@@ -11,7 +13,6 @@ import { Ticker } from './Ticker';
 import { useReduceMotionPref } from './Toggles';
 import { ECOSYSTEMS, type Eco } from '@/lib/eco';
 import { COUNTRY_ES } from '@/lib/geo';
-import { inCountry } from '@/lib/rank';
 
 const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
 const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -38,22 +39,13 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 }
 
 function Counter({ n }: { n: number }) {
-  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'oportunidad' : 'oportunidades'}</span>;
+  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'convocatoria' : 'convocatorias'}</span>;
 }
-
 export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCards }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; cards: React.ReactNode; featuredCards: React.ReactNode }) {
   // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm (listings restricted to another country are always hidden).
   const [f, setF] = useState<Filters>(initial.f);
-  const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso })); setLimit(PAGE); };
-  const paises = useMemo(() => Object.keys(COUNTRY_ES).filter((c) => listings.some((l) => inCountry(l, c))).sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es')), [listings]);
-  const paisSelect = (cls: string) => (
-    <label className={cls}><span className="sr-only">País</span>
-      <select value={f.pais ?? ''} onChange={(e) => choosePais(e.target.value || null)} className="fx-input h-9 w-full cursor-pointer rounded-[10px] border border-border bg-surface-2 px-2.5 text-sm text-fg">
-        <option value="">Toda LatAm</option>
-        {[...new Set([...(f.pais ? [f.pais] : []), ...paises])].map((c) => <option key={c} value={c}>{COUNTRY_ES[c] ?? c}</option>)}
-      </select>
-    </label>
-  );
+  const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso, ciudad: null })); setLimit(PAGE); }; // changing country resets the city
+  const locCtx = useMemo(() => locationContext(listings), [listings]); const cityOpts = locCtx.cities;
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
   const first = useRef(true);
@@ -65,7 +57,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     if (lastQs.current === null) { lastQs.current = spStr; return; }
     if (spStr === lastQs.current) return;
     lastQs.current = spStr;
-    const next = filtersFromSearch(Object.fromEntries(sp.entries()));
+    const next = filtersFromSearch(Object.fromEntries(sp.entries()), locCtx);
     setF(next.f); setSort(next.sort); setLimit(PAGE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spStr]);
@@ -94,6 +86,33 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const total = organic.length + featured.length;
   const dataless = sort === 'menos-competencia' ? shown.findIndex((l) => l.rewardUsd == null || l.competitors == null || !isOpen(l, nowD)) : -1;
   const vis = useMemo(() => listings.filter((l) => matches(l, f, nowD)), [listings, f, nowD]);
+  // Location select (one control): "Toda LatAm", then one <optgroup> per country = "Toda <país> (n)" + its cities (n); zero-count options hidden.
+  const locGroups = useMemo(() => locationGroups(listings, locCtx, f, nowD), [listings, locCtx, f, nowD]);
+  const locValue = f.ciudad && f.pais ? `c:${f.pais}:${f.ciudad}` : f.pais ? `p:${f.pais}` : '';
+  const chooseLoc = (v: string) => {
+    const [k, iso, slug] = v.split(':');
+    setF((o) => ({ ...o, pais: k === 'p' || k === 'c' ? iso : null, ciudad: k === 'c' ? slug : null })); setLimit(PAGE);
+  };
+  const toda = (name: string) => `${/a$/.test(name) ? 'Toda' : 'Todo'} ${name}`;
+  const hub = f.pais ? HUBS.find((h) => h.iso === f.pais) : undefined;
+  const cityName = f.ciudad ? cityOpts.find((c) => c.slug === f.ciudad)?.name ?? null : null;
+  const locSelect = (cls: string) => (
+    <div className={cls}>
+      <label className="block"><span className="sr-only">Ubicación</span>
+        <select value={locValue} onChange={(e) => chooseLoc(e.target.value)} className="fx-input h-9 w-full cursor-pointer rounded-[10px] border border-border bg-surface-2 px-2.5 text-sm text-fg">
+          <option value="">Toda LatAm</option>
+          {locGroups.map((g) => (
+            <optgroup key={g.iso} label={g.name}>
+              <option value={`p:${g.iso}`}>{toda(g.name)} ({g.n})</option>
+              {g.cities.map((c) => <option key={c.slug} value={`c:${g.iso}:${c.slug}`}>{c.name} ({c.n})</option>)}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+      {/* A <select> option is not a crawlable link: plain <a> to the country hub when one exists. */}
+      {hub && <Link href={`/${hub.slug}`} prefetch={false} className="mt-1.5 inline-flex min-h-tap items-center text-sm text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan lg:min-h-0">{hub.label} →</Link>}
+    </div>
+  );
   const closingWeek = useMemo(() => sortListings(listings.filter((l) => { const d = effDeadline(l); return d && isOpen(l, nowD) && new Date(d).getTime() - nowD.getTime() < 7 * 864e5 && matches(l, { ...f, q: '' }, nowD); }), 'cierra-pronto', nowD).slice(0, 5), [listings, f, nowD]);
   // Cards are server-rendered (Server Component) in #feed-list; this island only decides which show and in what order.
   const css = useMemo(() => {
@@ -119,31 +138,40 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
         className="fx-input h-12 w-full rounded-[12px] border border-border bg-surface-2 px-3.5 text-base text-fg placeholder:text-fg-muted" />
     </label>
   );
+  const anyFilter = !!(f.ciudad || f.virtual || f.abiertoTodos || f.pais || f.ecos.length || f.showClosed || !f.sinConfirmar || f.tipos.length !== ALL_TYPES.length);
+  const clearAll = () => { setF({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES], q: f.q }); setLimit(PAGE); };
+  const clearCls = 'min-h-tap shrink-0 px-1 text-left text-sm text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime';
+  // Virtual (?virtual=1, replaces the old Online/Presencial controls) and Abierto a todos (?abierto=1) lead the existing chip row on mobile
+  // and get their own "Modalidad y acceso" group in the desktop sidebar.
   const mobileControls = (
     <div className="mt-3">
-      {paisSelect('mb-2 block')}
+      {locSelect('mb-2')}
       <div className="chip-row -mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtros">
+        <Chip on={f.virtual} onClick={() => set({ virtual: !f.virtual })}>Virtual</Chip>
+        <Chip on={f.abiertoTodos} onClick={() => set({ abiertoTodos: !f.abiertoTodos })}>Abierto a todos</Chip>
         <Chip on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Chip>
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
-        {(['online', 'irl'] as Modality[]).map((m) => <Chip key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'Presencial' : 'Online'}</Chip>)}
         {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
         <Chip on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Chip>
+        {anyFilter && <button type="button" onClick={clearAll} className={clearCls}>Limpiar filtros</button>}
       </div>
     </div>
   );
   const sideControls = (
     <div className="text-sm">
-      <H4>País</H4>
-      {paisSelect('block')}
+      <H4>Ubicación</H4>
+      {locSelect('')}
+      <H4>Modalidad y acceso</H4>
+      <Check on={f.virtual} onClick={() => set({ virtual: !f.virtual })}>Virtual</Check>
+      <Check on={f.abiertoTodos} onClick={() => set({ abiertoTodos: !f.abiertoTodos })}>Abierto a todos</Check>
       <H4>Tipo</H4>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
-      <H4>Modalidad</H4>
-      {(['online', 'irl'] as Modality[]).map((m) => <Check key={m} on={f.modalidades.includes(m)} onClick={() => set({ modalidades: toggle(f.modalidades, m) })}>{m === 'irl' ? 'Presencial' : 'Online'}</Check>)}
       <H4>Ecosistema</H4>
       {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
       <H4>Estado</H4>
       <Check on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Check>
       <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>
+      {anyFilter && <div className="mt-4"><button type="button" onClick={clearAll} className={clearCls}>Limpiar filtros</button></div>}
     </div>
   );
 
@@ -156,10 +184,13 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
           {hero}
           <div className="mt-4">{search}</div>
           {f.pais && (
-            <div role="status" className="mt-3 inline-flex max-w-full items-center gap-2 rounded-pill border border-cyan/40 bg-surface-2 py-1 pl-3 pr-1 text-sm">
-              <span>📍 Mostrando oportunidades para {COUNTRY_ES[f.pais] ?? f.pais}</span><span aria-hidden="true" className="text-fg-muted">·</span>
-              <button type="button" onClick={() => choosePais(null)} className="text-cyan underline-offset-4 hover:underline">Ver todo LatAm</button>
-              <button type="button" aria-label="Quitar filtro de país" onClick={() => choosePais(null)} className="grid h-7 w-7 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
+            <div role="status" className="mt-3 flex max-w-full items-start gap-2 rounded-[14px] border border-cyan/40 bg-surface-2 py-1 pl-3 pr-1 text-sm sm:inline-flex sm:items-center sm:rounded-pill">
+              {/* <sm: text, then "Ver todo LatAm" on its own line; sm+: one inline row */}
+              <p className="min-w-0 flex-1 py-1 sm:py-0">
+                <span>📍 Mostrando oportunidades {cityName ? `en ${cityName}, ${COUNTRY_ES[f.pais] ?? f.pais}` : `para ${COUNTRY_ES[f.pais] ?? f.pais}`}{!cityName && total > 0 && !vis.some((l) => inCountry(l, f.pais!)) && <span className="text-fg-muted"> (ninguna es específica de {COUNTRY_ES[f.pais] ?? f.pais}: son abiertas a toda LatAm u online)</span>}</span><span aria-hidden="true" className="hidden text-fg-muted sm:inline"> · </span>
+                <button type="button" onClick={() => choosePais(null)} className="mt-1 block text-cyan underline-offset-4 hover:underline sm:mt-0 sm:inline">Ver todo LatAm</button>
+              </p>
+              <button type="button" aria-label="Quitar filtro de ubicación" onClick={() => choosePais(null)} className="grid h-7 w-7 shrink-0 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
             </div>
           )}
           <div className="lg:hidden">{mobileControls}</div>
@@ -210,7 +241,12 @@ function Empty({ f, set, unconf }: { f: Filters; set: (p: Partial<Filters>) => v
   let msg = 'No hay oportunidades con estos filtros.'; let action = <button className={btn} onClick={() => set({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES] })}>Limpiar filtros</button>;
   if (unconf > 0) { msg = `Hay ${unconf} ${unconf === 1 ? 'resultado' : 'resultados'} con estos filtros, pero con elegibilidad sin confirmar.`; action = <button className={btn} onClick={() => set({ sinConfirmar: true })}>Mostrar sin confirmar</button>; }
   else if (f.q) { msg = `No encontramos “${f.q}”. Probá con otra palabra o ecosistema.`; action = <button className={btn} onClick={() => set({ q: '' })}>Borrar búsqueda</button>; }
-  return <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center"><p>{msg}</p>{action}</div>;
+  return (
+    <div className="mt-6 rounded-card border border-border bg-surface p-6 text-center">
+      <p>{msg}</p>{action}
+      <p className="mt-4 text-sm text-fg-muted">¿Organizás uno que no está acá? <Link href="/publicar" prefetch={false} className="text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan">Publicalo gratis</Link></p>
+    </div>
+  );
 }
 
 function rel(ms: number) {
