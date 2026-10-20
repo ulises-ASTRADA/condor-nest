@@ -1,22 +1,21 @@
 import Link from 'next/link';
 import type { Faq } from '@/lib/hubs';
 
-/** Turn bare "/publicar" in FAQ copy into a real internal link. */
+const LINK = /\[([^\]]+)\]\((\/[a-z0-9\-/#?=&]*)\)|(\/publicar)\b/g;
+/** FAQ copy may carry internal links as [texto](/ruta) (site paths only) and bare "/publicar"; everything else is plain text. */
 function Answer({ text }: { text: string }) {
-  const parts = text.split(/(\/publicar)/g);
-  if (parts.length === 1) return <>{text}</>;
-  return (
-    <>
-      {parts.map((p, i) =>
-        p === '/publicar' ? (
-          <Link key={i} href="/publicar" className="text-lime hover:underline">/publicar</Link>
-        ) : (
-          <span key={i}>{p}</span>
-        ),
-      )}
-    </>
-  );
+  const out: React.ReactNode[] = []; let last = 0; let m: RegExpExecArray | null; LINK.lastIndex = 0;
+  while ((m = LINK.exec(text))) {
+    if (m.index > last) out.push(<span key={last}>{text.slice(last, m.index)}</span>);
+    const href = m[2] ?? m[3]; const label = m[1] ?? m[3];
+    out.push(<Link key={m.index} prefetch={false} href={href} className="text-lime hover:underline">{label}</Link>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(<span key={last}>{text.slice(last)}</span>);
+  return <>{out}</>;
 }
+/** Plain text for JSON-LD: same words as the visible answer, link markup removed. */
+export const faqText = (t: string) => t.replace(/\[([^\]]+)\]\((\/[^)]*)\)/g, '$1');
 
 export function FaqList({ items }: { items: Faq[] }) {
   return (
@@ -32,4 +31,4 @@ export function FaqList({ items }: { items: Faq[] }) {
     </div>
   );
 }
-export const faqLd = (items: Faq[]) => ({ '@type': 'FAQPage', mainEntity: items.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
+export const faqLd = (items: Faq[]) => ({ '@type': 'FAQPage', mainEntity: items.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: faqText(f.a) } })) });

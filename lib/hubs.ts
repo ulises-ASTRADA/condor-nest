@@ -5,7 +5,7 @@ import { DEFAULT_FILTERS, effDeadline, inCountry, isOpen, matches, openToArLatam
 export type Faq = { q: string; a: string };
 export type Hub = {
   slug: string; label: string; h1: string; noun: [string, string]; // singular, plural
-  where: string; feed: string; match: (l: Listing) => boolean; faqs: (n: number, items: Listing[], now: Date) => Faq[];
+  where: string; feed: string; match: (l: Listing) => boolean; faqs: (n: number, items: Listing[], now: Date, all: Listing[]) => Faq[];
   iso?: string; // country hubs: listings restricted to this country count as open here
   cities?: string[]; // country hubs: cities that always get their own section (with an honest empty state)
 };
@@ -15,7 +15,7 @@ const tms = (iso: string | null) => (iso ? new Date(iso).getTime() : Infinity);
 const startKey = (l: Listing) => l.startsAt ?? effDeadline(l);
 const sortHub = (h: Hub, list: Listing[], now: Date) => hubOrder(h) === 'cierre' ? sortListings(list, 'cierra-pronto', now) : [...list].sort((x, y) => tms(startKey(x)) - tms(startKey(y)));
 
-const UPDATED: Faq = { q: '¿Cada cuánto se actualiza esta lista?', a: 'Todos los días a la mañana (hora de Argentina) corre una carga automática desde Superteam Earn, Devpost y Taikai, y sumamos eventos curados de X y Luma después de verificarlos en su página oficial. La página se regenera sola con esos datos.' };
+const UPDATED: Faq = { q: '¿Cada cuánto se actualiza esta lista?', a: 'Todos los días a las 8 (hora de Argentina) corre una carga automática desde Superteam Earn, Devpost y Taikai, y sumamos eventos curados de X y Luma después de verificarlos en su página oficial. La página se regenera sola con esos datos.' };
 const FREE: Faq = { q: '¿Cuesta algo usar Condor Nest?', a: 'No. Ver las oportunidades es gratis y no hace falta crear una cuenta. Los espacios “Destacado” son pagos y siempre están marcados como tales.' };
 const PUBLISH: Faq = { q: '¿Cómo publico mi evento acá?', a: 'Desde Condor Nest → “Publicá tu evento” (/publicar). Listamos gratis cualquier hackathon, bounty o grant abierto a builders de LatAm una vez que lo verificamos en su página oficial.' };
 const ELIG: Faq = { q: '¿Cómo sé si puedo participar?', a: 'Cada tarjeta muestra la elegibilidad que publica la fuente oficial (país, LatAm o abierta). Nunca la inferimos: si la fuente no lo aclara, figura como “Elegibilidad sin confirmar”. Revisá siempre las bases en el link oficial.' };
@@ -25,10 +25,13 @@ const country = (iso: string, name: string, slug: string, cities?: string[]): Hu
   iso, slug, cities, label: `Hackathons en ${name}`, h1: `Hackathons en ${name}`, noun: ['hackathon', 'hackathons'], where: `en ${name}`,
   feed: `/?tipo=hackathon&pais=${iso.toLowerCase()}`,
   match: (l) => l.type === 'hackathon' && inCountry(l, iso),
-  faqs(_n, items, now) { return [
-    { q: `¿Qué hackathons hay abiertos en ${name}?`, a: `${answerLine(this, items, now)} Son los que se hacen en ${name} o están restringidos a participantes de ${name}.` },
-    ELIG, UPDATED, TZ, PUBLISH,
-  ]; },
+  faqs(_n, items, now, all) {
+    if (cities?.length) return richCountryFaqs(this, name, items, now, all);
+    return [
+      { q: `¿Qué hackathons hay abiertos en ${name}?`, a: `${answerLine(this, items, now)} Son los que se hacen en ${name} o están restringidos a participantes de ${name}.` },
+      ELIG, UPDATED, TZ, PUBLISH,
+    ];
+  },
 });
 
 export const HUBS: Hub[] = [
@@ -126,4 +129,49 @@ export function cityGroups(h: Hub, items: Listing[]): { city: string; items: Lis
   for (const l of irl) { const k = normCity(l.city!); if (seen.has(k)) continue; if (!others.has(l.city!)) others.set(l.city!, []); others.get(l.city!)!.push(l); }
   const groups = [...pinned, ...[...others].map(([city, xs]) => ({ city, items: xs, pinned: false }))];
   return [...groups.filter((g) => g.items.length), ...groups.filter((g) => !g.items.length)]; // cities with events first, empty pinned ones last
+}
+
+const NO_CODE = /no hace falta (saber codear|saber programar|experiencia previa)/i;
+const TEAM_ON_SITE = /(armar equipo|se arman en el lugar|arma \d+ equipos|te ayudan a armar|pod[eé]s ir solo|te sum[aá]s solo|no hace falta llegar con equipo)/i;
+const FREE_RE = /\b(gratis|gratuit[oa])\b/i;
+const freeText = (l: Listing) => [l.eligibilityShort, l.eligibilityNote].filter(Boolean).join(' ');
+const ref = (l: Listing) => `${shortName(l)}${refDetails(l)}`;
+const names = (xs: Listing[]) => joinY(xs.map(shortName));
+/** Brief §7 FAQs (country hubs with pinned cities). Dynamic answers are built only from listing data; they regenerate with the page. */
+function richCountryFaqs(h: Hub, name: string, items: Listing[], now: Date, all: Listing[]): Faq[] {
+  const n = items.length;
+  const groups = cityGroups(h, items);
+  const withEv = groups.filter((g) => g.items.length); const empty = groups.filter((g) => !g.items.length);
+  const cityBits = withEv.map((g) => `en ${g.city} ${g.items.length === 1 ? 'hay 1 abierto' : `hay ${g.items.length} abiertos`} (${g.items.length === 1 ? '' : 'el próximo es '}${shortName(g.items[0])}${startDm(g.items[0]) ? `, ${startDm(g.items[0])}` : ''})`);
+  const emptyBit = empty.length ? ` ${empty.length === 1 ? `En ${empty[0].city}` : `En ${joinY(empty.map((g) => g.city))}`} no hay ninguno abierto hoy; los sumamos apenas se publican y se verifican, y te podés enterar por el newsletter de los lunes.` : '';
+  const q2 = `${cityBits.length ? `Al ${dmy(now)}, ${joinY(cityBits)}.` : `Al ${dmy(now)} no hay hackathons abiertos en ${joinY(groups.map((g) => g.city))}.`}${emptyBit}`;
+  const st = items.filter(studentOnly);
+  const q3 = `${st.length ? `Sí: ${joinY(st.map(ref))} ${st.length === 1 ? 'es' : 'son'} solo para estudiantes.` : `Hoy ninguno de los abiertos en ${name} es solo para estudiantes.`} Otros también los aceptan: la elegibilidad de cada tarjeta sale de la fuente oficial, así que fijate quién puede participar en cada uno.`;
+  const online = HUBS.find((x) => x.slug === 'hackathons-online');
+  const onlineN = online ? hubItems(online, all, now).length : 0;
+  const q4 = `Sí. Los online que aceptan participantes de ${name} o de LatAm, incluidas convocatorias globales abiertas a participantes de Latinoamérica, están en [Hackathons online](/hackathons-online) (${onlineN === 1 ? '1 abierto' : `${onlineN} abiertos`} hoy).`;
+  const noCode = items.filter((l) => NO_CODE.test(l.eligibilityNote ?? ''));
+  const team = items.filter((l) => TEAM_ON_SITE.test(l.eligibilityNote ?? ''));
+  const q5 = `Depende de cada evento y está en sus bases oficiales. Varios aceptan perfiles de diseño, negocio o estudiantes, y en muchos los equipos se arman ahí mismo.${noCode.length ? ` Según sus fichas, ${names(noCode)} ${noCode.length === 1 ? 'indica' : 'indican'} que no hace falta saber programar o tener experiencia previa.` : ''}${team.length ? ` En ${names(team)} podés ir sin equipo y armarlo en el lugar.` : ''}`;
+  const free = items.filter((l) => FREE_RE.test(freeText(l)));
+  const q6 = n === 0 ? 'Depende de cada evento: revisá la ficha y las bases oficiales.'
+    : free.length ? `De los ${n} abiertos hoy, ${free.length} ${free.length === 1 ? 'indica' : 'indican'} en su ficha que ${free.length === 1 ? 'es gratis' : 'son gratis'} (${names(free)}).${free.length < n ? ' Para el resto, revisá la ficha de cada uno: si la fuente no publica el costo, no lo damos por hecho.' : ''}`
+    : 'Ninguno de los abiertos hoy publica el costo en su ficha. Revisá las bases oficiales de cada uno antes de inscribirte.';
+  return [
+    { q: `¿Qué hackathons hay abiertos en ${name} ahora?`, a: answerLine(h, items, now) },
+    { q: `¿Hay hackathons en ${joinY(h.cities ?? []).replace(/ y ([^ ]+)$/, ' o $1')}?`, a: q2 },
+    { q: `¿Hay hackathons para estudiantes en ${name}?`, a: q3 },
+    { q: `¿Puedo participar en hackathons online desde ${name}?`, a: q4 },
+    { q: '¿Tengo que saber programar o tener equipo?', a: q5 },
+    { q: '¿Cuánto cuesta participar?', a: q6 },
+    { q: '¿Cada cuánto se actualiza y de dónde salen los datos?', a: UPDATED.a },
+    { q: '¿Cómo publico mi hackathon?', a: 'Desde “Publicá tu evento” (/publicar). Listamos gratis cualquier hackathon abierto a builders de LatAm una vez que lo verificamos en su página oficial. También ofrecemos espacios Destacado, que son pagos y siempre están marcados como tales (ver [Transparencia](/acerca#divulgacion)).' },
+    TZ,
+  ];
+}
+/** "Digital House · Belgrano": DB venue plus the last part of venue_locality (neighborhood), when present. */
+export function venueLine(l: Listing): string | null {
+  if (l.modality === 'online' || !l.venue) return null;
+  const hood = l.venueLocality?.split(',').pop()?.trim() || null;
+  return hood && !l.venue.toLowerCase().includes(hood.toLowerCase()) ? `${l.venue} · ${hood}` : l.venue;
 }

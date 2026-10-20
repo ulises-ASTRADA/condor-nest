@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getListings, lastIngest } from '@/lib/supabase';
 const ddmmyyyy = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
-import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm } from '@/lib/hubs';
+import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm, venueLine } from '@/lib/hubs';
 import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
@@ -34,7 +34,7 @@ export default async function HubPage({ params }: P) {
   const feedN = h.iso ? countryFeedCount(h.iso, all, now) : null;
   const n = items.length; const m = monthYear(now);
   const updated = [await lastIngest(), ...items.map((l) => l.updatedAt)].filter(Boolean).sort().pop() ?? null; const ab = 'abiertos';
-  const faqs = h.faqs(n, items, now); const order = hubOrder(h);
+  const faqs = h.faqs(n, items, now, all); const order = hubOrder(h);
   const online = h.iso ? hubBySlug('hackathons-online') : null; const onlineN = online ? hubItems(online, all, now).length : 0;
   const cities = h.iso ? cityGroups(h, items) : []; const country = h.where.replace(/^en /, '');
   const stOnly = h.iso ? items.filter(studentOnly) : [];
@@ -87,7 +87,7 @@ export default async function HubPage({ params }: P) {
             <section key={g.city} aria-labelledby={`c-${g.city}`}>
               <h2 id={`c-${g.city}`} className="font-display text-2xl font-semibold">Hackathons en {g.city}</h2>
               {g.items.length === 1 ? (
-                <p className="mt-2 text-fg-muted">1 abierto: <Link prefetch={false} href={`/o/${g.items[0].slug}`} className="text-lime hover:underline">{shortName(g.items[0])}</Link>{startDm(g.items[0]) && <> el {startDm(g.items[0])}</>}{g.items[0].venue && <>, en {g.items[0].venue}</>}.</p>
+                <p className="mt-2 text-fg-muted">1 abierto: <Link prefetch={false} href={`/o/${g.items[0].slug}`} className="text-lime hover:underline">{shortName(g.items[0])}</Link>{startDm(g.items[0]) && <> el {startDm(g.items[0])}</>}.{venueLine(g.items[0]) && <span className="block text-sm">{venueLine(g.items[0])}</span>}</p>
               ) : g.items.length ? (<>
                 <p className="mt-2 text-fg-muted">{g.items.length} abiertos, el próximo es {shortName(g.items[0])}{startDm(g.items[0]) && <> el {startDm(g.items[0])}</>}.</p>
                 <RefList items={g.items} city={false} />
@@ -123,5 +123,5 @@ export default async function HubPage({ params }: P) {
 }
 
 function RefList({ items, city = true }: { items: Listing[]; city?: boolean }) {
-  return <ul className="mt-2 list-disc space-y-1 pl-5">{items.map((l) => <li key={l.id}><Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortName(l)}</Link><span className="text-fg-muted">{refDetails(l, { city, venue: true })}</span></li>)}</ul>;
+  return <ul className="mt-2 list-disc space-y-2 pl-5">{items.map((l) => { const v = venueLine(l); return <li key={l.id}><Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortName(l)}</Link><span className="text-fg-muted">{refDetails(l, { city })}</span>{v && <span className="block text-sm text-fg-muted">{v}</span>}</li>; })}</ul>;
 }
