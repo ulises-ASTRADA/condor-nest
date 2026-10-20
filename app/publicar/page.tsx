@@ -1,10 +1,11 @@
+import { OG_BASE } from '@/lib/site';
 import { PublicarForm } from '@/components/PublicarForm';
 const DESC = 'Mandanos tu hackathon, bounty o grant abierto a builders de LatAm. Lo verificamos en su página oficial y lo listamos gratis en Condor Nest.';
 // og:image / twitter:image come from ./opengraph-image.tsx (its own 1200×630 card for this page).
 export const metadata = {
   title: 'Publicá tu evento',
   description: DESC,
-  alternates: { canonical: '/publicar' }, openGraph: { url: '/publicar' },
+  alternates: { canonical: '/publicar' }, openGraph: { ...OG_BASE, url: '/publicar' },
   twitter: { card: 'summary_large_image', title: 'Publicá tu evento · Condor Nest', description: DESC },
 };
 export default function Publicar() {
