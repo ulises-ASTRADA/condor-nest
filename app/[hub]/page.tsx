@@ -6,6 +6,7 @@ const ddmmyyyy = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: '
 import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm, venueLine, venueLines } from '@/lib/hubs';
 import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
+import { DEFAULT_FILTERS, inCountry, matches, sortListings } from '@/lib/rank';
 import { FaqList, faqLd } from '@/components/Faq';
 import { hubEventLd, ldScript } from '@/lib/jsonld';
 import { OG_IMAGE, SITE } from '@/lib/site';
@@ -32,6 +33,9 @@ export default async function HubPage({ params }: P) {
   const all = await getListings();
   const items = hubItems(h, all, now); const unconf = hubUnconfirmed(h, all, now); const restr = hubRestricted(h, all, now);
   const feedN = h.iso ? countryFeedCount(h.iso, all, now) : null;
+  // Country hub with no country-specific open hackathons: show the ones the feed shows for this country (open to all LatAm or online), clearly labelled.
+  const regional = h.iso && items.length === 0
+    ? sortListings(all.filter((l) => matches(l, { ...DEFAULT_FILTERS, tipos: ['hackathon'], pais: h.iso! }, now) && !inCountry(l, h.iso!)), 'cierra-pronto', now) : [];
   const n = items.length; const m = monthYear(now);
   const updated = [await lastIngest(), ...items.map((l) => l.updatedAt)].filter(Boolean).sort().pop() ?? null; const ab = 'abiertos';
   const faqs = h.faqs(n, items, now, all); const order = hubOrder(h);
@@ -64,7 +68,14 @@ export default async function HubPage({ params }: P) {
               {h.iso && feedN != null && feedN !== n && <>Contando bounties, grants y convocatorias abiertas a toda LatAm, hay <Link prefetch={false} href={`/?pais=${h.iso.toLowerCase()}`} className="text-lime hover:underline">{feedN} oportunidades para {h.where.replace(/^en /, '')}</Link>.</>}
             </p>}
           </>          ) : (
-            <p>Hoy no hay {h.noun[1]} {ab} {h.where}. La lista se actualiza todos los días a la mañana; mientras tanto, <Link prefetch={false} href="/" className="text-lime hover:underline">mirá todas las oportunidades abiertas</Link>.</p>
+            h.iso ? (<>
+              <p>Hoy no hay hackathons abiertos específicos de {country} (que se hagan en {country} o sean solo para participantes de {country}).{regional.length > 0
+                ? <> {regional.length === 1 ? 'El que mostramos abajo está abierto' : `Los ${regional.length} que mostramos abajo están abiertos`} a toda LatAm o {regional.length === 1 ? 'es online' : 'son online'}, así que {regional.length === 1 ? 'podés participar' : 'podés participar en ellos'} desde {country}.</>
+                : <> Mientras tanto, <Link prefetch={false} href="/" className="text-lime hover:underline">mirá todas las oportunidades abiertas</Link>.</>}</p>
+              <p className="mt-1 text-sm text-fg-muted">La lista se actualiza todos los días a la mañana: cuando haya uno en {country}, aparece acá primero.</p>
+            </>) : (
+              <p>Hoy no hay {h.noun[1]} {ab} {h.where}. La lista se actualiza todos los días a la mañana; mientras tanto, <Link prefetch={false} href="/" className="text-lime hover:underline">mirá todas las oportunidades abiertas</Link>.</p>
+            )
           )}
         </div>
       </header>
@@ -72,6 +83,13 @@ export default async function HubPage({ params }: P) {
         <section aria-label={h.iso ? undefined : h.label} aria-labelledby={h.iso ? 'proximos' : undefined} className="mt-8">
           {h.iso && <><h2 id="proximos" className="font-display text-2xl font-semibold">Próximos hackathons {h.where}</h2><p className="mb-4 mt-1 text-sm text-fg-muted">Ordenados por fecha de inicio.</p></>}
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{items.map((l) => <li key={l.id}><ListingCard listing={l} now={nowIso} showStart={order === 'inicio'} /></li>)}</ul>
+        </section>
+      )}
+      {regional.length > 0 && (
+        <section aria-labelledby="regionales" className="mt-8">
+          <h2 id="regionales" className="font-display text-2xl font-semibold">Abiertos a toda LatAm u online</h2>
+          <p className="mb-4 mt-1 text-sm text-fg-muted">No son específicos de {country}: se hacen online o aceptan participantes de toda Latinoamérica.</p>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{regional.map((l) => <li key={l.id}><ListingCard listing={l} now={nowIso} /></li>)}</ul>
         </section>
       )}
       {unconf.length > 0 && (
