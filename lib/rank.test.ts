@@ -39,3 +39,24 @@ test('LatAm scope', () => {
   assert.equal(latamCountryOf('Bogotá, Colombia'), 'CO');
   assert.equal(latamCountryOf('São Paulo'), 'BR');
 });
+
+test('shortName: derived from the DB title, no new facts', async () => {
+  const { shortName } = await import('./hubs');
+  const n = (title: string, city: string | null = null) => shortName({ ...base, title, city });
+  assert.equal(n('shippear #3: hackatón de un día en Rosario', 'Rosario'), 'shippear #3');
+  assert.equal(n('belo buildathon: Agentic Banking MCP', 'Buenos Aires'), 'belo buildathon');
+  assert.equal(n('Hackathon EDU HUB · LABITCONF 2026', 'Buenos Aires'), 'EDU HUB de LABITCONF');
+  assert.equal(n('Hackatón Media Party Buenos Aires 2026', 'Buenos Aires'), 'Media Party');
+  assert.equal(n('HackaTwin', 'Buenos Aires'), 'HackaTwin');
+  assert.equal(n('Hackathon', null), 'Hackathon');
+});
+
+test('venueLines: all-or-none per list, only DB venues', async () => {
+  const { venueLines } = await import('./hubs');
+  const irl = (venue: string | null, venueLocality: string | null = null) => ({ ...base, modality: 'irl', city: 'Buenos Aires', venue, venueLocality });
+  assert.deepEqual(venueLines([irl('Digital House', 'CABA, Belgrano'), irl(null), irl(null)]), [null, null, null]);
+  assert.deepEqual(venueLines([irl('Digital House', 'CABA, Belgrano'), irl('UTN')]), ['Digital House · Belgrano', 'UTN']);
+  assert.deepEqual(venueLines([irl('UTN'), { ...irl('Somewhere'), modality: 'online' }]), [null, null]);
+  assert.deepEqual(venueLines([irl('UTN')]), ['UTN']);
+  assert.deepEqual(venueLines([]), []);
+});

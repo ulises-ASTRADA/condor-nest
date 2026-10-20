@@ -5,8 +5,10 @@ import { competitionText, rewardText } from '@/lib/format';
 import { isOpen } from '@/lib/rank';
 import { TypeBadge, EligBadge } from './Badges';
 import { Countdown } from './Countdown';
+import { LocalTime } from './LocalTime';
 
-export function ListingCard({ listing: l, variant = 'default', now }: { listing: Listing; variant?: 'default' | 'featured' | 'compact'; now: string }) {
+/** showStart: lists ordered by start date also print the start when the countdown shows another date (deadline). */
+export function ListingCard({ listing: l, variant = 'default', now, showStart = false }: { listing: Listing; variant?: 'default' | 'featured' | 'compact'; now: string; showStart?: boolean }) {
   const r = rewardText(l); const c = competitionText(l);
   const closed = !isOpen(l, new Date(now));
   return (
@@ -29,6 +31,7 @@ export function ListingCard({ listing: l, variant = 'default', now }: { listing:
           </p>
         )}
         <div className="mt-2"><Countdown l={l} initialNow={now} /></div>
+        {showStart && l.startsAt && (l.deadlineAt || l.modality === 'online') && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Empieza <LocalTime iso={l.startsAt} /></p>}
         {variant !== 'compact' && l.competitors != null && (
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-sm tabular text-fg-muted">
             <span aria-hidden="true">👥</span><span>{c.count}</span>
