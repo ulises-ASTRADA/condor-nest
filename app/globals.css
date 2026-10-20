@@ -154,12 +154,12 @@ html[data-reduce-motion] .btn-sweep::before { display: none; }
 
 /* ---------- Custom cursor (fine pointers, motion allowed) ---------- */
 .cn-cursor { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 9999; border-radius: 9999px; opacity: 0; transition: opacity 200ms ease; will-change: transform; }
-.cn-cursor.dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: rgb(var(--lime)); box-shadow: 0 0 10px rgb(var(--lime) / .8); }
-.cn-cursor.ring { width: 32px; height: 32px; margin: -16px 0 0 -16px; border: 1px solid rgb(var(--lime) / .6);
-  transition: opacity 200ms ease, width 200ms ease, height 200ms ease, margin 200ms ease, border-color 200ms ease, background-color 200ms ease; }
+.cn-cursor.dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; background: rgb(var(--lime)); box-shadow: 0 0 10px rgb(var(--lime) / .8);
+  transition: opacity 200ms ease, width 150ms ease, height 150ms ease, margin 150ms ease; }
 html.cursor-on .cn-cursor { opacity: 1; }
-html.cursor-on .cn-cursor.ring.hot { width: 48px; height: 48px; margin: -24px 0 0 -24px; border-color: rgb(var(--cyan)); background: rgb(var(--cyan) / .08); }
-html.cursor-on .cn-cursor.ring.text, html.cursor-on .cn-cursor.dot.text { opacity: 0; }
+/* Over links/buttons the dot grows slightly (the native pointer is hidden, so this is the only hover cue) */
+html.cursor-on .cn-cursor.dot.hot { width: 10px; height: 10px; margin: -5px 0 0 -5px; }
+html.cursor-on .cn-cursor.dot.text { opacity: 0; }
 html.cursor-on, html.cursor-on a, html.cursor-on button, html.cursor-on select, html.cursor-on label, html.cursor-on [role="checkbox"] { cursor: none; }
 html.cursor-on input, html.cursor-on textarea { cursor: text; }
 
