@@ -23,8 +23,3 @@ export function LocalTime({ iso, format = 'short', className }: { iso: string; f
   const text = format === 'full' ? artFull(iso, tz) : format === 'day' ? artDay(iso, tz) : artShort(iso, tz);
   return <time dateTime={iso} className={className} title={tzLabel(tz, iso)}>{text}</time>;
 }
-
-export function TzLabel({ prefix = '', className }: { prefix?: string; className?: string }) {
-  const tz = useTz();
-  return <span className={className}>{prefix}{tzLabel(tz)}</span>;
-}
