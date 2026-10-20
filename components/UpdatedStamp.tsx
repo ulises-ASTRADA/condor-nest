@@ -10,7 +10,7 @@ export function UpdatedStamp({ iso, open, counts, now }: { iso: string | null; o
         <span aria-hidden="true" className="h-2 w-2 rounded-pill bg-cyan shadow-glow-cyan" />
         {iso ? (
           <time dateTime={iso} title={artFull(iso, tz)} className="whitespace-nowrap">
-            <span className="sm:hidden">Actualizado {dayKey(iso, tz).slice(0, 5)} {hhmm(iso, tz)}</span>
+            <span className="sm:hidden">Actualizado {dayKey(iso, tz).slice(0, 5)} {hhmm(iso, tz)} {tzOffset(tz, iso)}</span>
             <span className="max-sm:hidden">Actualizado el {dayKey(iso, tz)} a las {hhmm(iso, tz)} {tzOffset(tz, iso)}</span>
           </time>
         ) : <span>Actualizado: sin dato</span>}
