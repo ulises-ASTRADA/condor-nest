@@ -1,6 +1,7 @@
 import type { Listing, ListingType } from './types';
 import { ecosOf, ECOSYSTEMS, type Eco } from './eco';
 import { citySlug } from './city';
+import { COUNTRY_ES } from './geo';
 export type Sort = 'cierra-pronto' | 'mayor-premio' | 'menos-competencia' | 'mas-nuevos';
 export const SORTS: { id: Sort; label: string }[] = [
   { id: 'cierra-pronto', label: 'Cierra pronto' }, { id: 'mayor-premio', label: 'Mayor premio' },
@@ -58,6 +59,27 @@ export function cityOptions(all: Listing[]): CityOpt[] {
     .sort((a, b) => a.name.localeCompare(b.name, 'es'));
 }
 
+/** Valid ?pais= / ?ciudad= values, derived from the listings (never from the URL). */
+export type LocCtx = { cities: CityOpt[]; countries: string[] };
+export function locationContext(all: Listing[]): LocCtx {
+  const cities = cityOptions(all);
+  const countries = Object.keys(COUNTRY_ES).filter((c) => all.some((l) => inCountry(l, c)) || cities.some((x) => x.countries.includes(c)))
+    .sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es'));
+  return { cities, countries };
+}
+/** Cards the feed shows for these filters: organic matches + at most 1 featured (the feed shows a single Destacado). */
+export const feedCount = (all: Listing[], f: Filters, now: Date) => { let feat = 0, org = 0; for (const l of all) if (matches(l, f, now)) { if (l.featured) feat++; else org++; } return org + Math.min(feat, 1); };
+export type LocGroup = { iso: string; name: string; n: number; cities: (CityOpt & { n: number })[] };
+/** Location select model: one group per country ("Toda <país> (n)" + cities (n)); n = feedCount after picking that option with every
+ *  other filter kept. Options with n = 0 are hidden, except the one currently selected. */
+export function locationGroups(all: Listing[], ctx: LocCtx, f: Filters, now: Date): LocGroup[] {
+  return ctx.countries.map((iso) => ({
+    iso, name: COUNTRY_ES[iso], n: feedCount(all, { ...f, pais: iso, ciudad: null }, now),
+    cities: ctx.cities.filter((c) => c.countries.includes(iso)).map((c) => ({ ...c, n: feedCount(all, { ...f, pais: iso, ciudad: c.slug }, now) }))
+      .filter((c) => c.n > 0 || (f.ciudad === c.slug && f.pais === iso)),
+  })).filter((g) => g.n > 0 || g.iso === f.pais);
+}
+
 /** "Abierto a AR/LatAm": hides listings restricted to another country (e.g. "Solo México"). */
 export const openToArLatam = (l: Listing) => l.eligibility !== 'restricted'; // 'restricted' = non-AR-wide limit (country 'ar' uses eligibility 'ar')
 /** Listing is in / for this country itself (not counting LatAm-wide ones). */
@@ -98,13 +120,16 @@ function sortRaw(list: Listing[], sort: Sort, now: Date): Listing[] {
 }
 
 /** cities: cityOptions(listings). ?ciudad= is normalized (accents/case/spaces) and accepted only when it equals a derived slug; a city
- *  implies its country (?ciudad alone infers ?pais), and a city outside an explicit ?pais= is ignored. Unknown values are ignored.
+ *  implies its country (?ciudad alone infers ?pais), and a city outside an explicit ?pais= is ignored. ?pais= must be a derived country
+ *  (case-insensitive). Unknown values are ignored.
  *  ?virtual= and ?abierto= accept only '1'. Legacy ?modalidad=online (without irl) maps to virtual. */
-export function filtersFromSearch(sp: Record<string, string | string[] | undefined>, cities: CityOpt[] = []): { f: Filters; sort: Sort } {
+export function filtersFromSearch(sp: Record<string, string | string[] | undefined>, ctx: LocCtx = { cities: [], countries: [] }): { f: Filters; sort: Sort } {
+  const { cities, countries } = ctx;
   const g = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : sp[k]) as string | undefined;
   const list = (k: string) => (g(k) ?? '').split(',').filter(Boolean);
   const orden = g('orden') as Sort | undefined;
-  const paisQ = /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null;
+  const paisRaw = (g('pais') ?? '').trim().toUpperCase();
+  const paisQ = countries.includes(paisRaw) ? paisRaw : null; // unknown/invalid ?pais= is ignored (like ?ciudad=xx)
   const mods = list('modalidad');
   const rawCity = g('ciudad');
   const wanted = rawCity ? citySlug(rawCity.slice(0, 80)) : '';

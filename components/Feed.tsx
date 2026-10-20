@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
-import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, cityOptions, type Filters, type Sort } from '@/lib/rank';
+import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, locationContext, locationGroups, type Filters, type Sort } from '@/lib/rank';
 import { HUBS } from '@/lib/hubs';
 import dynamic from 'next/dynamic';
 const Newsletter = dynamic(() => import('./Newsletter').then((x) => x.Newsletter));
@@ -12,7 +12,6 @@ import { Ticker } from './Ticker';
 import { useReduceMotionPref } from './Toggles';
 import { ECOSYSTEMS, type Eco } from '@/lib/eco';
 import { COUNTRY_ES } from '@/lib/geo';
-import { inCountry } from '@/lib/rank';
 
 const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
 const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -45,8 +44,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm (listings restricted to another country are always hidden).
   const [f, setF] = useState<Filters>(initial.f);
   const choosePais = (iso: string | null) => { setF((o) => ({ ...o, pais: iso, ciudad: null })); setLimit(PAGE); }; // changing country resets the city
-  const cityOpts = useMemo(() => cityOptions(listings), [listings]);
-  const paises = useMemo(() => Object.keys(COUNTRY_ES).filter((c) => listings.some((l) => inCountry(l, c))).sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es')), [listings]);
+  const locCtx = useMemo(() => locationContext(listings), [listings]); const cityOpts = locCtx.cities;
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
   const first = useRef(true);
@@ -58,7 +56,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     if (lastQs.current === null) { lastQs.current = spStr; return; }
     if (spStr === lastQs.current) return;
     lastQs.current = spStr;
-    const next = filtersFromSearch(Object.fromEntries(sp.entries()), cityOpts);
+    const next = filtersFromSearch(Object.fromEntries(sp.entries()), locCtx);
     setF(next.f); setSort(next.sort); setLimit(PAGE);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spStr]);
@@ -87,19 +85,8 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const total = organic.length + featured.length;
   const dataless = sort === 'menos-competencia' ? shown.findIndex((l) => l.rewardUsd == null || l.competitors == null || !isOpen(l, nowD)) : -1;
   const vis = useMemo(() => listings.filter((l) => matches(l, f, nowD)), [listings, f, nowD]);
-  // Location select (one control): "Toda LatAm", then one <optgroup> per country = "Toda <país>" + its cities with counts.
-  // A count = exactly what the feed shows after picking that option (organic + at most 1 featured), with every other filter kept.
-  const countFor = (fx: Filters) => { let feat = 0, org = 0; for (const l of listings) if (matches(l, fx, nowD)) { if (l.featured) feat++; else org++; } return org + Math.min(feat, 1); };
-  const locGroups = useMemo(() => {
-    const isos = [...new Set([...paises, ...cityOpts.flatMap((c) => c.countries), ...(f.pais ? [f.pais] : [])])].filter((c) => c in COUNTRY_ES)
-      .sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es'));
-    return isos.map((iso) => ({
-      iso, name: COUNTRY_ES[iso],
-      cities: cityOpts.filter((c) => c.countries.includes(iso)).map((c) => ({ ...c, n: countFor({ ...f, pais: iso, ciudad: c.slug }) }))
-        .filter((c) => c.n > 0 || (f.ciudad === c.slug && f.pais === iso)),
-    })).filter((g) => paises.includes(g.iso) || g.cities.length || g.iso === f.pais);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listings, f, nowD, paises, cityOpts]);
+  // Location select (one control): "Toda LatAm", then one <optgroup> per country = "Toda <país> (n)" + its cities (n); zero-count options hidden.
+  const locGroups = useMemo(() => locationGroups(listings, locCtx, f, nowD), [listings, locCtx, f, nowD]);
   const locValue = f.ciudad && f.pais ? `c:${f.pais}:${f.ciudad}` : f.pais ? `p:${f.pais}` : '';
   const chooseLoc = (v: string) => {
     const [k, iso, slug] = v.split(':');
@@ -115,7 +102,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
           <option value="">Toda LatAm</option>
           {locGroups.map((g) => (
             <optgroup key={g.iso} label={g.name}>
-              <option value={`p:${g.iso}`}>{toda(g.name)}</option>
+              <option value={`p:${g.iso}`}>{toda(g.name)} ({g.n})</option>
               {g.cities.map((c) => <option key={c.slug} value={`c:${g.iso}:${c.slug}`}>{c.name} ({c.n})</option>)}
             </optgroup>
           ))}

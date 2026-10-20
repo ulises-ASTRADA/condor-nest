@@ -62,7 +62,7 @@ test('venueLines: all-or-none per list, only DB venues', async () => {
 });
 
 // ---- feed-filters: ?ciudad / ?virtual / ?abierto + access rule ----
-import { filtersFromSearch, filtersToSearch, cityOptions, access, hasRequirements } from './rank.ts';
+import { filtersFromSearch, filtersToSearch, cityOptions, access, hasRequirements, locationContext, locationGroups, feedCount } from './rank.ts';
 const cityRows = [L({ id: 'c1', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'c2', modality: 'hybrid', city: 'Cordoba', country: 'AR' }), L({ id: 'c3', modality: 'irl', city: 'Ciudad de México', country: 'MX' }), L({ id: 'o1', modality: 'online', city: 'Rosario' })];
 const opts = cityOptions(cityRows);
 test('cityOptions: in-person/hybrid only, accent-insensitive slugs', () => {
@@ -70,7 +70,7 @@ test('cityOptions: in-person/hybrid only, accent-insensitive slugs', () => {
   assert.deepEqual(opts.find((c) => c.slug === 'cordoba')!.countries, ['AR']);
 });
 test('parse ciudad/virtual/abierto; invalid values ignored', () => {
-  const p = (q: Record<string, string>) => filtersFromSearch(q, opts).f;
+  const p = (q: Record<string, string>) => filtersFromSearch(q, locationContext(cityRows)).f;
   assert.equal(p({ ciudad: 'cordoba' }).ciudad, 'cordoba');
   assert.equal(p({ ciudad: 'CORDOBA' }).ciudad, 'cordoba');
   assert.equal(p({ ciudad: 'córdoba' }).ciudad, 'cordoba');
@@ -92,9 +92,9 @@ test('parse ciudad/virtual/abierto; invalid values ignored', () => {
   assert.equal(p({ modalidad: 'online,irl' }).virtual, false);
 });
 test('filtersToSearch round-trip', () => {
-  const { f, sort } = filtersFromSearch({ ciudad: 'cordoba', virtual: '1', abierto: '1', pais: 'ar' }, opts);
+  const { f, sort } = filtersFromSearch({ ciudad: 'cordoba', virtual: '1', abierto: '1', pais: 'ar' }, locationContext(cityRows));
   assert.equal(filtersToSearch(f, sort), 'pais=ar&ciudad=cordoba&virtual=1&abierto=1');
-  assert.equal(filtersToSearch(filtersFromSearch({ modalidad: 'online' }, opts).f, 'cierra-pronto'), 'virtual=1');
+  assert.equal(filtersToSearch(filtersFromSearch({ modalidad: 'online' }, locationContext(cityRows)).f, 'cierra-pronto'), 'virtual=1');
 });
 test('access rule: restricted/ar, age, student-only; listing who is welcome is not a requirement', () => {
   assert.equal(access(L({ eligibility: 'restricted' })), 'requisitos');
@@ -110,7 +110,7 @@ test('access rule: restricted/ar, age, student-only; listing who is welcome is n
 });
 test('combined filters: city + virtual + abierto', () => {
   const rows = [L({ id: 'a', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'b', modality: 'hybrid', city: 'Córdoba', country: 'AR' }), L({ id: 'c', modality: 'hybrid', city: 'Córdoba', country: 'AR', eligibilityShort: 'Abierto · +18 años' }), L({ id: 'd', modality: 'online' })];
-  const run = (q: Record<string, string>) => { const f = filtersFromSearch(q, cityOptions(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
+  const run = (q: Record<string, string>) => { const f = filtersFromSearch(q, locationContext(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
   assert.deepEqual(run({ ciudad: 'cordoba' }), ['a', 'b', 'c']);
   assert.deepEqual(run({ virtual: '1' }), ['b', 'c', 'd']);
   assert.deepEqual(run({ ciudad: 'cordoba', virtual: '1' }), ['b', 'c']);
@@ -128,8 +128,35 @@ test('event JSON-LD offers: registration url + availability, never an unverified
 });
 test('a city implies its country: country-restricted listings there become visible', () => {
   const rows = [L({ id: 'r', modality: 'irl', city: 'Monterrey', country: 'MX', eligibility: 'restricted' }), L({ id: 'o', modality: 'irl', city: 'Monterrey', country: 'MX' })];
-  const run = (q: Record<string, string>) => { const f = filtersFromSearch(q, cityOptions(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
+  const run = (q: Record<string, string>) => { const f = filtersFromSearch(q, locationContext(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
   assert.deepEqual(run({}), ['o']);
   assert.deepEqual(run({ ciudad: 'monterrey' }), ['r', 'o']);
   assert.deepEqual(run({ ciudad: '<script>' }), ['o']);
+});
+
+test('?pais= validated against derived countries (case-insensitive); unknown ignored', () => {
+  const ctx = locationContext(cityRows); // AR (Córdoba), MX (CDMX)
+  const p = (q: Record<string, string>) => filtersFromSearch(q, ctx).f.pais;
+  assert.equal(p({ pais: 'ar' }), 'AR'); assert.equal(p({ pais: 'AR' }), 'AR'); assert.equal(p({ pais: 'Mx' }), 'MX');
+  for (const v of ['xx', 'ZZ', '<script>', 'arg', 'cl', '']) assert.equal(p({ pais: v }), null); // cl: real country but no listings
+  assert.equal(filtersFromSearch({ pais: 'ar' }).f.pais, null); // no derived list -> nothing accepted
+  const rows = [L({ id: 'a', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'b', modality: 'online' }), L({ id: 'c', modality: 'irl', city: 'Lima', country: 'PE', eligibility: 'restricted' })];
+  const all = (q: Record<string, string>) => { const f = filtersFromSearch(q, locationContext(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
+  assert.deepEqual(all({ pais: 'xx' }), all({})); assert.deepEqual(all({ pais: '<script>' }), ['a', 'b']);
+  assert.equal(filtersToSearch(filtersFromSearch({ pais: 'xx' }, locationContext(rows)).f, 'cierra-pronto'), ''); // nothing active -> no 'Limpiar filtros'
+});
+test('location groups: country + city counts = cards after picking; zero-count options hidden', () => {
+  const rows = [L({ id: 'a', modality: 'irl', city: 'Córdoba', country: 'AR' }), L({ id: 'b', modality: 'irl', city: 'Rosario', country: 'AR', type: 'grant' }),
+    L({ id: 'c', modality: 'online', eligibility: 'latam' }), L({ id: 'd', modality: 'irl', city: 'Lima', country: 'PE', type: 'grant' })];
+  const ctx = locationContext(rows);
+  const g = locationGroups(rows, ctx, DEFAULT_FILTERS, now);
+  assert.deepEqual(g.map((x) => [x.iso, x.n, x.cities.map((c) => [c.slug, c.n])]), [['AR', 3, [['cordoba', 1], ['rosario', 1]]], ['PE', 2, [['lima', 1]]]]);
+  for (const x of g) { assert.equal(x.n, feedCount(rows, { ...DEFAULT_FILTERS, pais: x.iso }, now)); for (const c of x.cities) assert.equal(c.n, feedCount(rows, { ...DEFAULT_FILTERS, pais: x.iso, ciudad: c.slug }, now)); }
+  // only bounties: Peru (grant-only city + LatAm online bounty) keeps the online one; Rosario/Lima hidden
+  const gb = locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['bounty'] }, now);
+  assert.deepEqual(gb.map((x) => [x.iso, x.n, x.cities.map((c) => c.slug)]), [['AR', 2, ['cordoba']], ['PE', 1, []]]);
+  // a country whose count drops to 0 disappears, unless it is the selected one
+  const gv = locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['grant'], virtual: true }, now);
+  assert.deepEqual(gv.map((x) => x.iso), []);
+  assert.deepEqual(locationGroups(rows, ctx, { ...DEFAULT_FILTERS, tipos: ['grant'], virtual: true, pais: 'PE' }, now).map((x) => [x.iso, x.n]), [['PE', 0]]);
 });
