@@ -152,8 +152,8 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const clearAll = () => { setF({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES], q: f.q }); setLimit(PAGE); };
   // Quick filters above the feed (not sticky). Replaces the old Online/Presencial controls: "Virtual" = ?virtual=1 (legacy ?modalidad=online maps to it).
   const filterRow = (
-    <div className="mt-3 flex items-center gap-3">
-      <div role="group" aria-label="Filtros rápidos" className="chip-row -mx-4 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-4 lg:mx-0 lg:overflow-visible lg:px-0">
+    <div className="mt-3 flex items-center gap-x-3 lg:flex-wrap">
+      <div role="group" aria-label="Filtros rápidos" className="chip-row -mx-4 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-4 lg:mx-0 lg:flex-none lg:overflow-visible lg:px-0">
         <label className="relative flex min-h-tap shrink-0 items-center">
           <span className="sr-only">Ciudad</span>
           <select value={f.ciudad ?? ''} onChange={(e) => set({ ciudad: e.target.value || null })} className={`fchip cursor-pointer appearance-none pr-7${f.ciudad ? ' on' : ''}`}>
@@ -166,7 +166,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
         <FChip on={f.abiertoTodos} onClick={() => set({ abiertoTodos: !f.abiertoTodos })}>Abierto a todos</FChip>
         {anyFilter && <button type="button" onClick={clearAll} className="min-h-tap shrink-0 px-1 text-sm text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime">Limpiar filtros</button>}
       </div>
-      <p className="hidden shrink-0 text-sm text-fg-muted lg:block"><Counter n={total} /></p>
+      <p className="ml-auto hidden shrink-0 text-sm text-fg-muted lg:block"><Counter n={total} /></p>
     </div>
   );
   const sideControls = (
