@@ -22,9 +22,9 @@ export const Turnstile = forwardRef<TurnstileHandle>(function Turnstile(_, ref) 
     if (!KEY) return; let gone = false;
     load().then(() => {
       if (gone || !el.current || !window.turnstile) return;
-      id.current = window.turnstile.render(el.current, { sitekey: KEY, appearance: 'interaction-only', theme: 'dark', language: 'es', callback: (t: string) => { tok.current = t; }, 'expired-callback': () => { tok.current = undefined; }, 'error-callback': () => { tok.current = undefined; } });
+      id.current = window.turnstile.render(el.current, { sitekey: KEY, appearance: 'interaction-only', size: el.current.clientWidth < 300 ? 'compact' : 'flexible', theme: 'dark', language: 'es', callback: (t: string) => { tok.current = t; }, 'expired-callback': () => { tok.current = undefined; }, 'error-callback': () => { tok.current = undefined; } });
     }).catch(() => {});
     return () => { gone = true; if (id.current && window.turnstile) window.turnstile.remove(id.current); };
   }, []);
-  return KEY ? <div ref={el} className="cf-ts mt-2 empty:mt-0" /> : null;
+  return KEY ? <div ref={el} className="cf-ts mt-2 w-full max-w-full overflow-hidden empty:mt-0" /> : null;
 });
