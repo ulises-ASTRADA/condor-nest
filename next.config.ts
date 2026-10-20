@@ -31,12 +31,13 @@ const config: NextConfig = {
       { key: 'Content-Security-Policy', value: csp },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
       { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
       ] },
-      // Referrer-Policy: site default everywhere except /go/ click redirects, where the external site gets no referrer
-      // (same as the old rel="noreferrer" direct link). Split by source so the two values never overlap.
-      { source: '/((?!go/).*)', headers: [{ key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' }] },
+      // Token-bearing pages: never send the URL (with the token) as Referer, never cache. Listed last so it overrides the default Referrer-Policy.
+      { source: '/newsletter/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'no-store' }] },
+      // /go/ click redirects: the external site gets no referrer (same as the old rel="noreferrer" direct link). Listed last to override the default.
       { source: '/go/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },
     ];
   },

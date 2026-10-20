@@ -1,28 +1,40 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Newsletter } from '@/components/Newsletter';
+import { PRIMARY, SECONDARY } from './styles';
 type E = 'loading' | 'confirmado' | 'invalido' | 'error';
 const key = (t: string) => `cn-nl-ok:${t.slice(0, 16)}`;
+// The token is single-use: cn_confirm clears it on success, so a second open can't tell "already used" from "expired".
+// Re-opening in the same browser shows success via localStorage; elsewhere it shows the expired state with the form.
 export default function AutoConfirm({ token }: { token: string }) {
   const [st, setSt] = useState<E>('loading'); const once = useRef(false);
-  useEffect(() => {
-    if (once.current) return; once.current = true;
-    // Re-opening a link already confirmed in this browser shows success (token is single-use server-side).
-    try { if (localStorage.getItem(key(token))) { setSt('confirmado'); return; } } catch {}
-    fetch('/api/newsletter/confirm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store' })
+  const run = useCallback(() => {
+    setSt('loading');
+    // Always POST (mail scanners prefetch GETs). Abort after 10 s so nobody stays stuck on "Confirmando…".
+    fetch('/api/newsletter/confirm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store', signal: AbortSignal.timeout(10_000) })
       .then((r) => r.json()).then((j) => { const e = (['confirmado', 'invalido', 'error'].includes(j?.estado) ? j.estado : 'error') as E;
         if (e === 'confirmado') { try { localStorage.setItem(key(token), '1'); } catch {} } setSt(e); })
       .catch(() => setSt('error'));
   }, [token]);
+  useEffect(() => {
+    if (once.current) return; once.current = true;
+    try { if (localStorage.getItem(key(token))) { setSt('confirmado'); return; } } catch {}
+    run();
+  }, [token, run]);
   const C = {
     loading: { t: 'Confirmando…', d: 'Un segundo.' },
     confirmado: { t: '¡Listo, ya estás suscripto!', d: 'El lunes te llega el primero.' },
-    invalido: { t: 'Este link no funciona', d: 'Puede que haya vencido (dura 48 horas) o que ya lo hayas usado. Si ya confirmaste, no tenés que hacer nada; si no, suscribite de nuevo.' },
-    error: { t: 'No pudimos procesarlo', d: 'Probá abrir el link de nuevo en un rato.' },
+    invalido: { t: 'Este link ya venció', d: 'Poné tu mail y te mandamos uno nuevo. Si ya lo habías confirmado, no tenés que hacer nada.' },
+    error: { t: 'No pudimos procesarlo', d: 'Puede ser la conexión. Probá de nuevo.' },
   }[st];
-  return (<div aria-live="polite" data-state={st}>
-    <h1 className="mt-3 font-display text-2xl font-semibold">{C.t}</h1>
-    <p className="mt-3 text-fg-muted">{C.d}</p>
-    {st !== 'loading' && <Link href="/" className="mt-7 inline-grid h-12 place-items-center rounded-[12px] bg-lime px-6 font-bold text-primary-fg">Ver oportunidades</Link>}
-  </div>);
+  return (<>
+    <div aria-live="polite" data-state={st}>
+      <h1 className="mt-3 font-display text-2xl font-semibold">{C.t}</h1>
+      <p className="mt-3 text-fg-muted">{C.d}</p>
+    </div>
+    {st === 'invalido' && <Newsletter variant="resub" />}
+    {st === 'error' && <div><button type="button" onClick={run} className={PRIMARY}>Reintentar</button></div>}
+    {st !== 'loading' && <Link href="/" className={st === 'confirmado' ? PRIMARY : SECONDARY}>Ver oportunidades</Link>}
+  </>);
 }
