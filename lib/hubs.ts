@@ -46,7 +46,7 @@ export const HUBS: Hub[] = [
     match: (l) => l.type === 'grant',
     faqs: () => [
       { q: '¿Qué es un grant?', a: 'Financiamiento no reembolsable para construir un proyecto. A diferencia de un hackathon, no compite en un evento con fecha: se postula con una propuesta.' },
-      { q: '¿Qué grants lista Condor Nest?', a: 'Solo los que están abiertos explícitamente a LatAm o a un país de LatAm. No listamos convocatorias globales ni las que no aclaran desde dónde se puede participar.' },
+      { q: '¿Qué grants lista Condor Nest?', a: 'Los que están abiertos explícitamente a LatAm o a un país de LatAm. También listamos convocatorias globales abiertas a participantes de Latinoamérica. No listamos las que no aclaran desde dónde se puede participar.' },
       ELIG, UPDATED, PUBLISH,
     ] },
   { slug: 'hackathons-online', label: 'Hackathons online', h1: 'Hackathons online para LatAm', noun: ['hackathon online', 'hackathons online'], where: 'para participar desde LatAm', feed: '/?tipo=hackathon&modalidad=online',
