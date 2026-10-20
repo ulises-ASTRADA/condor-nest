@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { getListing } from '@/lib/supabase';
 import { serverRpc } from '@/lib/server-supabase';
-import { VALID_SLUG, goFallback, refPath, noJsPage } from '@/lib/go';
+import { VALID_SLUG, goFallback, refPath, noJsPage, goneOrigin } from '@/lib/go';
 
 // /go/<slug> → 302 to the listing's stored apply_url (never a user-supplied URL), counting the click.
 // What counts as a click (documented for analytics):
@@ -38,14 +38,16 @@ function refDomain(req: NextRequest): string | null {
   try { const u = new URL(r); return /^https?:$/.test(u.protocol) ? u.hostname.toLowerCase().replace(/^www\./, '').slice(0, 253) : null; } catch { return null; }
 }
 
-// Same-origin fetch of the static /go-gone page. On non-production deployments the visitor's cookies are forwarded so a
+// Fetch of the static /go-gone page from a FIXED origin (goneOrigin: never Host-derived). On non-production deployments the visitor's cookies are forwarded so a
 // protected preview (share link / Vercel login) can be read; production is public and gets no cookies.
 async function goneHtml(req: NextRequest): Promise<string | null> {
   try {
+    const origin = goneOrigin({ VERCEL_ENV: process.env.VERCEL_ENV, VERCEL_URL: process.env.VERCEL_URL });
+    if (!origin) return null;
     const h: Record<string, string> = { accept: 'text/html' };
     const c = req.headers.get('cookie');
     if (c && process.env.VERCEL_ENV !== 'production') h.cookie = c;
-    const r = await fetch(new URL('/go-gone', req.nextUrl.origin), { headers: h, redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(3000) });
+    const r = await fetch(`${origin}/go-gone`, { headers: h, redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(3000) });
     if (r.status !== 200) return null;
     const html = await r.text();
     return html.includes('Esta convocatoria ya no está publicada') ? noJsPage(html) : null;

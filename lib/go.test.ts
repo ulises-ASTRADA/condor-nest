@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { refPath, goFallback, VALID_SLUG, goPath, stripScripts, noJsPage } from './go.ts';
+import { refPath, goFallback, VALID_SLUG, goPath, stripScripts, noJsPage, goneOrigin } from './go.ts';
 
 test('refPath: condor-nest referers keep the pathname only', () => {
   assert.equal(refPath('https://condor-nest.lat/o/hackatwin-2026', 'condor-nest.lat'), '/o/hackatwin-2026');
@@ -46,4 +46,12 @@ test('noJsPage injects the hide-JS-controls style once, still no scripts', () =>
   const out = noJsPage('<html><head><script>x</script></head><body></body></html>');
   assert.equal((out.match(/<style>/g) ?? []).length, 1);
   assert.doesNotMatch(out, /<script/);
+});
+test('goneOrigin: fixed origin, never from the request', () => {
+  assert.equal(goneOrigin({ VERCEL_ENV: 'production', VERCEL_URL: 'condor-nest-abc.vercel.app' }), 'https://condor-nest.lat');
+  assert.equal(goneOrigin({ VERCEL_ENV: 'production' }), 'https://condor-nest.lat');
+  assert.equal(goneOrigin({ VERCEL_ENV: 'preview', VERCEL_URL: 'condor-nest-abc-team.vercel.app' }), 'https://condor-nest-abc-team.vercel.app');
+  assert.equal(goneOrigin({ VERCEL_ENV: 'development', VERCEL_URL: 'localhost:3000' }), null);
+  assert.equal(goneOrigin({ VERCEL_ENV: 'preview', VERCEL_URL: 'evil.com/x' }), null);
+  assert.equal(goneOrigin({}), null);
 });

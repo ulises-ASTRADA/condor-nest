@@ -56,7 +56,17 @@ export function stripScripts(html: string): string {
     .replace(/<link\b[^>]*\b(?:as=["']?script|rel=["']?modulepreload)[^>]*>/gi, '');
 }
 
-/** Hides controls that only work with JS (music/theme/motion toggles, footer newsletter form) on a script-free page. */
-export const NO_JS_STYLE = '<style>.site-header button,footer button[role=switch],footer form,footer section:has(form){display:none!important}</style>';
+/** Hides toggles that only work with JS (music/theme/motion) on a script-free page. (The footer form is not rendered there at all.) */
+export const NO_JS_STYLE = '<style>.site-header button,footer button[role=switch]{display:none!important}</style>';
 /** Script-free version of a server-rendered page: scripts removed, JS-only controls hidden. */
 export const noJsPage = (html: string) => stripScripts(html).replace(/<\/head>/i, `${NO_JS_STYLE}</head>`);
+
+/**
+ * Fixed origin for the internal fetch of /go-gone. Never derived from the request's Host header.
+ * Production → https://condor-nest.lat; otherwise this deployment's own https://$VERCEL_URL; null if unknown (→ plain 404).
+ */
+export function goneOrigin(env: { VERCEL_ENV?: string; VERCEL_URL?: string }): string | null {
+  if (env.VERCEL_ENV === 'production') return 'https://condor-nest.lat';
+  const u = (env.VERCEL_URL ?? '').trim().toLowerCase();
+  return /^[a-z0-9.-]+$/.test(u) ? `https://${u}` : null;
+}
