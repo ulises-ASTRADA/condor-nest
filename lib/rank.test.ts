@@ -73,11 +73,18 @@ test('parse ciudad/virtual/abierto; invalid values ignored', () => {
   const p = (q: Record<string, string>) => filtersFromSearch(q, opts).f;
   assert.equal(p({ ciudad: 'cordoba' }).ciudad, 'cordoba');
   assert.equal(p({ ciudad: 'CORDOBA' }).ciudad, 'cordoba');
+  assert.equal(p({ ciudad: 'córdoba' }).ciudad, 'cordoba');
+  assert.equal(p({ ciudad: decodeURIComponent('C%C3%B3rdoba') }).ciudad, 'cordoba');
+  assert.equal(p({ ciudad: 'Ciudad de México' }).ciudad, 'ciudad-de-mexico');
+  assert.equal(p({ ciudad: 'cordoba' }).pais, 'AR'); // city implies its country
+  assert.equal(p({ ciudad: 'cordoba', pais: 'ar' }).ciudad, 'cordoba');
   assert.equal(p({ ciudad: 'xx' }).ciudad, null);
+  assert.equal(p({ ciudad: 'xx' }).pais, null);
   assert.equal(p({ ciudad: 'rosario' }).ciudad, null); // only an online listing has it
   assert.equal(p({ ciudad: '<script>' }).ciudad, null);
   assert.equal(filtersFromSearch({ ciudad: 'cordoba' }).f.ciudad, null); // no derived list -> nothing accepted
   assert.equal(p({ ciudad: 'cordoba', pais: 'mx' }).ciudad, null); // city outside the selected country
+  assert.equal(p({ ciudad: 'cordoba', pais: 'mx' }).pais, 'MX');
   assert.equal(p({ virtual: '1' }).virtual, true);
   for (const v of ['true', '0', 'yes', '']) { assert.equal(p({ virtual: v }).virtual, false); assert.equal(p({ abierto: v }).abiertoTodos, false); }
   assert.equal(p({ abierto: '1' }).abiertoTodos, true);
@@ -118,4 +125,11 @@ test('event JSON-LD offers: registration url + availability, never an unverified
   assert.equal('price' in ev.offers, false); assert.equal('priceCurrency' in ev.offers, false);
   assert.equal('isAccessibleForFree' in ev, false);
   assert.equal(ev.eventAttendanceMode, 'https://schema.org/OfflineEventAttendanceMode');
+});
+test('a city implies its country: country-restricted listings there become visible', () => {
+  const rows = [L({ id: 'r', modality: 'irl', city: 'Monterrey', country: 'MX', eligibility: 'restricted' }), L({ id: 'o', modality: 'irl', city: 'Monterrey', country: 'MX' })];
+  const run = (q: Record<string, string>) => { const f = filtersFromSearch(q, cityOptions(rows)).f; return rows.filter((l) => matches(l, f, now)).map((l) => l.id); };
+  assert.deepEqual(run({}), ['o']);
+  assert.deepEqual(run({ ciudad: 'monterrey' }), ['r', 'o']);
+  assert.deepEqual(run({ ciudad: '<script>' }), ['o']);
 });

@@ -3,7 +3,7 @@ import type { Listing } from '@/lib/types';
 import { SOURCE_LABEL } from '@/lib/types';
 import { competitionText, rewardText } from '@/lib/format';
 import { isOpen } from '@/lib/rank';
-import { TypeBadge, EligBadge, CardTags } from './Badges';
+import { TypeBadge, CardTags } from './Badges';
 import { Countdown } from './Countdown';
 import { LocalTime } from './LocalTime';
 
@@ -20,7 +20,7 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
           <span data-featured-pill className="featured-pill mb-2 inline-block w-fit self-start rounded-pill bg-lime px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">★ Destacado</span>
         )}
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
-          <TypeBadge type={l.type} /> <EligBadge l={l} short /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
+          <TypeBadge type={l.type} /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
         <div className="mt-auto pt-2">

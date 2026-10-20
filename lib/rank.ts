@@ -97,16 +97,20 @@ function sortRaw(list: Listing[], sort: Sort, now: Date): Listing[] {
   });
 }
 
-/** cities: cityOptions(listings). ?ciudad= is accepted only when it equals a derived slug (and belongs to ?pais= when set); else ignored.
+/** cities: cityOptions(listings). ?ciudad= is normalized (accents/case/spaces) and accepted only when it equals a derived slug; a city
+ *  implies its country (?ciudad alone infers ?pais), and a city outside an explicit ?pais= is ignored. Unknown values are ignored.
  *  ?virtual= and ?abierto= accept only '1'. Legacy ?modalidad=online (without irl) maps to virtual. */
 export function filtersFromSearch(sp: Record<string, string | string[] | undefined>, cities: CityOpt[] = []): { f: Filters; sort: Sort } {
   const g = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : sp[k]) as string | undefined;
   const list = (k: string) => (g(k) ?? '').split(',').filter(Boolean);
   const orden = g('orden') as Sort | undefined;
-  const pais = /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null;
+  const paisQ = /^[A-Za-z]{2}$/.test(g('pais') ?? '') ? g('pais')!.toUpperCase() : null;
   const mods = list('modalidad');
   const rawCity = g('ciudad');
-  const city = rawCity ? cities.find((c) => c.slug === rawCity.toLowerCase()) : undefined;
+  const wanted = rawCity ? citySlug(rawCity.slice(0, 80)) : '';
+  const hit = wanted ? cities.find((c) => c.slug === wanted) : undefined;
+  const city = hit && (paisQ ? hit.countries.includes(paisQ) : true) ? hit : undefined;
+  const pais = paisQ ?? (city?.countries.length === 1 ? city.countries[0] : null);
   return {
     f: {
       tipos: g('tipo') ? (list('tipo').filter((t) => (ALL_TYPES as string[]).includes(t)) as ListingType[]) : [...ALL_TYPES],
@@ -116,7 +120,7 @@ export function filtersFromSearch(sp: Record<string, string | string[] | undefin
       abierto: true, // always on (hides other-country-restricted listings); ?abierto=1 now means abiertoTodos, other values ignored
       sinConfirmar: g('sinconfirmar') !== '0', // old ?sinconfirmar=1 = default (harmless)
       pais,
-      ciudad: city && (!pais || city.countries.includes(pais)) ? city.slug : null,
+      ciudad: city ? city.slug : null,
       virtual: g('virtual') === '1' || (mods.includes('online') && !mods.includes('irl')),
       abiertoTodos: g('abierto') === '1',
     },
