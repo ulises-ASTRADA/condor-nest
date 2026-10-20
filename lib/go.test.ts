@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { refPath, goFallback, VALID_SLUG, goPath } from './go.ts';
+import { refPath, goFallback, VALID_SLUG, goPath, GO_GONE_HTML } from './go.ts';
 
 test('refPath: condor-nest referers keep the pathname only', () => {
   assert.equal(refPath('https://condor-nest.lat/o/hackatwin-2026', 'condor-nest.lat'), '/o/hackatwin-2026');
@@ -26,9 +26,16 @@ test('refPath: other sites and junk are null', () => {
 });
 test('goFallback: same-origin only', () => {
   assert.equal(goFallback('dp-hack-1', true), '/o/dp-hack-1');
-  assert.equal(goFallback('dp-hack-1', false), '/');
-  assert.equal(goFallback('//evil.com', true), '/');
-  assert.equal(goFallback('../x', true), '/');
+  assert.equal(goFallback('dp-hack-1', false), null);
+  assert.equal(goFallback('//evil.com', true), null);
+  assert.equal(goFallback('../x', true), null);
+});
+test('GO_GONE_HTML: styled 404 copy, noindex, button to / only', () => {
+  assert.match(GO_GONE_HTML, /Esta convocatoria ya no está publicada/);
+  assert.match(GO_GONE_HTML, /<a href="\/">Ver convocatorias abiertas<\/a>/);
+  assert.match(GO_GONE_HTML, /noindex/);
+  assert.doesNotMatch(GO_GONE_HTML, /<script|https?:\/\//);
+  assert.equal((GO_GONE_HTML.match(/<a /g) ?? []).length, 1);
 });
 test('VALID_SLUG and goPath', () => {
   assert.ok(VALID_SLUG.test('st-foo_bar-2026'));

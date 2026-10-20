@@ -3,7 +3,9 @@
 - El botón "Inscribirme" de cada ficha apunta a `/go/<slug>`. La ruta busca la ficha en la base (filtro público `in_latam`) y responde **302 solo a su `apply_url` guardada**. No acepta URLs por parámetro.
 - El link "Link oficial: <dominio> ↗" del recuadro "En pocas palabras" también pasa por `/go/<slug>` (`rel="nofollow noopener"`, `sponsored nofollow noopener` en Destacados; mismo texto visible), **siempre que** el dominio que muestra sea el mismo de `apply_url`. Si el link oficial que se muestra es de otro dominio (`verified_url` en otro host), queda directo, porque `/go/` siempre lleva a `apply_url` y el texto no coincidiría con el destino. El JSON-LD sigue usando el link oficial, nunca `/go/`.
 - Slug con formato inválido (fuera de `[A-Za-z0-9_-]{1,200}`, por ejemplo con `../` o `%2F`) → **400**.
-- Slug desconocido o ficha sin `apply_url` → **302 dentro del mismo sitio**: a `/o/<slug>` si esa ficha existe, si no a `/` (el feed). `Location` es relativa, así que nunca sale del sitio, y **no se cuenta ningún clic**. Lleva los mismos headers (noindex, no-store, no-referrer).
+- Ficha que existe pero sin `apply_url` → **302 a `/o/<slug>`** (mismo sitio, `Location` relativa).
+- Slug que no existe (ni ficha) → **404 con página propia**: "Esta convocatoria ya no está publicada" y botón "Ver convocatorias abiertas" a `/`. HTML autocontenido con los colores del sitio (claro/oscuro), sin scripts ni recursos externos.
+- En ninguno de esos dos casos se cuenta un clic ni se sale del sitio. Llevan los mismos headers (noindex, no-store, no-referrer).
 - `/go/` queda fuera del índice: `Disallow: /go/` en robots.txt, `X-Robots-Tag: noindex, nofollow`, `rel="nofollow"` en el botón (con `sponsored` en Destacados), no está en el sitemap y el JSON-LD sigue usando el link oficial.
 - La respuesta lleva `Referrer-Policy: no-referrer` (el sitio externo no recibe referrer, igual que con el `rel="noreferrer"` anterior) y `Cache-Control: private, no-store`.
 

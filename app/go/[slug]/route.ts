@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from 'next/server';
 import { getListing } from '@/lib/supabase';
 import { serverRpc } from '@/lib/server-supabase';
-import { VALID_SLUG, goFallback, refPath } from '@/lib/go';
+import { GO_GONE_HTML, VALID_SLUG, goFallback, refPath } from '@/lib/go';
 
 // /go/<slug> → 302 to the listing's stored apply_url (never a user-supplied URL), counting the click.
 // What counts as a click (documented for analytics):
@@ -12,7 +12,8 @@ import { VALID_SLUG, goFallback, refPath } from '@/lib/go';
 //     that this browser was already counted; repeats within the window redirect but are not inserted.
 // Stored per click: listing id + slug, timestamp, referrer hostname, and the condor-nest page PATH the click came from
 // (only when the Referer is this site; pathname only, no query). No IP, no UA, no cookie value.
-// Unknown slug or no apply_url: 302 to same-origin /o/<slug> if that page exists, else / (never off-site, never counted).
+// No apply_url but the listing page exists: 302 to same-origin /o/<slug>. Nothing exists: styled 404 page
+// ("Esta convocatoria ya no está publicada" + button to /). Never off-site, never counted.
 // Malformed slug: 400.
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +44,11 @@ async function handle(req: NextRequest, slug: string, count: boolean) {
   }
   const l = await getListing(slug).catch(() => null);
   if (!l || !l.applyUrl || !UUID.test(l.id)) {
-    // Relative Location: always same-origin. Nothing is recorded.
-    return new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: goFallback(slug, !!l) } });
+    // Listing page exists (e.g. no apply_url): 302 to same-origin /o/<slug> (relative Location). Otherwise styled 404.
+    // Nothing is recorded in either case.
+    const to = goFallback(slug, !!l);
+    if (to) return new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: to } });
+    return new NextResponse(GO_GONE_HTML, { status: 404, headers: { ...baseHeaders, 'content-type': 'text/html; charset=utf-8' } });
   }
   const res = new NextResponse(null, { status: 302, headers: { ...baseHeaders, Location: l.applyUrl } });
   const cookie = `cng_${l.id.replace(/-/g, '')}`;
