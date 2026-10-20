@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 export const metadata: Metadata = { title: 'Newsletter · Condor Nest', robots: { index: false, follow: false } };
 const COPY: Record<string, { k: string; t: string; d: string; ok: boolean }> = {
-  confirmado: { k: 'SUSCRIPCIÓN ACTIVA', t: '¡Bienvenido al nido, ahora...\nA volar!', d: 'Alas listas: cada lunes despegás con lo que cierra pronto y lo que tiene poca competencia en LatAm.', ok: true },
+  confirmado: { k: 'SUSCRIPCIÓN ACTIVA', t: '¡Listo, ya estás suscripto!', d: 'El lunes te llega el primero.', ok: true },
   baja: { k: 'BAJA CONFIRMADA', t: 'Te diste de baja', d: 'No te vamos a escribir más. Si cambiás de idea, te podés volver a suscribir desde el inicio.', ok: true },
   invalido: { k: 'LINK INVÁLIDO', t: 'Este link no funciona', d: 'Puede que haya vencido (dura 48 horas) o que ya lo hayas usado. Suscribite de nuevo y te mandamos uno nuevo.', ok: false },
   error: { k: 'ALGO FALLÓ', t: 'No pudimos procesarlo', d: 'Probá abrir el link de nuevo en un rato.', ok: false },
