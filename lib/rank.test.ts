@@ -50,3 +50,13 @@ test('shortName: derived from the DB title, no new facts', async () => {
   assert.equal(n('HackaTwin', 'Buenos Aires'), 'HackaTwin');
   assert.equal(n('Hackathon', null), 'Hackathon');
 });
+
+test('venueLines: all-or-none per list, only DB venues', async () => {
+  const { venueLines } = await import('./hubs');
+  const irl = (venue: string | null, venueLocality: string | null = null) => ({ ...base, modality: 'irl', city: 'Buenos Aires', venue, venueLocality });
+  assert.deepEqual(venueLines([irl('Digital House', 'CABA, Belgrano'), irl(null), irl(null)]), [null, null, null]);
+  assert.deepEqual(venueLines([irl('Digital House', 'CABA, Belgrano'), irl('UTN')]), ['Digital House · Belgrano', 'UTN']);
+  assert.deepEqual(venueLines([irl('UTN'), { ...irl('Somewhere'), modality: 'online' }]), [null, null]);
+  assert.deepEqual(venueLines([irl('UTN')]), ['UTN']);
+  assert.deepEqual(venueLines([]), []);
+});

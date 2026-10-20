@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getListings, lastIngest } from '@/lib/supabase';
 const ddmmyyyy = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
-import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm, venueLine } from '@/lib/hubs';
+import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm, venueLine, venueLines } from '@/lib/hubs';
 import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
@@ -99,7 +99,7 @@ export default async function HubPage({ params }: P) {
           <section aria-labelledby="estudiantes">
             <h2 id="estudiantes" className="font-display text-2xl font-semibold">Hackathons para estudiantes</h2>
             {stOnly.length > 0 ? (<><p className="mt-2 text-fg-muted">Solo para estudiantes:</p><RefList items={stOnly} /></>) : <p className="mt-2 text-fg-muted">Hoy ninguno de los abiertos {h.where} es solo para estudiantes.</p>}
-            <p className="mt-3 text-fg-muted">Otras también los aceptan, fijate quién puede participar en cada tarjeta.</p>
+            <p className="mt-3 text-fg-muted">Otros también los aceptan, fijate quién puede participar en cada tarjeta.</p>
           </section>
           {online && (
             <section aria-labelledby="online">
@@ -123,5 +123,6 @@ export default async function HubPage({ params }: P) {
 }
 
 function RefList({ items, city = true }: { items: Listing[]; city?: boolean }) {
-  return <ul className="mt-2 list-disc space-y-2 pl-5">{items.map((l) => { const v = venueLine(l); return <li key={l.id}><Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortName(l)}</Link><span className="text-fg-muted">{refDetails(l, { city })}</span>{v && <span className="block text-sm text-fg-muted">{v}</span>}</li>; })}</ul>;
+  const vs = venueLines(items);
+  return <ul className="mt-2 list-disc space-y-2 pl-5">{items.map((l, i) => { const v = vs[i]; return <li key={l.id}><Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortName(l)}</Link><span className="text-fg-muted">{refDetails(l, { city })}</span>{v && <span className="block text-sm text-fg-muted">{v}</span>}</li>; })}</ul>;
 }

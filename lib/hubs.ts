@@ -175,3 +175,8 @@ export function venueLine(l: Listing): string | null {
   const hood = l.venueLocality?.split(',').pop()?.trim() || null;
   return hood && !l.venue.toLowerCase().includes(hood.toLowerCase()) ? `${l.venue} · ${hood}` : l.venue;
 }
+/** Venue lines for one list: every item's venueLine only when ALL items have one in the DB, otherwise none (a lone venue reads as a glitch). Never invents a venue. */
+export function venueLines(items: Listing[]): (string | null)[] {
+  const v = items.map(venueLine);
+  return v.every(Boolean) ? v : v.map(() => null);
+}
