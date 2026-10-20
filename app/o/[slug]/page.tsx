@@ -8,7 +8,7 @@ import { LocalTime } from '@/components/LocalTime';
 import { competitionText, ELIG_LABEL, rewardText, TYPE_LABEL, whoSentence, prizeProse } from '@/lib/format';
 import { COUNTRY_ES } from '@/lib/geo';
 import { isOpen, sortListings } from '@/lib/rank';
-import { TypeBadge, ModalityBadge, EligBadge } from '@/components/Badges';
+import { TypeBadge, ModalityBadge, EligBadge, modalityLabel } from '@/components/Badges';
 import { Countdown } from '@/components/Countdown';
 import { ListingCard } from '@/components/ListingCard';
 import { Newsletter } from '@/components/Newsletter';
@@ -46,7 +46,7 @@ function whenText(l: Listing, open: boolean): string | null {
   if (l.endsAt) return `${past ? 'Fue' : 'Va'} del ${shortDate(l.startsAt)} al ${longDate(l.endsAt)}.`;
   return `${past ? 'Empezó' : 'Empieza'} el ${longDate(l.startsAt)}.`;
 }
-const modalityText = (l: Listing) => (l.modality === 'online' ? 'online' : l.modality === 'irl' ? 'presencial' : 'híbrida') + (l.city && l.modality !== 'online' ? ` en ${l.city}` : '');
+const modalityText = (l: Listing) => (l.modality === 'online' ? 'virtual' : l.modality === 'irl' ? 'presencial' : 'híbrida') + (l.city && l.modality !== 'online' ? ` en ${l.city}` : '');
 
 type P = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
@@ -125,7 +125,7 @@ export default async function Detail({ params }: P) {
       {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
       {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
       <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{l.eligibilityShort ?? ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
-      <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{l.modality === 'online' ? 'Online' : l.modality === 'irl' ? 'Presencial' : 'Híbrido'}{l.city ? ` · ${l.city}` : ''}</dd>
+      <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{modalityLabel(l)}</dd>
     </dl>
   );
 

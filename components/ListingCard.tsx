@@ -3,7 +3,7 @@ import type { Listing } from '@/lib/types';
 import { SOURCE_LABEL } from '@/lib/types';
 import { competitionText, rewardText } from '@/lib/format';
 import { isOpen } from '@/lib/rank';
-import { TypeBadge, EligBadge } from './Badges';
+import { TypeBadge, EligBadge, CardTags } from './Badges';
 import { Countdown } from './Countdown';
 import { LocalTime } from './LocalTime';
 
@@ -32,6 +32,7 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
         )}
         <div className="mt-2"><Countdown l={l} initialNow={now} /></div>
         {showStart && l.startsAt && (l.deadlineAt || l.modality === 'online') && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Empieza <LocalTime iso={l.startsAt} /></p>}
+        <CardTags l={l} />
         {variant !== 'compact' && l.competitors != null && (
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-sm tabular text-fg-muted">
             <span aria-hidden="true">👥</span><span>{c.count}</span>

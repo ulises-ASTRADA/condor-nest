@@ -2,6 +2,7 @@ import type { Listing } from './types';
 import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 import type { OrgAbout } from './organizer';
+import { access } from './rank';
 
 const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|microsoft\.com|typeform\.com|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -33,6 +34,14 @@ export function placeLd(l: Listing): Record<string, unknown> | null {
   return { '@type': 'Place', name: l.venue ?? l.city, ...(address ? { address } : {}) };
 }
 const mode = (l: Listing) => `https://schema.org/${l.modality === 'online' ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`;
+/** One sentence on who can take part, from the same rule as the card tag; null when eligibility is unknown (omitted). */
+export function accessSentence(l: Listing): string | null {
+  const a = access(l);
+  if (a === 'todos') return `${l.eligibility === 'latam' ? 'Abierto a participantes de Latinoamérica' : 'Abierto a todos'}, sin requisitos de edad ni de estudios publicados por la organización.`;
+  if (a === 'requisitos') { const d = (l.eligibilityShort ?? l.eligibilityNote ?? '').trim().replace(/[.]$/, ''); return d ? `Tiene requisitos para participar (${d}).` : 'Tiene requisitos para participar.'; }
+  return null;
+}
+const withAccess = (d: string | null, l: Listing) => [d, accessSentence(l)].filter(Boolean).join(' ') || null;
 /** Short description from DB text only: the first summary bullet, else the first sentence of the eligibility note; null when neither exists. */
 const shortDesc = (l: Listing): string | null => {
   const t = l.summaryEs?.find((x) => x && x.trim())?.trim() ?? l.eligibilityNote?.match(/^(.+?[.!?])(\s|$)/)?.[1] ?? l.eligibilityNote ?? null;
@@ -44,7 +53,7 @@ export function hubEventLd(l: Listing): Record<string, unknown> | null {
   const place = l.modality !== 'online' ? placeLd(l) : null;
   const virt = l.modality !== 'irl' ? { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl } : null;
   const location = place && virt ? [place, virt] : place ?? virt;
-  return { '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: l.startsAt, ...(l.endsAt ? { endDate: l.endsAt } : {}), eventAttendanceMode: mode(l), eventStatus: 'https://schema.org/EventScheduled', ...(location ? { location } : {}), ...(shortDesc(l) ? { description: shortDesc(l) } : {}) };
+  return { '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: l.startsAt, ...(l.endsAt ? { endDate: l.endsAt } : {}), eventAttendanceMode: mode(l), eventStatus: 'https://schema.org/EventScheduled', ...(location ? { location } : {}), ...(withAccess(shortDesc(l), l) ? { description: withAccess(shortDesc(l), l) } : {}) };
 }
 
 /** Event schema from real listing data only; null when there is no start date to anchor an Event. */
@@ -57,10 +66,10 @@ export function eventLd(l: Listing, about?: OrgAbout | null): Record<string, unk
   const location = online ? virt : l.modality === 'hybrid' && place ? [place, virt] : place ?? undefined;
   const ev: Record<string, unknown> = {
     '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: start, ...(l.endsAt ? { endDate: l.endsAt } : {}),
-    eventAttendanceMode: `https://schema.org/${online ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`,
+    eventAttendanceMode: mode(l),
     eventStatus: 'https://schema.org/EventScheduled', inLanguage: l.titleLang === 'en' ? 'en' : 'es-AR',
     ...(location ? { location } : {}),
-    ...(l.summaryEs?.length ? { description: l.summaryEs.join(' ') } : {}),
+    ...(withAccess(l.summaryEs?.length ? l.summaryEs.join(' ') : null, l) ? { description: withAccess(l.summaryEs?.length ? l.summaryEs.join(' ') : null, l) } : {}),
     // No per-listing image in the DB: use the site OG image (same one the page's og:image uses).
     image: [`${SITE}/opengraph-image`],
   };
