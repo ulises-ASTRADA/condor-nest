@@ -8,7 +8,7 @@ import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
 import { hubEventLd, ldScript } from '@/lib/jsonld';
-import { OG_IMAGE, SITE } from '@/lib/site';
+import { OG_BASE, OG_IMAGE, SITE } from '@/lib/site';
 export const revalidate = 3600;
 export const dynamicParams = false;
 export const generateStaticParams = () => HUBS.map((h) => ({ hub: h.slug }));
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const now = new Date(); const n = hubItems(h, await getListings(), now).length; const m = monthYear(now);
   const title = `${h.h1} (${m}): ${n} ${n === 1 ? 'abierto' : 'abiertos'} | Condor Nest`;
   const description = `${n ? `${n} ${n === 1 ? h.noun[0] : h.noun[1]} abierto${n === 1 ? '' : 's'} ${h.where}` : `${h.noun[1]} ${h.where}`}, con premio, elegibilidad y fecha de ${hubOrder(h)} en tu hora. Actualizado todos los días, en español.`;
-  return { title: { absolute: title }, description, alternates: { canonical: `/${h.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/${h.slug}`, siteName: 'Condor Nest', locale: 'es_AR', type: 'website' } };
+  return { title: { absolute: title }, description, alternates: { canonical: `/${h.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/${h.slug}`, ...OG_BASE, type: 'website' } };
 }
 
 export default async function HubPage({ params }: P) {

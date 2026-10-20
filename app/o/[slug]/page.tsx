@@ -1,4 +1,4 @@
-import { OG_IMAGE } from '@/lib/site';
+import { OG_BASE, OG_IMAGE } from '@/lib/site';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   let description = '';
   for (const p of parts) { const next = description ? `${description} ${p}` : p; if (next.length <= 155) description = next; }
   if (!description) description = parts[0].slice(0, 154).replace(/\s+\S*$/, '') + '…';
-  return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, siteName: 'Condor Nest', url: `/o/${l.slug}`, locale: 'es_AR', type: 'website' } };
+  return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'website' } };
 }
 
 function Cta({ l, className = '' }: { l: Listing; className?: string }) {

@@ -1,4 +1,4 @@
-import { OG_IMAGE } from '@/lib/site';
+import { OG_BASE, OG_IMAGE } from '@/lib/site';
 import { getListings, lastIngest } from '@/lib/supabase';
 import { filtersFromSearch, matches } from '@/lib/rank';
 import { Feed } from '@/components/Feed';
@@ -10,7 +10,7 @@ import { UpdatedStamp } from '@/components/UpdatedStamp';
 import { isOpen, sortListings } from '@/lib/rank';
 import { ORG, WEBSITE, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
-export const metadata = { alternates: { canonical: '/' }, openGraph: { images: [OG_IMAGE], url: '/' } };
+export const metadata = { alternates: { canonical: '/' }, openGraph: { ...OG_BASE, images: [OG_IMAGE], url: '/' } };
 export const revalidate = 300;
 
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
