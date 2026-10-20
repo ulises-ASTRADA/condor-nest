@@ -18,7 +18,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const { token, estado } = await searchParams;
   const st = estado === 'ok' ? 'ok' : estado === 'error' ? 'error' : estado === 'invalido' || !ok(token) ? 'invalido' : 'confirmar';
   const C = {
-    confirmar: { k: 'NEWSLETTER', t: '¿Te damos de baja?', d: 'No te vamos a mandar más mails de Condor Nest. Podés volver a suscribirte cuando quieras.' },
+    confirmar: { k: 'NEWSLETTER', t: '¿Te damos de baja?', d: 'Si confirmás, no te mandamos más mails de Condor Nest. Podés volver a suscribirte cuando quieras.' },
     ok: { k: 'BAJA CONFIRMADA', t: 'Listo, te diste de baja', d: 'No te vamos a escribir más. Si cambiás de idea, te podés volver a suscribir desde el inicio.' },
     invalido: { k: 'LINK INVÁLIDO', t: 'Este link no funciona', d: 'Puede que esté incompleto o que ya lo hayas usado. Si ya te diste de baja, no tenés que hacer nada.' },
     error: { k: 'ALGO FALLÓ', t: 'No pudimos darte de baja', d: 'Puede ser la conexión. Probá de nuevo.' },

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { serverRpc } from '@/lib/server-supabase';
 import { rateLimit } from '@/lib/rate-limit';
-import { isToken, SITE_URL } from '@/lib/email';
+import { isToken } from '@/lib/email';
+import { sameOriginUrl } from '@/lib/same-origin';
 export const dynamic = 'force-dynamic';
 const NO_STORE = { 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
 type R = 'ok' | 'invalido' | 'error';
@@ -14,7 +15,7 @@ async function unsubscribe(req: Request, token: unknown): Promise<R> {
 // Links in already-sent emails point here, so they keep working.
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get('token');
-  return NextResponse.redirect(`${SITE_URL}/newsletter/baja${isToken(token) ? `?token=${token}` : ''}`, { status: 303, headers: NO_STORE });
+  return NextResponse.redirect(sameOriginUrl(req, '/newsletter/baja', { token: isToken(token) ? token : null }), { status: 303, headers: NO_STORE });
 }
 // POST unsubscribes. Two callers:
 // - RFC 8058 one-click from mail clients: token in the URL, body "List-Unsubscribe=One-Click"; single step, status code only.
@@ -28,6 +29,6 @@ export async function POST(req: Request) {
   }
   const token = form?.get('token');
   const r = await unsubscribe(req, token);
-  const q = r === 'error' && isToken(token) ? `estado=error&token=${token}` : `estado=${r}`;
-  return NextResponse.redirect(`${SITE_URL}/newsletter/baja?${q}`, { status: 303, headers: NO_STORE });
+  const params = { estado: r, token: r === 'error' && isToken(token) ? token : null };
+  return NextResponse.redirect(sameOriginUrl(req, '/newsletter/baja', params), { status: 303, headers: NO_STORE });
 }
