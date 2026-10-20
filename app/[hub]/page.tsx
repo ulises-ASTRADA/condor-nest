@@ -3,10 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getListings, lastIngest } from '@/lib/supabase';
 const ddmmyyyy = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
-import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm, venueLine, venueLines } from '@/lib/hubs';
+import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCount, hubRegional, hubHeading, monthYear, monthDeYear, hubOrder, answerParts, cityGroups, studentOnly, shortName, refDetails, startDm, venueLine, venueLines } from '@/lib/hubs';
 import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
-import { DEFAULT_FILTERS, inCountry, matches, sortListings } from '@/lib/rank';
 import { FaqList, faqLd } from '@/components/Faq';
 import { hubEventLd, ldScript } from '@/lib/jsonld';
 import { OG_IMAGE, SITE } from '@/lib/site';
@@ -20,8 +19,8 @@ type P = { params: Promise<{ hub: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const h = hubBySlug((await params).hub);
   if (!h) return {};
-  const now = new Date(); const n = hubItems(h, await getListings(), now).length; const m = monthYear(now);
-  const title = `${h.h1} (${m}): ${n} ${n === 1 ? 'abierto' : 'abiertos'} | Condor Nest`;
+  const now = new Date(); const all = await getListings(); const n = hubItems(h, all, now).length; const m = monthYear(now);
+  const { title } = hubHeading(h, n, hubRegional(h, all, now).length, m);
   const description = `${n ? `${n} ${n === 1 ? h.noun[0] : h.noun[1]} abierto${n === 1 ? '' : 's'} ${h.where}` : `${h.noun[1]} ${h.where}`}, con premio, elegibilidad y fecha de ${hubOrder(h)} en tu hora. Actualizado todos los días, en español.`;
   return { title: { absolute: title }, description, alternates: { canonical: `/${h.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/${h.slug}`, siteName: 'Condor Nest', locale: 'es_AR', type: 'website' } };
 }
@@ -34,9 +33,8 @@ export default async function HubPage({ params }: P) {
   const items = hubItems(h, all, now); const unconf = hubUnconfirmed(h, all, now); const restr = hubRestricted(h, all, now);
   const feedN = h.iso ? countryFeedCount(h.iso, all, now) : null;
   // Country hub with no country-specific open hackathons: show the ones the feed shows for this country (open to all LatAm or online), clearly labelled.
-  const regional = h.iso && items.length === 0
-    ? sortListings(all.filter((l) => matches(l, { ...DEFAULT_FILTERS, tipos: ['hackathon'], pais: h.iso! }, now) && !inCountry(l, h.iso!)), 'cierra-pronto', now) : [];
-  const n = items.length; const m = monthYear(now);
+  const regional = hubRegional(h, all, now);
+  const n = items.length; const m = monthYear(now); const heading = hubHeading(h, n, regional.length, m);
   const updated = [await lastIngest(), ...items.map((l) => l.updatedAt)].filter(Boolean).sort().pop() ?? null; const ab = 'abiertos';
   const faqs = h.faqs(n, items, now, all); const order = hubOrder(h);
   const online = h.iso ? hubBySlug('hackathons-online') : null; const onlineN = online ? hubItems(online, all, now).length : 0;
@@ -45,8 +43,8 @@ export default async function HubPage({ params }: P) {
   const ans = answerParts(h, items, now);
   const url = `${SITE}/${h.slug}`;
   const ld = { '@context': 'https://schema.org', '@graph': [
-    { '@type': 'CollectionPage', '@id': url, url, name: `${h.h1} (${m})`, inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` }, ...(updated ? { dateModified: updated } : {}) },
-    { '@type': 'ItemList', name: `${h.h1} (${m})`, description: `Ordenados por fecha de ${order}.`, itemListOrder: 'https://schema.org/ItemListOrderAscending', numberOfItems: n + unconf.length, itemListElement: [...items, ...unconf].map((l, i) => { const ev = hubEventLd(l); return { '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title, ...(ev ? { item: ev } : {}) }; }) },
+    { '@type': 'CollectionPage', '@id': url, url, name: `${heading.h1} (${m})`, inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` }, ...(updated ? { dateModified: updated } : {}) },
+    { '@type': 'ItemList', name: `${heading.h1} (${m})`, description: `Ordenados por fecha de ${order}.`, itemListOrder: 'https://schema.org/ItemListOrderAscending', numberOfItems: n + unconf.length, itemListElement: [...items, ...unconf].map((l, i) => { const ev = hubEventLd(l); return { '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title, ...(ev ? { item: ev } : {}) }; }) },
     faqLd(faqs),
     { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: h.label, item: url }] },
   ] };
@@ -55,7 +53,7 @@ export default async function HubPage({ params }: P) {
       <script type="application/ld+json" dangerouslySetInnerHTML={ldScript(ld)} />
       <nav aria-label="Migas de pan" className="pt-3 text-sm text-fg-muted"><ol className="flex min-h-tap items-center gap-1.5"><li><Link prefetch={false} href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true">›</li><li aria-current="page">{h.label}</li></ol></nav>
       <header className="mt-2 max-w-3xl">
-        <h1 className="font-display text-[26px] font-semibold leading-8 lg:text-[40px] lg:leading-[46px]"><span className="text-gradient">{h.h1}</span> <span className="text-fg-muted">({m})</span></h1>
+        <h1 className="font-display text-[26px] font-semibold leading-8 lg:text-[40px] lg:leading-[46px]"><span className="text-gradient">{heading.h1}</span> <span className="text-fg-muted">({m})</span></h1>
         <div className="mt-4 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
           {n ? (<>
             {h.iso ? <p>{ans.lead}{ans.named.map((l, i) => <span key={l.id}>{i > 0 && (i === ans.named.length - 1 && !ans.more ? ' y ' : ', ')}<Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortName(l)}</Link>{refDetails(l)}</span>)}{ans.more > 0 && <> y {ans.more} más</>}.</p> : <p>{n === 1

@@ -173,3 +173,17 @@ test('location groups: a country is listed only with a country-specific visible 
   assert.deepEqual(locationGroups(rows, ctx, f, now).map((g) => [g.iso, g.n, g.cities.length]), [['AR', 2, 1], ['CL', 1, 0]]);
   assert.equal(feedCount(rows, f, now), 1);
 });
+
+import { HUBS, hubHeading, hubRegional } from './hubs.ts';
+test('hub heading never says "0 abiertos"', () => {
+  const cl = HUBS.find((x) => x.slug === 'hackathons-chile')!; const bounties = HUBS.find((x) => x.slug === 'bounties')!;
+  assert.deepEqual(hubHeading(cl, 0, 3, 'octubre 2026'), { h1: 'Hackathons en Chile y abiertos a LatAm', title: 'Hackathons en Chile y abiertos a LatAm (octubre 2026) | Condor Nest' });
+  assert.equal(hubHeading(cl, 0, 0, 'octubre 2026').title, 'Hackathons en Chile (octubre 2026) | Condor Nest');
+  assert.equal(hubHeading(cl, 2, 0, 'octubre 2026').title, 'Hackathons en Chile (octubre 2026): 2 abiertos | Condor Nest');
+  assert.equal(hubHeading(cl, 1, 0, 'noviembre 2026').title, 'Hackathons en Chile (noviembre 2026): 1 abierto | Condor Nest');
+  assert.equal(hubHeading(bounties, 0, 0, 'octubre 2026').title, 'Bounties para builders LatAm (octubre 2026) | Condor Nest');
+  for (const h of HUBS) for (const r of [0, 2]) assert.doesNotMatch(hubHeading(h, 0, r, 'octubre 2026').title, /\b0 abiert/);
+  const rows = [L({ id: 'r', type: 'hackathon', modality: 'online', eligibility: 'latam' }), L({ id: 's', type: 'hackathon', modality: 'irl', city: 'Santiago', country: 'CL' })];
+  assert.deepEqual(hubRegional(cl, rows, now).map((l) => l.id), []); // has a Chile-specific one -> no regional block
+  assert.deepEqual(hubRegional(cl, [rows[0]], now).map((l) => l.id), ['r']);
+});
