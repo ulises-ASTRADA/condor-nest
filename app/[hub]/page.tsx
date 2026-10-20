@@ -114,11 +114,13 @@ export default async function HubPage({ params }: P) {
               )}
             </section>
           ))}
+          {n > 0 && ( /* hidden when the country has no specific open hackathons: "ninguno de los abiertos en X" would contradict the intro */
           <section aria-labelledby="estudiantes">
             <h2 id="estudiantes" className="font-display text-2xl font-semibold">Hackathons para estudiantes</h2>
             {stOnly.length > 0 ? (<><p className="mt-2 text-fg-muted">Solo para estudiantes:</p><RefList items={stOnly} /></>) : <p className="mt-2 text-fg-muted">Hoy ninguno de los abiertos {h.where} es solo para estudiantes.</p>}
             <p className="mt-3 text-fg-muted">Otros también los aceptan, fijate quién puede participar en cada tarjeta.</p>
           </section>
+          )}
           {online && (
             <section aria-labelledby="online">
               <h2 id="online" className="font-display text-2xl font-semibold">Hackathons online desde {country}</h2>

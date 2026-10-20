@@ -184,10 +184,13 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
           {hero}
           <div className="mt-4">{search}</div>
           {f.pais && (
-            <div role="status" className="mt-3 inline-flex max-w-full items-center gap-2 rounded-pill border border-cyan/40 bg-surface-2 py-1 pl-3 pr-1 text-sm">
-              <span>📍 Mostrando oportunidades {cityName ? `en ${cityName}, ${COUNTRY_ES[f.pais] ?? f.pais}` : `para ${COUNTRY_ES[f.pais] ?? f.pais}`}{!cityName && total > 0 && !vis.some((l) => inCountry(l, f.pais!)) && <span className="text-fg-muted"> (ninguna es específica de {COUNTRY_ES[f.pais] ?? f.pais}: son abiertas a toda LatAm u online)</span>}</span><span aria-hidden="true" className="text-fg-muted">·</span>
-              <button type="button" onClick={() => choosePais(null)} className="text-cyan underline-offset-4 hover:underline">Ver todo LatAm</button>
-              <button type="button" aria-label="Quitar filtro de ubicación" onClick={() => choosePais(null)} className="grid h-7 w-7 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
+            <div role="status" className="mt-3 flex max-w-full items-start gap-2 rounded-[14px] border border-cyan/40 bg-surface-2 py-1 pl-3 pr-1 text-sm sm:inline-flex sm:items-center sm:rounded-pill">
+              {/* <sm: text, then "Ver todo LatAm" on its own line; sm+: one inline row */}
+              <p className="min-w-0 flex-1 py-1 sm:py-0">
+                <span>📍 Mostrando oportunidades {cityName ? `en ${cityName}, ${COUNTRY_ES[f.pais] ?? f.pais}` : `para ${COUNTRY_ES[f.pais] ?? f.pais}`}{!cityName && total > 0 && !vis.some((l) => inCountry(l, f.pais!)) && <span className="text-fg-muted"> (ninguna es específica de {COUNTRY_ES[f.pais] ?? f.pais}: son abiertas a toda LatAm u online)</span>}</span><span aria-hidden="true" className="hidden text-fg-muted sm:inline"> · </span>
+                <button type="button" onClick={() => choosePais(null)} className="mt-1 block text-cyan underline-offset-4 hover:underline sm:mt-0 sm:inline">Ver todo LatAm</button>
+              </p>
+              <button type="button" aria-label="Quitar filtro de ubicación" onClick={() => choosePais(null)} className="grid h-7 w-7 shrink-0 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
             </div>
           )}
           <div className="lg:hidden">{mobileControls}</div>
