@@ -82,11 +82,11 @@ export function eventLd(l: Listing, about?: OrgAbout | null): Record<string, unk
     const org = { '@type': 'Organization', name: l.organizer, ...(url ? { url } : {}), ...(about?.description ? { description: about.description } : {}) };
     ev.organizer = org; ev.performer = org;
   }
-  // offers = registration (free), not the prize. Availability from open/closed status.
+  // offers = registration link + availability only, not the prize. No price: entry cost is not verified (no entry_cost column yet).
   const close = l.deadlineAt ?? l.endsAt ?? start;
   const open = new Date(close).getTime() > Date.now();
   const offerUrl = l.applyUrl ?? officialUrl(l) ?? `${SITE}/o/${l.slug}`;
-  ev.offers = { '@type': 'Offer', price: 0, priceCurrency: 'USD', availability: `https://schema.org/${open ? 'InStock' : 'SoldOut'}`, url: offerUrl, ...(new Date(l.createdAt) < new Date(close) ? { validFrom: l.createdAt } : {}), validThrough: close };
+  ev.offers = { '@type': 'Offer', availability: `https://schema.org/${open ? 'InStock' : 'SoldOut'}`, url: offerUrl, ...(new Date(l.createdAt) < new Date(close) ? { validFrom: l.createdAt } : {}), validThrough: close };
   return ev;
 }
 export const ldScript = (data: unknown) => ({ __html: JSON.stringify(data).replace(/</g, '\\u003c') });

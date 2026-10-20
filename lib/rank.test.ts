@@ -110,3 +110,12 @@ test('combined filters: city + virtual + abierto', () => {
   assert.deepEqual(run({ ciudad: 'cordoba', virtual: '1', abierto: '1' }), ['b']);
   assert.deepEqual(run({ ciudad: 'xx', abierto: '1' }), ['a', 'b', 'd']);
 });
+import { eventLd } from './jsonld.ts';
+test('event JSON-LD offers: registration url + availability, never an unverified price', () => {
+  const ev = eventLd(L({ slug: 's', type: 'hackathon', modality: 'irl', city: 'Rosario', country: 'AR', startsAt: '2099-01-02T12:00:00Z', deadlineAt: '2099-01-01T00:00:00Z', applyUrl: 'https://example.org/apply' })) as any;
+  assert.equal(ev.offers.url, 'https://example.org/apply');
+  assert.equal(ev.offers.availability, 'https://schema.org/InStock');
+  assert.equal('price' in ev.offers, false); assert.equal('priceCurrency' in ev.offers, false);
+  assert.equal('isAccessibleForFree' in ev, false);
+  assert.equal(ev.eventAttendanceMode, 'https://schema.org/OfflineEventAttendanceMode');
+});
