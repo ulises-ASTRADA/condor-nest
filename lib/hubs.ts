@@ -19,7 +19,7 @@ const UPDATED: Faq = { q: '¿Cada cuánto se actualiza esta lista?', a: 'Todos l
 const FREE: Faq = { q: '¿Cuesta algo usar Condor Nest?', a: 'No. Ver las oportunidades es gratis y no hace falta crear una cuenta. Los espacios “Destacado” son pagos y siempre están marcados como tales.' };
 const PUBLISH: Faq = { q: '¿Cómo publico mi evento acá?', a: 'Desde Condor Nest → “Publicá tu evento” (/publicar). Listamos gratis cualquier hackathon, bounty o grant abierto a builders de LatAm una vez que lo verificamos en su página oficial.' };
 const ELIG: Faq = { q: '¿Cómo sé si puedo participar?', a: 'Cada tarjeta muestra la elegibilidad que publica la fuente oficial (país, LatAm o abierta). Nunca la inferimos: si la fuente no lo aclara, figura como “Elegibilidad sin confirmar”. Revisá siempre las bases en el link oficial.' };
-const TZ: Faq = { q: '¿En qué horario están las fechas?', a: 'En la zona horaria de tu dispositivo, así no tenés que convertir horarios. Cada fecha muestra su zona al lado (por ejemplo, GMT-3). Si tu navegador no informa una zona, las mostramos en hora de Argentina (GMT-3).' };
+const TZ: Faq = { q: '¿En qué horario están las fechas?', a: 'En la zona horaria de tu dispositivo, así no tenés que convertir horarios. Cada fecha muestra su zona al lado (por ejemplo, GMT-3). Si tu navegador no informa una zona, las mostramos en hora de Córdoba (GMT-3), la misma de todo el país.' };
 
 const country = (iso: string, name: string, slug: string, cities?: string[]): Hub => ({
   iso, slug, cities, label: `Hackathons en ${name}`, h1: `Hackathons en ${name}`, noun: ['hackathon', 'hackathons'], where: `en ${name}`,
@@ -82,13 +82,13 @@ export const monthDeYear = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZ
 const dm = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: 'numeric', month: 'numeric' }).format(new Date(iso));
 const dmy = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Cordoba', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
 /** "shippear #3 (Rosario, 24/10)": city and start date only when the DB has them. */
-export const shortRef = (l: Listing) => { const bits = [l.modality !== 'online' ? l.city : 'online', l.startsAt ? dm(l.startsAt) : null].filter(Boolean); return bits.length ? `${l.title} (${bits.join(', ')})` : l.title; };
+export const shortRef = (l: Listing, withCity = true) => { const bits = [withCity ? (l.modality !== 'online' ? l.city : 'online') : null, l.startsAt ? dm(l.startsAt) : null].filter(Boolean); return bits.length ? `${l.title} (${bits.join(', ')})` : l.title; };
 const joinY = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
 /** Self-contained answer sentence ("Al 20/10/2026 hay 5 hackathons abiertas en Argentina: …"). Up to 5 named; more → 3 + "y N más". */
 export function answerLine(h: Hub, items: Listing[], now: Date): string {
   const n = items.length; const ab = hubOrder(h) === 'cierre' ? 'abiertos' : 'abiertas';
   if (!n) return `Al ${dmy(now)} no hay ${h.noun[1]} ${ab} ${h.where}.`;
-  const named = (n > 5 ? items.slice(0, 3) : items).map(shortRef);
+  const named = (n > 5 ? items.slice(0, 3) : items).map((l) => shortRef(l));
   const rest = n > 5 ? [...named, `${n - 3} más`] : named;
   const irl = items.filter((l) => l.modality !== 'online').length;
   const all = irl === n && n > 1 ? ', todas presenciales' : '';

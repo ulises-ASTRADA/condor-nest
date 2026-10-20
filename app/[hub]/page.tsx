@@ -87,7 +87,7 @@ export default async function HubPage({ params }: P) {
               <h2 id={`c-${g.city}`} className="font-display text-2xl font-semibold">Hackathons en {g.city}</h2>
               {g.items.length ? (<>
                 <p className="mt-2 text-fg-muted">{g.items.length === 1 ? 'Hay 1 abierta' : `Hay ${g.items.length} abiertas`} en {g.city}, ordenadas por fecha de inicio:</p>
-                <RefList items={g.items} />
+                <RefList items={g.items} withCity={false} />
               </>) : (
                 <p className="mt-2 text-fg-muted">Hoy no hay hackathons abiertas en {g.city} en Condor Nest. Las agregamos apenas se publican y las verificamos en su página oficial; suscribite al newsletter para enterarte. ¿Organizás una en {g.city}? Publicala gratis en <Link prefetch={false} href="/publicar" className="text-lime hover:underline">/publicar</Link>.</p>
               )}
@@ -121,6 +121,6 @@ export default async function HubPage({ params }: P) {
   );
 }
 
-function RefList({ items }: { items: Listing[] }) {
-  return <ul className="mt-2 list-disc space-y-1 pl-5">{items.map((l) => <li key={l.id}><Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortRef(l)}</Link>{l.venue && l.modality !== 'online' ? <span className="text-fg-muted"> · {l.venue}</span> : null}</li>)}</ul>;
+function RefList({ items, withCity = true }: { items: Listing[]; withCity?: boolean }) {
+  return <ul className="mt-2 list-disc space-y-1 pl-5">{items.map((l) => <li key={l.id}><Link prefetch={false} href={`/o/${l.slug}`} className="text-lime hover:underline">{shortRef(l, withCity)}</Link>{l.venue && l.modality !== 'online' ? <span className="text-fg-muted"> · {l.venue}</span> : null}</li>)}</ul>;
 }
