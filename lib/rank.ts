@@ -67,8 +67,8 @@ export function locationContext(all: Listing[]): LocCtx {
     .sort((a, b) => COUNTRY_ES[a].localeCompare(COUNTRY_ES[b], 'es'));
   return { cities, countries };
 }
-/** Cards the feed shows for these filters: organic matches + at most 1 featured (the feed shows a single Destacado). */
-export const feedCount = (all: Listing[], f: Filters, now: Date) => { let feat = 0, org = 0; for (const l of all) if (matches(l, f, now)) { if (l.featured) feat++; else org++; } return org + Math.min(feat, 1); };
+/** Every matching listing is displayed once, whether featured or organic. */
+export const feedCount = (all: Listing[], f: Filters, now: Date) => all.filter((l) => matches(l, f, now)).length;
 export type LocGroup = { iso: string; name: string; n: number; cities: (CityOpt & { n: number })[] };
 /** Location select model: one group per country ("Toda <país> (n)" + cities (n)); n = feedCount after picking that option with every
  *  other filter kept (so it includes LatAm-wide/online cards). A country group is listed only if ≥1 of those cards is specific to it

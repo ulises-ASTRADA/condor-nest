@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
+import { featuredListings, isFeatured } from '@/lib/featured';
 import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, locationContext, locationGroups, type Filters, type Sort } from '@/lib/rank';
 import { HUBS } from '@/lib/hubs';
 import { inCountry } from '@/lib/rank';
@@ -80,8 +81,8 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
     window.history[typing ? 'replaceState' : 'pushState'](null, '', qs ? `/?${qs}` : '/');
   }, [f, sort]);
 
-  const featured = useMemo(() => listings.filter((l) => l.featured && matches(l, f, nowD)).slice(0, 1), [listings, f, nowD]);
-  const organic = useMemo(() => sortListings(listings.filter((l) => !l.featured && matches(l, f, nowD)), sort, nowD), [listings, f, sort, nowD]);
+  const featured = useMemo(() => featuredListings(listings.filter((l) => matches(l, f, nowD))), [listings, f, nowD]);
+  const organic = useMemo(() => sortListings(listings.filter((l) => !isFeatured(l) && matches(l, f, nowD)), sort, nowD), [listings, f, sort, nowD]);
   const shown = organic.slice(0, limit);
   const total = organic.length + featured.length;
   const dataless = sort === 'menos-competencia' ? shown.findIndex((l) => l.rewardUsd == null || l.competitors == null || !isOpen(l, nowD)) : -1;

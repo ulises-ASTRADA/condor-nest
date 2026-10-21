@@ -5,6 +5,21 @@ import { sig2, deadlineInfo } from './format.ts';
 const base: any = { country: null, eligibilityShort: null, rewardText: null, id: 'x', slug: 'x', type: 'bounty', title: 't', organizer: null, source: 'superteam', sourceUrl: 'u', rewardAmount: null, rewardCurrency: 'USD', rewardUsd: null, rewardKind: null, deadlineAt: '2099-01-01T00:00:00Z', startsAt: null, endsAt: null, competitors: null, competitorsKind: 'submissions', eligibility: 'global', eligibilityNote: null, modality: 'online', city: null, ecosystems: [], summaryEs: null, featured: false, featuredUntil: null, disclosureKey: null, updatedAt: '', createdAt: '2026-01-01', titleLang: 'en', applyUrl: null, sourcePostUrl: null, verifiedUrl: null, curated: false };
 const L = (o: any) => ({ ...base, ...o });
 const now = new Date('2026-10-13T00:00:00Z');
+import { featuredListings, isFeatured } from './featured.ts';
+test('featured placements: belo before Twin, filters respected, no duplicate organic cards or missing count', () => {
+  const rows = [L({ id: 'twin', slug: 'hackatwin-2026', type: 'hackathon', featured: true }), L({ id: 'regular', slug: 'other' }), L({ id: 'belo', slug: 'belo-hackathon-agentic-banking-mcp', type: 'hackathon', featured: false })];
+  const featured = featuredListings(rows.filter((l) => matches(l, DEFAULT_FILTERS, now)));
+  const organic = rows.filter((l) => !isFeatured(l) && matches(l, DEFAULT_FILTERS, now));
+  assert.deepEqual(featured.map((l) => l.id), ['belo', 'twin']);
+  assert.deepEqual(organic.map((l) => l.id), ['regular']);
+  assert.equal(feedCount(rows, DEFAULT_FILTERS, now), featured.length + organic.length);
+  assert.deepEqual(featuredListings(rows.filter((l) => matches(l, { ...DEFAULT_FILTERS, q: 'other' }, now))), []);
+  assert.deepEqual(featuredListings(rows.filter((l) => matches(l, { ...DEFAULT_FILTERS, tipos: ['bounty'] }, now))), []);
+  const closedBelo = rows.map((l) => l.id === 'belo' ? { ...l, deadlineAt: '2020-01-01T00:00:00Z' } : l);
+  assert.deepEqual(featuredListings(closedBelo.filter((l) => matches(l, DEFAULT_FILTERS, now))).map((l) => l.id), ['twin']);
+  assert.deepEqual(featuredListings(rows).map((l) => l.id), ['belo', 'twin']); // input order is unchanged
+  assert.equal(rows[0].id, 'twin');
+});
 test('score formula', () => {
   assert.equal(competitionScore(L({ rewardUsd: 1000, competitors: 24 })), 40);
   assert.equal(competitionScore(L({ rewardUsd: 1000, competitors: 18, competitorsKind: 'registrations' })), 100);
