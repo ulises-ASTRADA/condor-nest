@@ -18,7 +18,7 @@ import { SITE } from '@/lib/site';
 import { hubsFor } from '@/lib/hubs';
 import { getOrgAbout } from '@/lib/organizer';
 import { OrgAbout } from '@/components/OrgAbout';
-import { Location } from '@/components/Location';
+import { Location, LocationNote } from '@/components/Location';
 import { bareHost, goPath, hostLabel } from '@/lib/go';
 export const revalidate = 300;
 
@@ -103,6 +103,8 @@ export default async function Detail({ params }: P) {
   // Through /go/ (counted) only when /go/ lands on the same site the visible text names: /go/ always redirects to
   // apply_url, so if the official link shown is on another host (verified_url ≠ apply_url host), keep it direct.
   const officialViaGo = !!l.applyUrl && !!officialHost && bareHost(l.applyUrl) === bareHost(officialUrl);
+  // Official page link for the location card (same href/rel as "Link oficial" in "En pocas palabras").
+  const official = officialUrl && officialHost ? { href: officialViaGo ? goPath(l.slug) : officialUrl, host: officialHost, rel: officialViaGo ? (l.featured ? 'sponsored nofollow noopener' : 'nofollow noopener') : (l.featured ? 'sponsored noopener noreferrer' : 'noopener noreferrer') } : null;
   const updated = l.updatedAt || l.createdAt;
   // The intro already states the prize: drop prize-only bullets from the summary (and the big rewardText box) to avoid repeating it.
   const prizeInIntro = !!prize;
@@ -155,7 +157,9 @@ export default async function Detail({ params }: P) {
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
           <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
-          {l.modality !== 'online' && l.venue && <Location name={l.venue} address={[l.venueLocality, l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} />}
+          {l.modality !== 'online' && l.venue ? <Location name={l.venue} address={[l.venueLocality, l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} />
+            : l.modality !== 'online' && l.city ? <Location mode="city" name={l.city} address={[l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} official={official} />
+            : l.type === 'hackathon' && <LocationNote text={l.modality === 'online' ? 'Online' : 'Sede a confirmar'} official={official} />}
           <section className="mt-8">
             <h2 className="font-medium text-lg">Resumen en español</h2>
             {summary.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{summary.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="mt-2 text-fg-muted">Sin dato. Mirá la fuente oficial.</p>}
