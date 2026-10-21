@@ -19,7 +19,7 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
   const mini = variant === 'mini'; const resub = variant === 'resub';
   const err = st === 'invalid' || st === 'error';
   return (
-      <section aria-labelledby={`${id}-t`} className={mini ? 'text-sm' : resub ? 'mt-7 text-left' : `rounded-card border border-violet/35 [background:radial-gradient(120%_140%_at_0%_0%,rgb(var(--violet)/.18),transparent_60%),rgb(var(--surface))] ${variant === 'compact' ? 'p-[18px]' : 'p-5'}`}>
+      <section aria-labelledby={`${id}-t`} className={mini ? 'text-sm' : resub ? 'mt-7 text-left' : `rounded-card border border-violet/35 [background:radial-gradient(120%_140%_at_0%_0%,rgb(var(--violet)/.18),transparent_60%),rgb(var(--surface))] ${variant === 'compact' ? 'px-4 py-[18px]' : 'p-5'}`}>
         {mini ? <h2 id={`${id}-t`} className="mb-2 text-sm text-fg-muted">Novedades cada lunes, por mail</h2> : resub ? <h2 id={`${id}-t`} className="sr-only">Pedir un link nuevo</h2> : variant === 'compact'
           ? <><h2 id={`${id}-t`} className="font-display text-base font-semibold">Cada lunes, en tu mail</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Lo que cierra pronto y lo que tiene poca competencia.</p></>
           : <><h2 id={`${id}-t`} className="font-display text-lg font-semibold leading-6">Las mejores oportunidades, cada lunes</h2><p className="mb-3.5 mt-1.5 text-sm text-fg-muted">Un mail por semana con lo que cierra pronto y lo que tiene poca competencia. Sin spam.</p></>}
