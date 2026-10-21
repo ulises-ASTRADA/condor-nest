@@ -9,6 +9,7 @@ export function Footer() {
         <FooterNewsletter />
         <div className="space-y-3 text-sm text-fg-muted">
           <nav aria-label="Pie" className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href="/que-es-una-hackaton">¿Qué es una hackatón?</Link>
             <Link prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href="/acerca">Acerca</Link>
             <Link prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href="/publicar">Publicá tu evento</Link>
           </nav>

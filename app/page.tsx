@@ -48,6 +48,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
         </>} now={now.toISOString()} initial={{ f, sort }} affUrl={affiliateUrl()} hero={<>
         <h1 className="font-display text-[26px] font-semibold leading-8 tracking-[-.01em] lg:text-[44px] lg:font-extrabold lg:leading-[48px]"><span className="text-gradient">Oportunidades</span> para builders LatAm</h1>
         <UpdatedStamp iso={updated} open={open} counts={{ conf: 0, unc: 0 }} now={now.toISOString()} />
+        <Link href="/que-es-una-hackaton" prefetch={false} className="mt-3 inline-flex min-h-tap items-center gap-2 rounded-card border border-border bg-surface px-3 py-2 text-sm text-cyan hover:border-cyan/50">
+          ¿Primera vez? Qué es una hackatón y en qué se diferencia de bounties y grants →
+        </Link>
       </>} />
     </>
   );

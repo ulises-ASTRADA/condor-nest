@@ -49,6 +49,7 @@ export default function Acerca() {
       <section aria-labelledby="que-es">
         <H2 k="01 · Qué es"><span id="que-es">Un feed, toda LatAm</span></H2>
         <p className="max-w-3xl text-lg leading-relaxed">Condor Nest junta hackathons, bounties y grants abiertos a builders de Argentina y LatAm en un solo feed en español, actualizado todos los días. Los horarios se muestran en la zona horaria de tu dispositivo.</p>
+        <Link href="/que-es-una-hackaton" className="mt-3 inline-flex min-h-tap items-center text-lime underline underline-offset-4">Qué es una hackatón y cómo se diferencia de bounties y grants →</Link>
       </section>
 
       {/* 3 · Cómo funciona */}

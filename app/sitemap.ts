@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: SITE, lastModified: fresh, changeFrequency: 'daily', priority: 1 },
     { url: `${SITE}/acerca`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE}/que-es-una-hackaton`, lastModified: new Date('2026-10-21'), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE}/publicar`, changeFrequency: 'monthly', priority: 0.3 },
     ...HUBS.map((h) => ({ url: `${SITE}/${h.slug}`, lastModified: fresh, changeFrequency: 'daily' as const, priority: 0.9 })),
     ...pages.map((l) => ({ url: `${SITE}/o/${encodeURIComponent(l.slug)}`, lastModified: new Date(l.updatedAt || l.createdAt), changeFrequency: 'daily' as const, priority: 0.8 })),

@@ -130,6 +130,7 @@ export default async function HubPage({ params }: P) {
       )}
       <p className="mt-6"><Link prefetch={false} href={h.feed} className="inline-flex min-h-tap items-center rounded-pill border border-lime/60 px-4 text-sm text-lime hover:shadow-glow-lime">Ver en el feed completo con filtros →</Link></p>
       <section aria-labelledby="faq" className="mt-12 max-w-3xl">
+        <p className="mb-5 text-sm text-fg-muted">¿Estás empezando? <Link prefetch={false} href="/que-es-una-hackaton" className="inline-flex min-h-tap items-center text-lime underline underline-offset-4">Conocé las diferencias entre hackathons, bounties y grants →</Link></p>
         <h2 id="faq" className="mb-4 font-display text-2xl font-semibold">Preguntas frecuentes</h2>
         <FaqList items={faqs} />
       </section>

@@ -12,6 +12,7 @@ export async function GET() {
 > Condor Nest junta en un solo feed en español los hackathons, bounties y grants abiertos a builders de Argentina y Latinoamérica. Se actualiza todos los días con Superteam Earn, Devpost, Taikai y eventos curados de X y Luma, y cada evento curado se verifica en su página oficial antes de publicarse. Hecho en Córdoba, Argentina.
 
 ## Páginas principales
+- [Qué es una hackatón: diferencias con bounties y grants](${SITE}/que-es-una-hackaton): definiciones, comparación, ejemplos ilustrativos, requisitos y preguntas frecuentes para empezar.
 - [Feed de oportunidades](${SITE}/): filtros por tipo, país, modalidad y ecosistema; orden por cierre o por "menos competencia".
 - [Acerca](${SITE}/acerca): qué listamos, cómo se calcula "menos competencia" y transparencia (Destacado y afiliados).
 - [Publicá tu evento](${SITE}/publicar)
