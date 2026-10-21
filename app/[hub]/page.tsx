@@ -7,7 +7,7 @@ import { HUBS, hubBySlug, hubItems, hubUnconfirmed, hubRestricted, countryFeedCo
 import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
-import { hubEventLd, ldScript } from '@/lib/jsonld';
+import { ldScript } from '@/lib/jsonld';
 import { OG_BASE, OG_IMAGE, SITE } from '@/lib/site';
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -44,7 +44,8 @@ export default async function HubPage({ params }: P) {
   const url = `${SITE}/${h.slug}`;
   const ld = { '@context': 'https://schema.org', '@graph': [
     { '@type': 'CollectionPage', '@id': url, url, name: `${heading.h1} (${m})`, inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` }, ...(updated ? { dateModified: updated } : {}) },
-    { '@type': 'ItemList', name: `${heading.h1} (${m})`, description: `Ordenados por fecha de ${order}.`, itemListOrder: 'https://schema.org/ItemListOrderAscending', numberOfItems: n + unconf.length, itemListElement: [...items, ...unconf].map((l, i) => { const ev = hubEventLd(l); return { '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title, ...(ev ? { item: ev } : {}) }; }) },
+    // Google Event markup belongs on single-event detail pages; hubs link to those pages.
+    { '@type': 'ItemList', name: `${heading.h1} (${m})`, description: `Ordenados por fecha de ${order}.`, itemListOrder: 'https://schema.org/ItemListOrderAscending', numberOfItems: n + unconf.length, itemListElement: [...items, ...unconf].map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title })) },
     faqLd(faqs),
     { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: h.label, item: url }] },
   ] };

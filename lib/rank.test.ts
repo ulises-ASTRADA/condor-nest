@@ -118,6 +118,17 @@ test('combined filters: city + virtual + abierto', () => {
   assert.deepEqual(run({ ciudad: 'xx', abierto: '1' }), ['a', 'b', 'd']);
 });
 import { eventLd } from './jsonld.ts';
+test('event JSON-LD keeps the verified host as organizer without inventing a performer', () => {
+  const listing = L({ slug: 'sample-hackathon', type: 'hackathon', organizer: 'Example Community', startsAt: '2099-01-02T12:00:00Z', verifiedUrl: 'https://example.org/event' });
+  const ev = eventLd(listing) as any;
+  assert.equal(ev['@type'], 'Event');
+  assert.equal(ev.organizer.name, 'Example Community');
+  assert.equal(ev.organizer.url, 'https://example.org');
+  assert.equal('performer' in ev, false);
+  const withoutHost = eventLd({ ...listing, organizer: null }) as any;
+  assert.equal('organizer' in withoutHost, false);
+  assert.equal('performer' in withoutHost, false);
+});
 test('event JSON-LD offers: registration url + availability, never an unverified price', () => {
   const ev = eventLd(L({ slug: 's', type: 'hackathon', modality: 'irl', city: 'Rosario', country: 'AR', startsAt: '2099-01-02T12:00:00Z', deadlineAt: '2099-01-01T00:00:00Z', applyUrl: 'https://example.org/apply' })) as any;
   assert.equal(ev.offers.url, 'https://example.org/apply');

@@ -46,20 +46,6 @@ export function accessSentence(l: Listing): string | null {
   return null;
 }
 const withAccess = (d: string | null, l: Listing) => [d, accessSentence(l)].filter(Boolean).join(' ') || null;
-/** Short description from DB text only: the first summary bullet, else the first sentence of the eligibility note; null when neither exists. */
-const shortDesc = (l: Listing): string | null => {
-  const t = l.summaryEs?.find((x) => x && x.trim())?.trim() ?? l.eligibilityNote?.match(/^(.+?[.!?])(\s|$)/)?.[1] ?? l.eligibilityNote ?? null;
-  return t ? t : null;
-};
-/** Compact Event for hub ItemLists: real start/end dates and location only (no fallbacks); null without a start date. */
-export function hubEventLd(l: Listing): Record<string, unknown> | null {
-  if (!l.startsAt) return null;
-  const place = l.modality !== 'online' ? placeLd(l) : null;
-  const virt = l.modality !== 'irl' ? { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl } : null;
-  const location = place && virt ? [place, virt] : place ?? virt;
-  return { '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: l.startsAt, ...(l.endsAt ? { endDate: l.endsAt } : {}), eventAttendanceMode: mode(l), eventStatus: 'https://schema.org/EventScheduled', ...(location ? { location } : {}), ...(withAccess(shortDesc(l), l) ? { description: withAccess(shortDesc(l), l) } : {}) };
-}
-
 /** Event schema from real listing data only; null when there is no start date to anchor an Event. */
 export function eventLd(l: Listing, about?: OrgAbout | null): Record<string, unknown> | null {
   const start = l.startsAt;
@@ -79,12 +65,13 @@ export function eventLd(l: Listing, about?: OrgAbout | null): Record<string, unk
   };
   // endDate: real end date; else single-day fallback = startDate (documented in knowledge notes).
   if (!l.endsAt) ev.endDate = start;
-  // organizer + performer: the organizer; url only when it's the organizer's own (see orgUrl). Omitted if DB has no organizer.
+  // Hosting does not establish performing. No verified performer field exists in the data model,
+  // so omit that optional property rather than copying the organizer to silence a warning.
   if (l.organizer) {
     const own = about?.website && !PLATFORMS.test(new URL(about.website).hostname.replace(/^www\./, '')) ? about.website : null;
     const url = own ?? orgUrl(l);
     const org = { '@type': 'Organization', name: l.organizer, ...(url ? { url } : {}), ...(about?.description ? { description: about.description } : {}) };
-    ev.organizer = org; ev.performer = org;
+    ev.organizer = org;
   }
   // offers = registration link + availability only, not the prize. No price: entry cost is not verified (no entry_cost column yet).
   const close = l.deadlineAt ?? l.endsAt ?? start;
