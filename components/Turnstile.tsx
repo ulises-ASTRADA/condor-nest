@@ -22,7 +22,7 @@ export const Turnstile = forwardRef<TurnstileHandle>(function Turnstile(_, ref) 
     if (!KEY) return; let gone = false;
     load().then(() => {
       if (gone || !el.current || !window.turnstile) return;
-      id.current = window.turnstile.render(el.current, { sitekey: KEY, appearance: 'interaction-only', size: el.current.clientWidth < 300 ? 'compact' : 'flexible', theme: 'dark', language: 'es', callback: (t: string) => { tok.current = t; }, 'expired-callback': () => { tok.current = undefined; }, 'error-callback': () => { tok.current = undefined; } });
+      id.current = window.turnstile.render(el.current, { sitekey: KEY, appearance: 'interaction-only', size: 'flexible', theme: 'dark', language: 'es', callback: (t: string) => { tok.current = t; }, 'expired-callback': () => { tok.current = undefined; }, 'error-callback': () => { tok.current = undefined; } });
     }).catch(() => {});
     return () => { gone = true; if (id.current && window.turnstile) window.turnstile.remove(id.current); };
   }, []);
