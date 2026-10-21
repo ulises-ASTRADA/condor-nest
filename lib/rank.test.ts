@@ -187,3 +187,13 @@ test('hub heading never says "0 abiertos"', () => {
   assert.deepEqual(hubRegional(cl, rows, now).map((l) => l.id), []); // has a Chile-specific one -> no regional block
   assert.deepEqual(hubRegional(cl, [rows[0]], now).map((l) => l.id), ['r']);
 });
+test('event JSON-LD location: Place with street only when venue_locality has a number, no geo; online stays VirtualLocation', () => {
+  const ev = (o: any) => eventLd(L({ slug: 's', type: 'hackathon', startsAt: '2099-01-02T12:00:00Z', applyUrl: 'https://example.org/apply', ...o })) as any;
+  const a = ev({ modality: 'irl', city: 'Buenos Aires', country: 'AR', venue: 'Ciudad Cultural Konex', venueLocality: 'Sarmiento 3131' });
+  assert.deepEqual(a.location, { '@type': 'Place', name: 'Ciudad Cultural Konex', address: { '@type': 'PostalAddress', streetAddress: 'Sarmiento 3131', addressLocality: 'Buenos Aires', addressCountry: 'AR' } });
+  const b = ev({ modality: 'irl', city: 'Coyoacán', country: 'MX', venue: 'UNAM', venueLocality: 'Ciudad Universitaria' });
+  assert.equal('streetAddress' in b.location.address, false); assert.equal('geo' in b.location, false);
+  const c = ev({ modality: 'irl', city: 'São Paulo', country: 'BR', venue: null, venueLocality: null });
+  assert.deepEqual(c.location, { '@type': 'Place', name: 'São Paulo', address: { '@type': 'PostalAddress', addressLocality: 'São Paulo', addressCountry: 'BR' } });
+  assert.equal(ev({ modality: 'online' }).location['@type'], 'VirtualLocation');
+});

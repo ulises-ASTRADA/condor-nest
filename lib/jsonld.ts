@@ -27,11 +27,14 @@ export const ORG = {
 };
 export const WEBSITE = { '@type': 'WebSite', '@id': `${SITE}/#website`, name: 'Condor Nest', url: SITE, inLanguage: 'es-AR', publisher: { '@id': `${SITE}/#org` } };
 
-/** Place from DB fields only. addressLocality is the city (venue_locality holds a street or neighborhood, not a locality); nulls omitted. */
+/** Place from DB fields only. addressLocality is the city (venue_locality holds a street or neighborhood, not a locality);
+ *  streetAddress is venue_locality only when it carries a street number (e.g. "Monroe 860, Belgrano"), never a bare neighborhood.
+ *  No geo: the DB has no coordinates, so none are emitted. Nulls omitted. */
 export function placeLd(l: Listing): Record<string, unknown> | null {
   if (!l.city && !l.venue) return null;
   const country = l.country && COUNTRY_ES[l.country] ? l.country : null;
-  const address = l.city || country ? { '@type': 'PostalAddress', ...(l.city ? { addressLocality: l.city } : {}), ...(country ? { addressCountry: country } : {}) } : null;
+  const street = l.venue && l.venueLocality && /\d/.test(l.venueLocality) ? l.venueLocality.trim() : null;
+  const address = street || l.city || country ? { '@type': 'PostalAddress', ...(street ? { streetAddress: street } : {}), ...(l.city ? { addressLocality: l.city } : {}), ...(country ? { addressCountry: country } : {}) } : null;
   return { '@type': 'Place', name: l.venue ?? l.city, ...(address ? { address } : {}) };
 }
 const mode = (l: Listing) => `https://schema.org/${l.modality === 'online' ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`;
