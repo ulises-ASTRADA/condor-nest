@@ -114,3 +114,15 @@ export function prizeProse(l: Listing): string | null {
   if (r.missing) return null;
   return l.rewardKind === 'total_pool' ? `${r.main} en premios` : l.rewardKind === 'top_prize' ? `1er premio de ${r.main}` : r.main;
 }
+
+/** Registration-close pill (Pixel Mate spec 2026-10-20): only with a real deadlineAt, only in the last 7 calendar days (viewer's zone). */
+export type RegPill = { kind: 'soft' | 'urgent' | 'last' | 'closed'; days: number; date: string; time: string };
+const dayNum = (iso: string, tz: string) => { const p = parts(fmt(tz, { year: 'numeric', month: '2-digit', day: '2-digit' }, 'ymd'), iso); return Date.UTC(+p.year, +p.month - 1, +p.day) / 864e5; };
+export function regPill(l: Pick<Listing, 'deadlineAt'>, now: Date, tz: string = TZ): RegPill | null {
+  if (!l.deadlineAt) return null;
+  const date = artDay(l.deadlineAt, tz); const time = hhmm(l.deadlineAt, tz);
+  if (new Date(l.deadlineAt).getTime() <= now.getTime()) return { kind: 'closed', days: 0, date, time };
+  const days = Math.max(0, dayNum(l.deadlineAt, tz) - dayNum(now.toISOString(), tz));
+  if (days > 7) return null;
+  return { kind: days === 0 ? 'last' : days <= 2 ? 'urgent' : 'soft', days, date, time };
+}

@@ -1,18 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { deadlineInfo, srDate } from '@/lib/format';
+import { deadlineInfo, regPill, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
 import { useTz } from './LocalTime';
 import { Ticker } from './Ticker';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
-export function Countdown({ l, initialNow, seconds = false }: { l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>; initialNow: string; seconds?: boolean }) {
+export function Countdown({ l, initialNow, seconds = false, pillAware = false }: { l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>; initialNow: string; seconds?: boolean; pillAware?: boolean }) {
   const [now, setNow] = useState(() => new Date(initialNow));
   const tz = useTz();
   const info = deadlineInfo(l, now, tz);
   const fast = seconds && info.state === 'closing';
   useEffect(() => { setNow(new Date()); const id = setInterval(() => setNow(new Date()), fast ? 1000 : 60000); return () => clearInterval(id); }, [fast]);
+  // Cards: within the last 7 days (or once closed) the registration pill replaces this block.
+  if (pillAware && regPill(l, now, tz)) return null;
   let label = info.label;
   if (fast && info.ms != null) { const s = Math.floor(info.ms / 1000); label = `¡Último momento! ${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`; }
   const showIcon = ['warning', 'urgent', 'closing'].includes(info.state);
