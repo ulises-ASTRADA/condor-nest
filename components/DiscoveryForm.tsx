@@ -21,8 +21,38 @@ export function DiscoveryForm({ token, demo = false, initialCoupon }: { token?: 
   const [coupon, setCoupon] = useState(initialCoupon);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [couponNotice, setCouponNotice] = useState('');
+  const [downloading, setDownloading] = useState(false);
   const resultRef = useRef<HTMLElement>(null);
   const answered = [source, purpose, rating, useful.trim(), improve.trim()].filter(Boolean).length;
+
+  async function copyCoupon() {
+    if (!coupon) return;
+    try {
+      await navigator.clipboard.writeText(coupon);
+      setCouponNotice('Código copiado');
+    } catch { setCouponNotice('No pudimos copiarlo. Podés seleccionar el código y copiarlo manualmente.'); }
+  }
+
+  async function downloadReceipt() {
+    if (downloading || !token) return;
+    setDownloading(true);
+    setCouponNotice('');
+    try {
+      const response = await fetch('/api/feedback/recibo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store' });
+      if (!response.ok) throw new Error('Unavailable');
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'condor-nest-descuento.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setCouponNotice('Comprobante descargado');
+    } catch { setCouponNotice('No pudimos descargar el comprobante. Probá de nuevo en unos minutos.'); }
+    finally { setDownloading(false); }
+  }
 
   function reset() {
     setSource(''); setPurpose(''); setRating(''); setUseful(''); setImprove(''); setSubmitted(false);
@@ -57,7 +87,17 @@ export function DiscoveryForm({ token, demo = false, initialCoupon }: { token?: 
       <p className="font-mono text-xs uppercase tracking-[.12em] text-lime">Encuesta completada</p>
       <h2 id="feedback-thanks" className="mt-3 font-display text-2xl font-semibold">Gracias por ayudarnos a mejorar.</h2>
       <p className="mt-3 leading-relaxed text-fg-muted">Cada respuesta nos ayuda a entender qué funciona y dónde podemos hacerlo mejor.</p>
-      {demo ? <p role="status" className="mt-5 rounded-[12px] border border-cyan/25 bg-cyan/5 p-3 text-sm text-cyan">Esta es una prueba: tus respuestas no se enviaron ni se guardaron.</p> : <div role="status" className="mt-5 rounded-[12px] border border-lime/30 bg-lime/5 p-5"><p className="text-lg font-medium">Tenés un 30% de descuento en tu próximo evento destacado.</p><p className="mt-2 text-sm text-fg-muted">Guardá este código y compartilo con nosotros cuando quieras usarlo. Es de un solo uso.</p><p className="mt-4 break-all font-mono text-xl text-lime">{coupon}</p><p className="mt-3 text-sm text-fg-muted">Tus respuestas quedaron guardadas.</p></div>}
+      {demo ? <p role="status" className="mt-5 rounded-[12px] border border-cyan/25 bg-cyan/5 p-3 text-sm text-cyan">Esta es una prueba: tus respuestas no se enviaron ni se guardaron.</p> : <div className="mt-5 rounded-[12px] border border-lime/30 bg-lime/5 p-5">
+        <p className="text-lg font-medium">Tenés un 30% de descuento en tu próximo evento destacado.</p>
+        <p className="mt-2 text-sm text-fg-muted">Usá este código en el formulario para destacar tu próximo evento. Es de un solo uso.</p>
+        <button type="button" onClick={copyCoupon} aria-label={`Copiar código ${coupon}`} className="mt-4 min-h-tap max-w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
+          <span className="break-all font-mono text-xl text-lime">{coupon}</span>
+          <span className="mt-1 block text-xs text-fg-muted">Hacé clic para copiar</span>
+        </button>
+        <div className="mt-4"><button type="button" onClick={downloadReceipt} disabled={downloading || !token} className="min-h-tap rounded-pill border border-lime/60 px-5 py-2 text-sm text-lime hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime disabled:opacity-50">{downloading ? 'Preparando PDF…' : 'Descargar comprobante PDF ↓'}</button></div>
+        <p role="status" aria-live="polite" className="mt-2 text-sm text-lime">{couponNotice}</p>
+        <p className="mt-3 text-sm text-fg-muted">Tus respuestas quedaron guardadas.</p>
+      </div>}
       {source && <details className="mt-6 rounded-[12px] border border-border p-4">
         <summary className="cursor-pointer text-sm text-fg">Ver mis respuestas{demo ? ' de prueba' : ''}</summary>
         <dl className="mt-4 space-y-4 text-sm">
