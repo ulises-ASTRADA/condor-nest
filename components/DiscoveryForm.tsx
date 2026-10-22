@@ -7,7 +7,7 @@ const questionClass = 'rounded-card border border-border bg-surface p-5 sm:p-6';
 const textAreaClass = 'fx-input mt-4 min-h-28 w-full resize-y rounded-[12px] border border-border bg-bg px-4 py-3 text-base text-fg placeholder:text-fg-muted';
 
 function QuestionTitle({ number, children, optional = false }: { number: number; children: React.ReactNode; optional?: boolean }) {
-  return <><span className="mb-2 block font-mono text-xs uppercase tracking-[.1em] text-lime">Pregunta {number.toString().padStart(2, '0')}</span><span className="text-lg font-medium">{children}</span>{optional && <span className="ml-2 text-xs font-normal text-fg-muted">Opcional</span>}</>;
+  return <><span className="mb-2 block font-mono text-xs uppercase tracking-[.1em] text-lime">Pregunta {number.toString().padStart(2, '0')}</span><span className="text-lg font-medium">{children}{!optional && <span aria-hidden="true" className="text-danger"> *</span>}</span>{optional && <span className="ml-2 text-xs font-normal text-fg-muted">Opcional</span>}</>;
 }
 
 export function DiscoveryForm({ token, demo = false, initialCoupon }: { token?: string; demo?: boolean; initialCoupon?: string }) {
@@ -70,6 +70,7 @@ export function DiscoveryForm({ token, demo = false, initialCoupon }: { token?: 
 
   return (
     <form onSubmit={submit} className="space-y-4" aria-busy={sending}>
+      <p className="text-xs text-fg-muted"><span aria-hidden="true" className="text-danger">*</span> Campos obligatorios</p>
       <div className="mb-6">
         <div className="mb-2 flex justify-between font-mono text-xs text-fg-muted"><span>UN POCO DE VOS, UN MEJOR CONDOR NEST</span><span>{answered}/5</span></div>
         <div role="progressbar" aria-label="Preguntas respondidas" aria-valuemin={0} aria-valuemax={5} aria-valuenow={answered} className="h-1 overflow-hidden rounded-pill bg-surface-2"><div style={{ width: `${answered * 20}%` }} className="h-full rounded-pill bg-lime transition-[width] duration-base" /></div>
@@ -80,7 +81,7 @@ export function DiscoveryForm({ token, demo = false, initialCoupon }: { token?: 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {sources.map((value) => <label key={value} className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[12px] border border-border bg-bg px-3.5 py-3 text-sm transition-colors has-[:checked]:border-lime has-[:checked]:bg-lime/5 has-[:checked]:text-lime has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime"><input type="radio" required name="source" value={value} checked={source === value} onChange={() => setSource(value)} className="h-4 w-4 shrink-0 accent-[rgb(var(--lime))]" />{value}</label>)}
         </div>
-        {source === 'Otro lugar' && <div className="mt-3"><label htmlFor="feedback-source-other" className="sr-only">¿Cuál?</label><input id="feedback-source-other" name="sourceOther" required pattern=".*\S.*" maxLength={200} value={sourceOther} onChange={(event) => setSourceOther(event.target.value)} placeholder="¿Cuál?" className="fx-input h-12 w-full min-w-0 rounded-[12px] border border-border bg-bg px-4 text-base text-fg placeholder:text-fg-muted" /></div>}
+        {source === 'Otro lugar' && <div className="mt-3"><label htmlFor="feedback-source-other" className="mb-1.5 block text-sm text-fg-muted">¿Cuál? <span aria-hidden="true" className="text-danger">*</span></label><input id="feedback-source-other" name="sourceOther" required pattern=".*\S.*" maxLength={200} value={sourceOther} onChange={(event) => setSourceOther(event.target.value)} placeholder="¿Cuál?" className="fx-input h-12 w-full min-w-0 rounded-[12px] border border-border bg-bg px-4 text-base text-fg placeholder:text-fg-muted" /></div>}
       </fieldset>
       <fieldset className={questionClass}>
         <legend className="sr-only">2. ¿Qué te trajo a Condor Nest?</legend>

@@ -58,11 +58,11 @@ export function PublicarForm() {
       </div>
       <Field req id="event_name" label="Nombre del evento" err={errs.event_name}><input id="event_name" name="event_name" required maxLength={200} className={inputCls(!!errs.event_name)} {...ar('event_name')} /></Field>
       <fieldset>
-        <legend className="mb-1.5 text-[13px] text-fg-muted">Tipo</legend>
+        <legend className="mb-1.5 text-[13px] text-fg-muted">Tipo <span className="text-danger" aria-hidden="true">*</span><span className="sr-only"> (obligatorio)</span></legend>
         <div className="flex flex-wrap gap-2">
           {['hackathon', 'bounty', 'grant'].map((k, i) => (
             <label key={k} className="flex min-h-tap cursor-pointer items-center gap-2 rounded-pill border border-border bg-bg px-4 text-sm has-[:checked]:border-lime has-[:checked]:text-lime">
-              <input type="radio" name="kind" value={k} defaultChecked={i === 0} className="accent-[rgb(var(--lime))]" />{k[0].toUpperCase() + k.slice(1)}
+              <input type="radio" required name="kind" value={k} defaultChecked={i === 0} className="accent-[rgb(var(--lime))]" />{k[0].toUpperCase() + k.slice(1)}
             </label>
           ))}
         </div>
