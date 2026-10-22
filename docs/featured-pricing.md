@@ -1,29 +1,45 @@
-# Featured placement proposal
+# Featured placement requests
 
-`/destacar` is an explicitly labeled prototype, published to production at the owner's request on 2026-10-22 after local review. It does not submit requests, send mail, collect payment, reserve inventory or redeem real feedback codes. `PRUEBA30` simulates a 30% discount; real codes are deliberately rejected in this prototype. The review screen is explicitly a simulation.
+Production `/destacar` now accepts requests. Development keeps a non-persistent demo (`PRUEBA30`); production accepts only real survey codes. Sending stores a request and sends transactional emails; it never charges money or activates a featured event.
 
-Proposed launch catalog (not approved/published): USD 19 / 7 days, USD 29 / 14 days, USD 49 / 30 days. `lib/featured-pricing.ts` centralizes the catalog. Arithmetic uses integer cents, and the discount recalculates when switching durations. Campaign end dates are inclusive.
+## Pricing and persistence
 
-The model charges per event and duration, without an ongoing subscription. All durations include the same shared featured feed space and label. No guaranteed clicks, registrations, exclusive position, newsletter or social promotion. Future pricing changes should be driven by observed traffic, clicks and renewals, not assumed reach. Evvnt's official syndication page lists a starting price of $29 (checked 2026-10-22), but its multi-site distribution is not equivalent to this single-site placement: https://evvnt.com/event-creators/syndication/
+The launch catalog in `lib/featured-pricing.ts` is USD 19 / 7 days, USD 29 / 14 days, USD 49 / 30 days. The API recalculates the price; client totals or percentages are ignored. `cn_featured_requests` freezes the full normalized event/contact details, plan, campaign dates, subtotal, discount, total, currency and expiry. Prices use integer cents. Campaign dates are inclusive. Event start/end dates are separate from campaign dates. Blank fields show generic labels instead of real event data. Required fields have red asterisks; phone and notes are optional.
 
-Before enabling live requests:
+`POST /api/destacar` has same-origin enforcement, payload validation, Turnstile, an IP limiter and durable hourly database caps. A SHA-256 fingerprint of normalized fields makes retries return the same request. Stored details are not returned to the browser. RLS is enabled and all table access and RPC execution are restricted to the service role. The page is noindex and excluded from site analytics.
 
-- Agree on catalog, currency, tax treatment and availability; allow personalized quotes if the owner chooses that model instead.
-- Validate survey codes server-side against `cn_feedback_responses` and the associated email; never trust client-supplied percentages, totals or code existence.
-- Persist contact/event, selected dates, catalog version, subtotal, discount and total as a server-authoritative quote in Supabase, with an idempotency key.
-- Availability and payment confirmation must precede activation. If payment is added, use a verified server webhook to consume a code and activate a campaign in one idempotent transaction. Protect against two requests redeeming the same code, and release temporary reservations after failure/expiry. A preview must never consume it.
-- Decide on payment method, cancellation/refund policy and how shared placements rotate. The prototype currently only previews the request; it has no payment integration or backend persistence.
+## Discounts
 
-Required fields have visible red asterisks. Optional notes and optional coupon do not. Returning from review preserves values. Existing `/publicar` and survey remain unchanged.
+`POST /api/destacar/codigo` validates the real code against its survey email, invitation revocation and redemption status. The save RPC rechecks and reserves the code atomically with the request. A second active request cannot reserve it. Previewing alone never reserves or consumes it. Reservations expire after 48 hours; cancellation also releases them. Changing contact email clears the applied code in the UI.
 
-The prototype starts with blank event fields, with “Tu evento” and “Tu organización” as display fallbacks. No actual event, brand or fictional email is prefilled. Deleting entered names restores these generic labels rather than the original event prop. The real invitation flow can resolve existing context server-side from its submission. Contact email, if present in that context, is displayed; no invented contact appears in the review. Internal `/o/` routing is entirely managed by Condor Nest, with no input for the internal URL or slug.
+Requests begin as `pending_payment`; the 48-hour quote is not a payment link or a booking guarantee. Payment provider and inventory activation are still pending. To cancel, update only the specific reviewed request status to `cancelled`. Do not delete request history.
 
-Owner chose duration-based pricing on 2026-10-22, initially requested local-only work, and then explicitly requested production deployment. The deployment publishes the existing prototype, without enabling live requests, email or payments.
+After verifying actual receipt of payment externally, an administrator can run:
 
-The local form includes editable prize, event start/end dates, featured duration, and a separate featured start date. Known event values are prefilled. Prize can explicitly say “Sin premio”; end date cannot precede event start. The review preserves and displays all values separately from campaign dates. These are local-only edits, not updates to the published event.
+```sql
+select public.cn_featured_mark_paid('REVIEWED-REQUEST-UUID', 'VERIFIED-PAYMENT-REFERENCE');
+```
 
-Event details also include editable event name, short description (300 chars), eligibility, registration HTTPS URL, organizer name/about, and modality (presencial/virtual/híbrido). Physical/hybrid events require a venue address, used for a Google Maps preview on the review screen. Virtual events disable the address field and omit both the address and map from review, ignoring any prior physical address. Switching back preserves the draft address. Condor Nest still generates the internal event URL; the only URL organizers enter is their external registration link.
+This service/admin-only function locks the request, rejects cancelled/expired requests, and marks the reserved coupon redeemed in the same transaction. It does not charge money, verify a payment provider, issue a tax invoice or activate an event. Never call it based only on a browser redirect, screenshot or customer claim. When a provider is chosen, a verified webhook should perform the equivalent reconciliation using provider reference, amount and currency.
 
-Location also accepts HTTPS Google Maps URLs, including short links. Addresses and full links containing a place/query show an embedded map plus a Maps link. Short links and links without a searchable place preserve the original “Abrir ubicación en Google Maps” link; they are not embedded as address searches. No remote short-link resolution is performed in this local prototype. The modality select keeps native keyboard behavior with a custom inset chevron replacing the browser arrow.
+## Mail
 
-Organizer contact has an editable required email (`type=email`, 254 chars) and optional phone (`type=tel`, country code encouraged, 40 chars). Both start blank in the prototype. Review includes email and only includes a phone when supplied. The header follows the current email and returns to the generic organization label if it is cleared. No emails or calls are triggered.
+Resend sends a confirmation to the organizer and a notice to the existing `PUBLICAR_NOTIFY_TO` address, using existing `RESEND_FROM` and `RESEND_API_KEY`. The organizer copy includes the frozen total, reference, review/payment next steps and Condor Nest signature. The internal copy includes all submitted fields and replies to the organizer. Confirmation replies go to the notification mailbox. Neither subscribes the person to promotional email.
+
+Delivery is attempted only after persistence. The two per-recipient statuses (`owner_mail_status`, `contact_mail_status`) record `sent` or a short failure reason. Stable Resend idempotency keys and sent-status checks suppress duplicate notifications on retries. Resend's existing bounded retry helper is reused. A failed mail never discards a saved request. There is no scheduled mail queue yet; review failed/pending statuses in Supabase and retry within the provider's idempotency window.
+
+```sql
+select id,created_at,event_name,contact_email,status,total_cents,currency,
+  owner_mail_status,contact_mail_status,expires_at
+from public.cn_featured_requests order by created_at desc;
+```
+
+## Event information
+
+The form collects name, short description, prize, event dates, modality, location, eligibility, HTTPS registration link, organizer name/about, required contact email and optional phone/notes. Internal URLs and slugs remain managed by Condor Nest. Submitting does not directly modify an existing published event.
+
+Virtual events disable and discard location in the persisted payload. Physical/hybrid events accept a complete address or a Google Maps link. Addresses and full place/query links show an embedded map. Short URLs are preserved as an external Maps link without inventing a map pin. No remote short-link resolution is performed.
+
+## Verification
+
+`npm test` covers request normalization, invalid dates/content, client-price tampering and escaped mail templates, in addition to pricing and map tests. `supabase/tests/featured_requests.sql` checks save/idempotency, email-bound coupons, single reservation, cancellation, mail status, payment-state redemption and public-access denial in a rolled-back transaction. Fixtures never send mail or move money.

@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { FEATURED_PLANS, featuredEndDate, featuredMoney, featuredQuote, type FeaturedEvent, type FeaturedPlanId } from '@/lib/featured-pricing';
 import { mapLocation } from '@/lib/map-location';
+import { Turnstile, type TurnstileHandle } from './Turnstile';
 
 const card = 'rounded-card border border-border bg-surface p-5 sm:p-6';
 const input = 'fx-input mt-2 h-12 w-full min-w-0 rounded-[12px] border border-border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted';
@@ -11,7 +12,7 @@ const button = 'min-h-12 rounded-pill border border-border px-5 text-sm focus-vi
 function Required() { return <><span aria-hidden="true" className="text-danger"> *</span><span className="sr-only"> (obligatorio)</span></>; }
 function readableDate(value: string) { return value ? value.split('-').reverse().join('/') : 'A elegir'; }
 
-export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent }) {
+export function FeaturedForm({ event: selectedEvent, demo = true }: { event: FeaturedEvent; demo?: boolean }) {
   const [planId, setPlanId] = useState<FeaturedPlanId>('fortnight');
   const [start, setStart] = useState('');
   const [title, setTitle] = useState(selectedEvent.title);
@@ -30,9 +31,14 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
   const [coupon, setCoupon] = useState('');
   const [appliedCode, setAppliedCode] = useState('');
   const [couponError, setCouponError] = useState('');
+  const [checkingCode, setCheckingCode] = useState(false);
+  const couponAttempt = useRef(0);
   const [details, setDetails] = useState<{ notes: string } | null>(null);
   const [reviewing, setReviewing] = useState(false);
   const [formError, setFormError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [savedRequest, setSavedRequest] = useState<{ id:string; totalCents:number; contactMailSent:boolean } | null>(null);
+  const turnstile = useRef<TurnstileHandle>(null);
   const result = useRef<HTMLElement>(null);
   const quote = featuredQuote(planId, appliedCode ? 30 : 0);
   const end = featuredEndDate(start, quote.days);
@@ -40,13 +46,46 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
   const today = new Date();
   const minStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  function applyCoupon() {
-    if (coupon.trim().toUpperCase() !== 'PRUEBA30') {
-      setAppliedCode('');
-      setCouponError('Para esta vista de prueba usá PRUEBA30. Los códigos reales se validarán al habilitar el formulario.');
-      return;
+  async function applyCoupon() {
+    const attempt = ++couponAttempt.current;
+    const code = coupon.trim().toUpperCase();
+    setAppliedCode(''); setCouponError('');
+    if (demo) {
+      if (code !== 'PRUEBA30') { setCouponError('Para esta vista de prueba usá PRUEBA30.'); return; }
+      setAppliedCode(code); return;
     }
-    setAppliedCode('PRUEBA30'); setCouponError('');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactEmail.trim())) { setCouponError('Completá primero el email de contacto de tu organización.'); return; }
+    setCheckingCode(true);
+    try {
+      const response = await fetch('/api/destacar/codigo',{ method:'POST',headers:{ 'content-type':'application/json' },body:JSON.stringify({ code,email:contactEmail }),cache:'no-store' });
+      const data = await response.json();
+      if (attempt !== couponAttempt.current) return;
+      if (response.ok && data.status === 'valid' && data.discount_percent === 30) setAppliedCode(code);
+      else setCouponError(data.status === 'error' ? 'No pudimos verificar el código. Probá de nuevo.' : data.status === 'rate' ? 'Esperá unos minutos antes de volver a intentar.' : 'El código no está disponible para este email. Revisá que sea el mismo con el que completaste la encuesta.');
+    } catch { if (attempt === couponAttempt.current) setCouponError('No pudimos conectarnos. Probá de nuevo.'); }
+    finally { if (attempt === couponAttempt.current) setCheckingCode(false); }
+  }
+
+  function resetCoupon() { couponAttempt.current++; setAppliedCode(''); setCouponError(''); setCheckingCode(false); }
+
+  async function sendRequest() {
+    if (sending || demo || !details) return;
+    setSending(true); setFormError('');
+    try {
+      const response = await fetch('/api/destacar',{ method:'POST',headers:{ 'content-type':'application/json' },body:JSON.stringify({
+        title,summary,prize,eventStart,eventEnd,modality,location,eligibility,registrationUrl,organizerName,organizerAbout,
+        contactEmail,contactPhone,notes:details.notes,planId,start,coupon:appliedCode,turnstileToken:await turnstile.current?.token(),
+      }),cache:'no-store' });
+      turnstile.current?.reset();
+      const data = await response.json();
+      if (response.ok && data.status === 'saved') {
+        setSavedRequest({ id:data.id,totalCents:data.totalCents,contactMailSent:data.contactMailSent });
+        requestAnimationFrame(() => { result.current?.focus(); result.current?.scrollIntoView({ block:'start' }); });
+      } else if (data.status === 'coupon_invalid') {
+        resetCoupon(); setReviewing(false); setFormError('El código ya no está disponible. Revisalo antes de volver a enviar.');
+      } else setFormError(data.status === 'rate' ? 'Mandaste varias solicitudes. Esperá unos minutos y probá de nuevo.' : data.status === 'bot' ? 'No pudimos verificar la comprobación de seguridad. Probá de nuevo.' : data.status === 'expired' ? 'Ya existe una solicitud vencida con estos datos. Contactanos para renovarla.' : 'No pudimos guardar la solicitud. Probá de nuevo; tus datos siguen completos.');
+    } catch { setFormError('No pudimos conectarnos. Probá de nuevo; tus datos siguen completos.'); }
+    finally { setSending(false); }
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -67,10 +106,19 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
     requestAnimationFrame(() => { result.current?.focus(); result.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
   }
 
+  if (savedRequest) return <section ref={result} tabIndex={-1} aria-labelledby="featured-saved" className={`${card} mx-auto max-w-2xl scroll-mt-24 outline-none`}>
+    <p className="font-mono text-xs uppercase tracking-[.12em] text-lime">Solicitud recibida</p>
+    <h2 id="featured-saved" className="mt-3 font-display text-2xl font-semibold">¡Gracias! Guardamos tu solicitud.</h2>
+    <p role="status" className="mt-4 text-fg-muted">{savedRequest.contactMailSent ? `Enviamos una confirmación a ${contactEmail.trim()}. Revisá también Promociones y Spam.` : 'La solicitud está guardada. La confirmación por mail está pendiente; no hace falta volver a completar el formulario.'}</p>
+    <p className="mt-4 text-fg-muted">Vamos a revisar el evento y contactarte para coordinar el pago y confirmar la disponibilidad. Todavía no se realizó ningún cobro ni se activó el destacado.</p>
+    <p className="mt-5 text-xl text-lime">Total: {featuredMoney(savedRequest.totalCents)}</p>
+    <p className="mt-3 break-all font-mono text-xs text-fg-muted">Referencia: {savedRequest.id}</p>
+  </section>;
+
   if (reviewing && details) return <section ref={result} tabIndex={-1} aria-labelledby="featured-review" className={`${card} mx-auto max-w-2xl scroll-mt-24 outline-none`}>
-    <p className="font-mono text-xs uppercase tracking-[.12em] text-cyan">Simulación de solicitud</p>
+    <p className="font-mono text-xs uppercase tracking-[.12em] text-cyan">{demo ? 'Simulación de solicitud' : 'Revisá tu solicitud'}</p>
     <h2 id="featured-review" className="mt-3 font-display text-2xl font-semibold">Así quedaría tu destacado.</h2>
-    <p role="status" className="mt-3 text-fg-muted">Esta prueba no se envió, no reservó un lugar y no utilizó ningún código real.</p>
+    <p role="status" className="mt-3 text-fg-muted">{demo ? 'Esta prueba no se envió, no reservó un lugar y no utilizó ningún código real.' : 'Al enviar guardaremos la solicitud y te enviaremos una confirmación por mail. El pago y la activación se coordinan después de revisar el evento.'}</p>
     <dl className="mt-6 space-y-4 break-words text-sm">
       {[
         ['Nombre del evento', title.trim()], ['En pocas palabras', summary.trim()],
@@ -84,8 +132,8 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
         ['Inicio del evento', readableDate(eventStart)], ['Finalización del evento', readableDate(eventEnd)],
         ['Duración del destacado', `${quote.days} días · ${readableDate(start)} al ${readableDate(end)}`],
         ['Precio', featuredMoney(quote.subtotalCents)],
-        ...(appliedCode ? [['Descuento PRUEBA30 (30%)', `−${featuredMoney(quote.discountCents)}`]] : []),
-        ['Total propuesto', featuredMoney(quote.totalCents)],
+        ...(appliedCode ? [[`Descuento ${appliedCode} (30%)`, `−${featuredMoney(quote.discountCents)}`]] : []),
+        [demo ? 'Total propuesto' : 'Total', featuredMoney(quote.totalCents)],
         ...(details.notes ? [['Notas', details.notes]] : []),
       ].map(([label, value]) => <div key={label}><dt className="text-fg-muted">{label}</dt><dd className="mt-1 whitespace-pre-wrap">{value}</dd></div>)}
     </dl>
@@ -93,7 +141,8 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
       {venueMap.embedUrl && <div className="overflow-hidden rounded-[12px] border border-border"><iframe title="Mapa de la ubicación del evento" src={venueMap.embedUrl} className="h-64 w-full border-0" loading="lazy" referrerPolicy="no-referrer" /></div>}
       <a href={venueMap.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm text-lime underline underline-offset-4">Abrir ubicación en Google Maps ↗</a>
     </div>}
-    <button type="button" onClick={() => setReviewing(false)} className={`${button} mt-6 border-lime/50 text-lime`}>Volver al formulario</button>
+    {!demo && <><p className="mt-5 text-xs text-fg-muted">El presupuesto y la reserva del descuento tienen una vigencia de 48 horas. Usamos tus datos para gestionar esta solicitud; no te suscribimos a mails promocionales.</p><Turnstile ref={turnstile} />{formError && <p role="alert" className="mt-4 text-sm text-danger">{formError}</p>}<button type="button" disabled={sending} onClick={sendRequest} className="mt-5 min-h-12 w-full rounded-pill bg-lime px-5 py-3 font-medium text-primary-fg disabled:opacity-60">{sending ? 'Guardando solicitud…' : 'Enviar solicitud'}</button></>}
+    <button type="button" disabled={sending} onClick={() => { setReviewing(false); setFormError(''); }} className={`${button} mt-6 border-lime/50 text-lime`}>Volver al formulario</button>
   </section>;
 
   return <form onSubmit={submit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -140,7 +189,7 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="featured-contact-email" className="block text-sm">Email de contacto<Required /></label>
-            <input id="featured-contact-email" name="contactEmail" type="email" required maxLength={254} autoComplete="email" value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} placeholder="contacto@tuorganizacion.com" className={input} />
+            <input id="featured-contact-email" name="contactEmail" type="email" required maxLength={254} autoComplete="email" value={contactEmail} onChange={(event) => { setContactEmail(event.target.value); resetCoupon(); }} placeholder="contacto@tuorganizacion.com" className={input} />
           </div>
           <div>
             <label htmlFor="featured-contact-phone" className="block text-sm">Teléfono de contacto <span className="text-xs text-fg-muted">Opcional</span></label>
@@ -183,19 +232,19 @@ export function FeaturedForm({ event: selectedEvent }: { event: FeaturedEvent })
       <p className="mt-2 text-sm text-fg-muted">{start ? `${readableDate(start)} → ${readableDate(end)}` : 'Elegí la fecha de inicio'}</p>
       <div className="mt-6 border-y border-border py-5">
         <label htmlFor="featured-coupon" className="text-sm">¿Tenés un código de descuento?</label>
-        <input id="featured-coupon" value={coupon} onChange={(event) => { setCoupon(event.target.value); setAppliedCode(''); setCouponError(''); }} maxLength={40} autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="Ingresá tu código" aria-invalid={!!couponError} aria-describedby="featured-coupon-message" className={`${input} font-mono`} />
-        <button type="button" disabled={!coupon.trim()} onClick={applyCoupon} className={`${button} mt-3 w-full`}>{appliedCode ? 'Código aplicado ✓' : 'Aplicar código'}</button>
-        <p id="featured-coupon-message" role={couponError ? 'alert' : 'status'} className={`mt-2 text-xs ${couponError ? 'text-danger' : appliedCode ? 'text-lime' : 'text-fg-muted'}`}>{couponError || (appliedCode ? '30% de descuento aplicado.' : 'Para probar el descuento, usá PRUEBA30.')}</p>
+        <input id="featured-coupon" value={coupon} onChange={(event) => { setCoupon(event.target.value); resetCoupon(); }} maxLength={40} autoCapitalize="characters" autoComplete="off" spellCheck={false} placeholder="Ingresá tu código" aria-invalid={!!couponError} aria-describedby="featured-coupon-message" className={`${input} font-mono`} />
+        <button type="button" disabled={!coupon.trim() || checkingCode} onClick={applyCoupon} className={`${button} mt-3 w-full`}>{checkingCode ? 'Verificando…' : appliedCode ? 'Código aplicado ✓' : 'Aplicar código'}</button>
+        <p id="featured-coupon-message" role={couponError ? 'alert' : 'status'} className={`mt-2 text-xs ${couponError ? 'text-danger' : appliedCode ? 'text-lime' : 'text-fg-muted'}`}>{couponError || (appliedCode ? '30% de descuento aplicado.' : demo ? 'Para probar el descuento, usá PRUEBA30.' : 'Usá el código de la encuesta con el mismo email con el que la completaste.')}</p>
       </div>
       <dl aria-live="polite" aria-atomic="true" className="mt-5 space-y-3 text-sm">
         <div className="flex justify-between gap-3"><dt className="text-fg-muted">Precio</dt><dd>{featuredMoney(quote.subtotalCents)}</dd></div>
         {appliedCode && <div className="flex justify-between gap-3 text-lime"><dt>Descuento (30%)</dt><dd>−{featuredMoney(quote.discountCents)}</dd></div>}
         <div className="flex justify-between gap-3 border-t border-border pt-4 text-lg font-medium"><dt>Total</dt><dd>{featuredMoney(quote.totalCents)}</dd></div>
       </dl>
-      <p className="mt-2 text-xs text-fg-muted">Precio propuesto en dólares estadounidenses. Un solo pago, sin renovación automática.</p>
+      <p className="mt-2 text-xs text-fg-muted">{demo ? 'Precio propuesto' : 'Precio'} en dólares estadounidenses. Un solo pago, sin renovación automática.</p>
       {formError && <p role="alert" className="mt-4 text-sm text-danger">{formError}</p>}
       <button type="submit" className="mt-6 min-h-12 w-full rounded-pill bg-lime px-5 py-3 font-medium text-primary-fg hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan">Revisar solicitud <span aria-hidden="true">↗</span></button>
-      <p className="mt-3 text-center text-xs leading-relaxed text-fg-muted">Vista de prueba. No se realiza ningún pago ni se envía la solicitud.</p>
+      <p className="mt-3 text-center text-xs leading-relaxed text-fg-muted">{demo ? 'Vista de prueba. No se realiza ningún pago ni se envía la solicitud.' : 'Primero revisás los datos. No se realiza ningún cobro al enviar.'}</p>
     </aside>
   </form>;
 }
