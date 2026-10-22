@@ -11,3 +11,5 @@ Antes de desplegar, aplicar `supabase/migrations/20261022193000_newsletter_welco
 El 22/10/2026 se verificó que Ulises estaba confirmado desde el 14/10 y se enviaron pruebas de la plantilla solo a su dirección autorizada. La plantilla de prueba en Resend desactiva el enlace de baja explícitamente para no modificar su suscripción durante la revisión. El envío automático sí lleva un enlace válido.
 
 Este cambio no implementa el newsletter semanal. La promesa de lunes que ya existe en la web corresponde a un flujo separado aún pendiente.
+
+Los reenvíos puntuales autorizados a suscriptores ya confirmados se preparan con un registro privado que contiene un `dispatch_token_hash` aleatorio y vencimiento corto. El mismo endpoint consume ese token una sola vez, verifica que el contacto siga confirmado y conserva `confirmed_at`. Este mecanismo no selecciona ni envía automáticamente a toda la base. El enlace de baja nuevo reemplaza el anterior.

@@ -90,9 +90,9 @@ export function DiscoveryForm({ token, demo = false, initialCoupon }: { token?: 
       {demo ? <p role="status" className="mt-5 rounded-[12px] border border-cyan/25 bg-cyan/5 p-3 text-sm text-cyan">Esta es una prueba: tus respuestas no se enviaron ni se guardaron.</p> : <div className="mt-5 rounded-[12px] border border-lime/30 bg-lime/5 p-5">
         <p className="text-lg font-medium">Tenés un 30% de descuento en tu próximo evento destacado.</p>
         <p className="mt-2 text-sm text-fg-muted">Usá este código en el formulario para destacar tu próximo evento. Es de un solo uso.</p>
-        <button type="button" onClick={copyCoupon} aria-label={`Copiar código ${coupon}`} className="mt-4 min-h-tap max-w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">
+        <button type="button" onClick={copyCoupon} aria-label={`Copiar código ${coupon}`} className="mt-4 flex min-h-tap w-full flex-col items-start gap-2 rounded-[12px] border border-lime/30 bg-bg/30 p-4 text-left transition-colors hover:border-lime/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-surface">
           <span className="break-all font-mono text-xl text-lime">{coupon}</span>
-          <span className="mt-1 block text-xs text-fg-muted">Hacé clic para copiar</span>
+          <span className="block text-xs text-fg-muted">Hacé clic para copiar</span>
         </button>
         <div className="mt-4"><button type="button" onClick={downloadReceipt} disabled={downloading || !token} className="min-h-tap rounded-pill border border-lime/60 px-5 py-2 text-sm text-lime hover:shadow-glow-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime disabled:opacity-50">{downloading ? 'Preparando PDF…' : 'Descargar comprobante PDF ↓'}</button></div>
         <p role="status" aria-live="polite" className="mt-2 text-sm text-lime">{couponNotice}</p>

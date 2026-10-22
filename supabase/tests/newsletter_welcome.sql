@@ -22,5 +22,19 @@ begin
   if has_function_privilege('anon','public.cn_confirm_with_welcome(text,text)','execute') or has_function_privilege('authenticated','public.cn_welcome_delivery(uuid,text)','execute') or has_table_privilege('anon','public.cn_newsletter_welcome','select') then raise exception 'public access granted'; end if;
 end;
 $$;
+do $$
+declare job uuid; result jsonb; original_confirmed timestamptz;
+begin
+  select confirmed_at into original_confirmed from newsletter_subscribers where email='welcome-flow-test@example.invalid';
+  insert into cn_newsletter_welcome(email,dispatch_token_hash,dispatch_expires_at)
+    values('welcome-flow-test@example.invalid',repeat('1',64),now()+interval '1 hour') returning id into job;
+  result := cn_confirm_with_welcome(repeat('1',64),repeat('2',64));
+  if result->>'status' <> 'confirmed' or (result#>>'{welcome,id}')::uuid <> job then raise exception 'operator dispatch failed'; end if;
+  if not exists(select 1 from newsletter_subscribers where email='welcome-flow-test@example.invalid' and status='confirmed' and confirmed_at=original_confirmed) then raise exception 'consent date changed'; end if;
+  if cn_confirm_with_welcome(repeat('1',64),repeat('3',64))->>'status' <> 'invalid' then raise exception 'dispatch replay accepted'; end if;
+  insert into cn_newsletter_welcome(email,dispatch_token_hash,dispatch_expires_at)
+    values('welcome-expired-test@example.invalid',repeat('4',64),now()+interval '1 hour');
+  if cn_confirm_with_welcome(repeat('4',64),repeat('5',64))->>'status' <> 'invalid' then raise exception 'unconfirmed dispatched'; end if;
+end; $$;
 select 'newsletter_welcome: all transactional checks passed' as result;
 rollback;
