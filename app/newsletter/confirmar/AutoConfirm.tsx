@@ -11,8 +11,8 @@ export default function AutoConfirm({ token }: { token: string }) {
   const [st, setSt] = useState<E>('loading'); const once = useRef(false);
   const run = useCallback(() => {
     setSt('loading');
-    // Always POST (mail scanners prefetch GETs). Abort after 10 s so nobody stays stuck on "Confirmando…".
-    fetch('/api/newsletter/confirm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store', signal: AbortSignal.timeout(10_000) })
+    // Allow the confirmation and transactional welcome delivery to finish.
+    fetch('/api/newsletter/confirm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store', signal: AbortSignal.timeout(30_000) })
       .then((r) => r.json()).then((j) => { const e = (['confirmado', 'invalido', 'error'].includes(j?.estado) ? j.estado : 'error') as E;
         if (e === 'confirmado') { try { localStorage.setItem(key(token), '1'); } catch {} } setSt(e); })
       .catch(() => setSt('error'));

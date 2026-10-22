@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { serverRpc } from '@/lib/server-supabase';
 import { rateLimit } from '@/lib/rate-limit';
-import { isToken, sha256 } from '@/lib/email';
+import { isToken, sha256, newToken, SITE_URL, resendSend } from '@/lib/email';
+import { confirmWithWelcome } from '@/lib/newsletter-confirm';
 import { sameOriginUrl } from '@/lib/same-origin';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 // GET never confirms (mail scanners prefetch links): it only forwards to the page with the "Confirmar" button.
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get('token');
@@ -19,7 +21,10 @@ export async function POST(req: Request) {
   else token = (await req.formData().catch(() => null))?.get('token');
   let estado: 'invalido' | 'confirmado' | 'error' = 'invalido';
   if (rateLimit(`nlc:${ip}`, 20) && isToken(token)) {
-    try { if ((await serverRpc('cn_confirm', { confirm_hash: sha256(token) })) === 'confirmed') estado = 'confirmado'; } catch { estado = 'error'; }
+    try {
+      const unsubscribe = newToken();
+      estado = await confirmWithWelcome(sha256(token), unsubscribe, sha256(unsubscribe), SITE_URL, { rpc: serverRpc, send: resendSend });
+    } catch { estado = 'error'; }
   }
   if (isJson) return NextResponse.json({ estado }, { headers: { 'cache-control': 'no-store' } });
   return NextResponse.redirect(sameOriginUrl(req, `/newsletter/${estado}`), 303);
