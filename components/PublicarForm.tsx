@@ -68,6 +68,26 @@ export function PublicarForm() {
         </div>
         {errs.kind && <p className="mt-1 text-sm text-danger">{errs.kind}</p>}
       </fieldset>
+      <fieldset>
+        <legend className="mb-2 text-[13px] text-fg-muted">Publicación <span className="text-danger" aria-hidden="true">*</span><span className="sr-only"> (obligatorio)</span></legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="cursor-pointer rounded-[14px] border border-border bg-bg p-4 has-[:checked]:border-lime/70 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime">
+            <span className="flex min-h-6 items-center gap-2.5 font-medium">
+              <input type="radio" name="wants_featured" value="off" required defaultChecked className="h-4 w-4 shrink-0 accent-[rgb(var(--lime))]" />Gratuito
+            </span>
+            <span className="mt-3 block text-sm leading-relaxed text-fg-muted">Tu evento en el feed, sin costo.</span>
+            <span className="mt-2 flex gap-2 text-xs leading-relaxed text-fg-muted"><span aria-hidden="true">–</span> Sin un lugar reservado arriba del feed.</span>
+          </label>
+          <label className="cursor-pointer rounded-[14px] border border-border bg-bg p-4 has-[:checked]:border-lime/70 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime">
+            <span className="flex min-h-6 items-center gap-2.5 font-medium">
+              <input type="radio" name="wants_featured" value="on" required className="h-4 w-4 shrink-0 accent-[rgb(var(--lime))]" />Destacado <span className="ml-auto font-mono text-[10px] uppercase tracking-wide text-fg-muted">Pago</span>
+            </span>
+            <span className="mt-3 flex gap-2 text-sm leading-relaxed text-fg-muted"><span aria-hidden="true" className="text-lime">✓</span> Un lugar reservado arriba del feed.</span>
+            <span className="mt-2 flex gap-2 text-xs leading-relaxed text-fg-muted"><span aria-hidden="true" className="text-lime">✓</span> Elegís 7, 14 o 30 días de visibilidad.</span>
+          </label>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-fg-muted">Si elegís Destacado, te compartimos los planes antes de confirmar. Completar este formulario no genera ningún cargo.</p>
+      </fieldset>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field req id="location" label="País y ciudad, u “Online”" err={errs.location}><input id="location" name="location" required maxLength={160} placeholder="Córdoba, Argentina" className={inputCls(!!errs.location)} {...ar('location')} /></Field>
         <Field req id="dates" label="Fechas" hint="Inicio y cierre de inscripción o entrega." err={errs.dates}><input id="dates" name="dates" required maxLength={160} placeholder="7 al 9 de noviembre de 2026" className={inputCls(!!errs.dates)} {...ar('dates')} /></Field>
@@ -79,9 +99,6 @@ export function PublicarForm() {
       <Field id="notes" label="Notas (opcional)" hint="Quién puede participar, requisitos, lo que quieras contarnos." err={errs.notes}>
         <textarea id="notes" name="notes" rows={4} maxLength={2000} className={`${inputCls(!!errs.notes)} h-auto py-3`} />
       </Field>
-      <label className="flex items-start gap-2.5 text-sm text-fg-muted">
-        <input type="checkbox" name="wants_featured" className="mt-1 accent-[rgb(var(--lime))]" />Quiero info sobre el espacio “Destacado” (pago, siempre marcado).
-      </label>
       {/* honeypot */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden"><label>Sitio web<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
       <div aria-live="polite">
