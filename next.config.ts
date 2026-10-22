@@ -1,14 +1,15 @@
 import type { NextConfig } from 'next';
+const isDev = process.env.NODE_ENV === 'development';
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com", // Next.js inline bootstrap; move to nonces later
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://challenges.cloudflare.com`, // Next.js dev uses eval for source maps; production keeps its existing policy.
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' https: data:",
   "font-src 'self' data:",
   "media-src 'self'",
-  `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} https://challenges.cloudflare.com`.trim(),
+  `connect-src 'self' ${isDev ? 'ws://127.0.0.1:* ws://localhost:*' : ''} ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''} https://challenges.cloudflare.com`.trim(),
   "frame-src https://challenges.cloudflare.com https://www.google.com",
-  "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "upgrade-insecure-requests",
+  "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", ...(!isDev ? ["upgrade-insecure-requests"] : []),
 ].join('; ');
 const config: NextConfig = {
   poweredByHeader: false,
@@ -39,6 +40,7 @@ const config: NextConfig = {
       { source: '/newsletter/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'no-store' }] },
       // /go/ click redirects: the external site gets no referrer (same as the old rel="noreferrer" direct link). Listed last to override the default.
       { source: '/go/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },
+      { source: '/como-nos-conociste', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'private, no-store' }, ...noindex] },
     ];
   },
 };
