@@ -21,8 +21,9 @@ export async function POST(req: Request) {
     const res = await serverRpc('cn_subscribe_v2', { email, confirm_hash: sha256(confirm), unsub_hash: sha256(unsub) });
     if (res === 'invalid') return NextResponse.json({ status: 'invalid' }, { status: 400 });
     if (res === 'rate') return NextResponse.json({ status: 'error' }, { status: 429 });
-    // Already confirmed, or a confirm mail went out < 1 h ago: don't mail again; same response so membership isn't revealed.
-    if (res === 'confirmed' || res === 'recent') return NextResponse.json({ status: 'success' });
+    // Confirmed subscribers get a clear message; neither case sends another mail.
+    if (res === 'confirmed') return NextResponse.json({ status: 'already' });
+    if (res === 'recent') return NextResponse.json({ status: 'success' });
     const sent = await sendConfirmation(email, confirm, unsub);
     if (!sent.ok) {
       // keep the pending row; record why so the confirm mail can be re-sent later (no PII in the reason)

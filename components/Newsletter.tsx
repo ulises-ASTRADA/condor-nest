@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import { Turnstile, type TurnstileHandle } from './Turnstile';
 type St = 'idle' | 'submitting' | 'success' | 'saved' | 'already' | 'invalid' | 'error';
-const MSG: Partial<Record<St, string>> = { success: '¡Listo! Te mandamos un mail para confirmar.', saved: 'Te anotamos. El mail de confirmación todavía no salió: te lo reenviamos en cuanto se active el envío, sin que hagas nada.', already: 'Ya estabas suscripto 🙌', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
+const MSG: Partial<Record<St, string>> = { success: '¡Listo! Te mandamos un mail para confirmar.', saved: 'Te anotamos. El mail de confirmación todavía no salió: te lo reenviamos en cuanto se active el envío, sin que hagas nada.', already: 'Ya estás suscripto a Condor Nest. Si no estás recibiendo nuestros mails, revisá las carpetas Spam y Promociones.', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
 
 export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compact' | 'footer' | 'mini' | 'resub' }) {
   const [st, setSt] = useState<St>('idle'); const [email, setEmail] = useState(''); const [shake, setShake] = useState(0);
@@ -40,9 +40,9 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
           )}
         <div id={`${id}-m`} aria-live="polite" className={`text-sm ${done || err ? 'mt-2' : ''}`}>
           {done && (
-            <p className="flex items-center gap-2 font-medium">
-              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="text-lime"><path className="cn-check" pathLength={1} d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
-              <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{resub ? 'Listo. Si ese mail está anotado, en unos minutos te llega un link nuevo. Revisá también Spam o Promociones.' : MSG[st]}</span>
+            <p className="flex items-start gap-2 font-medium">
+              <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="mt-0.5 shrink-0 text-lime"><path className="cn-check" pathLength={1} d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
+              <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{resub && st !== 'already' ? 'Listo. Si ese mail está anotado, en unos minutos te llega un link nuevo. Revisá también Spam o Promociones.' : MSG[st]}</span>
             </p>
           )}
           {st === 'success' && <p className="cn-fade mt-1 pl-[30px] text-xs text-fg-muted">Si no lo ves en un par de minutos, revisá Spam o Promociones y marcalo como "No es spam".</p>}
