@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/rank.test.ts lib/go.test.ts lib/pill.test.ts lib/feedback.test.ts lib/featured-pricing.test.ts lib/map-location.test.ts lib/featured-request.test.ts lib/newsletter-confirm.test.ts"
+    "test": "tsx --test lib/rank.test.ts lib/go.test.ts lib/pill.test.ts lib/feedback.test.ts lib/featured-pricing.test.ts lib/map-location.test.ts lib/featured-request.test.ts lib/newsletter-confirm.test.ts lib/template-dispatch.test.ts"
   },
   "devDependencies": {
     "@types/node": "22.18.8",
