@@ -79,6 +79,9 @@ export function PublicarForm() {
       <Field id="notes" label="Notas (opcional)" hint="Quién puede participar, requisitos, lo que quieras contarnos." err={errs.notes}>
         <textarea id="notes" name="notes" rows={4} maxLength={2000} className={`${inputCls(!!errs.notes)} h-auto py-3`} />
       </Field>
+      <label className="flex items-start gap-2.5 text-sm text-fg-muted">
+        <input type="checkbox" name="wants_featured" className="mt-1 accent-[rgb(var(--lime))]" />Quiero info sobre el espacio “Destacado” (pago, siempre marcado).
+      </label>
       {/* honeypot */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden"><label>Sitio web<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
       <div aria-live="polite">
