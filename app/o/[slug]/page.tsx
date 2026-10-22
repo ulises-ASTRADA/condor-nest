@@ -79,10 +79,12 @@ function Cta({ l, className = '' }: { l: Listing; className?: string }) {
   const platform = hostLabel(host);
   const label = platform ? `Inscribirme en ${platform}` : 'Inscribirme';
   return (
-    <div className={`grid gap-1 ${className}`}>
+    <div className={`min-w-0 ${className}`}>
       <a href={goPath(l.slug)} target="_blank" rel={l.featured ? "sponsored nofollow noopener" : "nofollow noopener"} aria-label={`${label}${host ? ` (${host}, abre sitio externo)` : ' (abre sitio externo)'}`}
-        className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">{label} ↗</a>
-      {host && <p className="text-center text-xs text-fg-muted">{host}</p>}
+        className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-pill bg-lime px-6 py-3 text-center font-medium text-primary-fg transition-shadow duration-fast hover:shadow-glow-lime active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+        <span>{label} ↗</span>
+        {host && <span className="max-w-full break-all text-xs font-normal text-primary-fg/70">{host}</span>}
+      </a>
     </div>
   );
 }
@@ -121,12 +123,12 @@ export default async function Detail({ params }: P) {
   const keyData = (
     <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
       <dt className="shrink-0 text-fg-muted">Premio</dt>
-      <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
+      <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main.replace(/^premios?:\s*/i, '')}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
       <dt className="shrink-0 text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
       <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell></dd>
       {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
       {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
-      <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words">{l.eligibilityShort ?? ELIG_LABEL[l.eligibility]}{l.eligibilityNote && <span className="mt-0.5 block text-fg-muted leading-snug">{l.eligibilityNote}</span>}</dd>
+      <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words leading-snug">{l.eligibilityNote || l.eligibilityShort || ELIG_LABEL[l.eligibility]}</dd>
       <dt className="shrink-0 text-fg-muted">Modalidad</dt><dd className="min-w-0 break-words">{modalityLabel(l)}</dd>
     </dl>
   );
@@ -161,7 +163,7 @@ export default async function Detail({ params }: P) {
             : l.modality !== 'online' && l.city ? <Location mode="city" name={l.city} address={[l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} official={official} />
             : l.type === 'hackathon' && <LocationNote text={l.modality === 'online' ? 'Online' : 'Sede a confirmar'} official={official} />}
           <section className="mt-8">
-            <h2 className="font-medium text-lg">Resumen en español</h2>
+            <h2 className="font-medium text-lg">Resumen</h2>
             {summary.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{summary.map((b, i) => <li key={i}>{b}</li>)}</ul> : <p className="mt-2 text-fg-muted">Sin dato. Mirá la fuente oficial.</p>}
             <p className="mt-2 text-xs text-fg-muted">Resumen automático en español. Revisá siempre la fuente oficial.</p>
           </section>
