@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-export const alt = 'Condor Nest · Hackathons, bounties y grants para builders LatAm';
+export const alt = 'Condor Nest · Hackathons, bounties y grants para builders de LatAm';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -20,7 +20,7 @@ export default function OG() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', fontSize: 76, fontWeight: 800, lineHeight: 1.05 }}><span style={{ color: lime }}>Oportunidades</span><span style={{ marginLeft: 22 }}>para</span></div>
-          <div style={{ display: 'flex', fontSize: 76, fontWeight: 800, lineHeight: 1.05 }}>builders LatAm</div>
+          <div style={{ display: 'flex', fontSize: 76, fontWeight: 800, lineHeight: 1.05 }}>builders de LatAm</div>
           <div style={{ display: 'flex', marginTop: 28, fontSize: 30, color: '#9AA3AE' }}>Hackathons, bounties y grants en un solo feed en español</div>
         </div>
         <div style={{ display: 'flex', gap: 14, fontSize: 24, fontFamily: 'monospace' }}>

@@ -26,8 +26,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   // ItemList = exactly the cards visible on first paint (same filters/sort as the feed island).
   const openList = [...featuredListings(listings.filter((l) => matches(l, f, now))), ...sortListings(listings.filter((l) => !isFeatured(l) && matches(l, f, now)), sort, now).slice(0, 20)];
   const ld = { '@context': 'https://schema.org', '@graph': [{ ...WEBSITE, ...(updated ? { dateModified: updated } : {}) }, ORG,
-    { '@type': 'CollectionPage', '@id': `${SITE}/`, url: `${SITE}/`, name: 'Oportunidades para builders LatAm', inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` }, ...(updated ? { dateModified: updated } : {}) }, {
-    '@type': 'ItemList', name: 'Oportunidades abiertas para builders LatAm', numberOfItems: openList.length,
+    { '@type': 'CollectionPage', '@id': `${SITE}/`, url: `${SITE}/`, name: 'Oportunidades para builders de LatAm', inLanguage: 'es-AR', isPartOf: { '@id': `${SITE}/#website` }, ...(updated ? { dateModified: updated } : {}) }, {
+    '@type': 'ItemList', name: 'Oportunidades abiertas para builders de LatAm', numberOfItems: openList.length,
     itemListElement: openList.map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}/o/${l.slug}`, name: l.title })),
   }] };
   return (
@@ -46,7 +46,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
           <li data-id="af" className="col-span-full"><Affiliate url={affiliateUrl()} /></li>
           {listings.filter((l) => !isFeatured(l)).map((l) => <li key={l.id} data-id={l.id} className="flex-col"><ListingCard listing={l} now={now.toISOString()} /></li>)}
         </>} now={now.toISOString()} initial={{ f, sort }} affUrl={affiliateUrl()} hero={<>
-        <h1 className="font-display text-[26px] font-semibold leading-8 tracking-[-.01em] lg:text-[44px] lg:font-extrabold lg:leading-[48px]"><span className="text-gradient">Oportunidades</span> para builders LatAm</h1>
+        <h1 className="font-display text-[26px] font-semibold leading-8 tracking-[-.01em] lg:text-[44px] lg:font-extrabold lg:leading-[48px]"><span className="text-gradient">Oportunidades</span> para builders de LatAm</h1>
         <UpdatedStamp iso={updated} open={open} counts={{ conf: 0, unc: 0 }} now={now.toISOString()} />
         <Link href="/que-es-una-hackaton" prefetch={false} className="mt-3 inline-flex min-h-tap items-center gap-2 rounded-card border border-border bg-surface px-3 py-2 text-sm text-cyan hover:border-cyan/50">
           ¿Primera vez? Qué es una hackatón y en qué se diferencia de bounties y grants →

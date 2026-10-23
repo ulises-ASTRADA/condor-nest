@@ -178,7 +178,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <style id="cn-feed-visibility" dangerouslySetInnerHTML={{ __html: css }} />
       <div className="grid gap-6 pt-5 lg:grid-cols-[240px_minmax(0,1fr)_336px] lg:gap-8 lg:pt-8">
         <aside className="hidden lg:block" aria-label="Filtros"><div className="sticky top-[90px]">{sideControls}</div></aside>
         <section aria-label="Oportunidades" className="min-w-0">

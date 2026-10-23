@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { TrackedListingLink } from './TrackedListingLink';
 import type { Listing } from '@/lib/types';
 import { SOURCE_LABEL } from '@/lib/types';
 import { competitionText, rewardText } from '@/lib/format';
@@ -13,7 +13,7 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
   const r = rewardText(l); const c = competitionText(l);
   const closed = !isOpen(l, new Date(now));
   return (
-    <Link href={`/o/${l.slug}`} prefetch={false} className="card-link group flex h-full flex-col rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
+    <TrackedListingLink slug={l.slug} placement={variant === 'featured' ? 'featured' : variant === 'compact' ? 'related' : 'organic'} className="card-link group flex h-full flex-col rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
       <article
         className={`card flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
@@ -44,7 +44,7 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
         )}
         </div>
       </article>
-    </Link>
+    </TrackedListingLink>
   );
 }
 

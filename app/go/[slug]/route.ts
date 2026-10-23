@@ -2,6 +2,7 @@ import { after, NextResponse, type NextRequest } from 'next/server';
 import { getListing } from '@/lib/supabase';
 import { serverRpc } from '@/lib/server-supabase';
 import { VALID_SLUG, goFallback, refPath, noJsPage, goneOrigin } from '@/lib/go';
+import { ANALYTICS_UUID, analyticsEnabled } from '@/lib/listing-analytics';
 
 // /go/<slug> → 302 to the listing's stored apply_url (never a user-supplied URL), counting the click.
 // What counts as a click (documented for analytics):
@@ -79,7 +80,13 @@ async function handle(req: NextRequest, slug: string, count: boolean) {
     const path = refPath(req.headers.get('referer'), req.headers.get('host'));
     // Non-blocking: runs after the redirect is sent; failures never affect the user.
     after(async () => {
-      try { await serverRpc('cn_record_click', { p_listing: l.id, p_ref: ref, p_path: path }); }
+      try {
+        const entry = req.nextUrl.searchParams.get('cn_entry');
+        const enabled = analyticsEnabled(process.env);
+        // Old deployments keep using the compatible 3-argument RPC. Attribution cannot redirect elsewhere.
+        await serverRpc('cn_record_click', { p_listing: l.id, p_ref: ref, p_path: path,
+          ...(enabled ? { p_exposure: entry && ANALYTICS_UUID.test(entry) ? entry : null } : {}) });
+      }
       catch (e) { console.warn('cn_record_click failed', (e as Error).message); }
     });
   }

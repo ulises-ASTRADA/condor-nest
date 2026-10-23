@@ -14,7 +14,7 @@ const unbounded = Unbounded({ subsets: ['latin', 'latin-ext'], display: 'optiona
 const grotesk = Space_Grotesk({ subsets: ['latin', 'latin-ext'], display: 'swap', variable: '--font-space-grotesk' });
 const mono = Geist_Mono({ subsets: ['latin', 'latin-ext'], weight: '500', display: 'swap', variable: '--font-geist-mono' });
 
-const TITLE = 'Condor Nest · Hackathons, bounties y grants para builders LatAm';
+const TITLE = 'Condor Nest · Hackathons, bounties y grants para builders de LatAm';
 const DESC = 'Hackathons, bounties y grants abiertos a Argentina y LatAm, en español y actualizados todos los días. Deadlines en tu hora local.';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

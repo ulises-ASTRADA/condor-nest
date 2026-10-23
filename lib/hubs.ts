@@ -45,14 +45,14 @@ export const HUBS: Hub[] = [
       { q: '¿Qué cuenta como hackathon de IA?', a: 'Las que en su fuente o descripción hablan de inteligencia artificial, agentes, LLMs o MCP. La clasificación sale de los datos reales del evento, no de una etiqueta puesta a mano.' },
       ELIG, UPDATED, TZ, PUBLISH,
     ] },
-  { slug: 'bounties', label: 'Bounties', h1: 'Bounties para builders LatAm', noun: ['bounty', 'bounties'], where: 'para builders de LatAm', feed: '/?tipo=bounty',
+  { slug: 'bounties', label: 'Bounties', h1: 'Bounties para builders de LatAm', noun: ['bounty', 'bounties'], where: 'para builders de LatAm', feed: '/?tipo=bounty',
     match: (l) => l.type === 'bounty',
     faqs: () => [
       { q: '¿Qué es un bounty?', a: 'Una tarea concreta (código, diseño, contenido) con un premio fijo que paga quien la publica. Se entrega online y gana la mejor entrega o todas las que cumplen, según las bases.' },
       { q: '¿De dónde salen estos bounties?', a: 'Principalmente de Superteam Earn, filtrados a los que están abiertos a LatAm o a un país de LatAm.' },
       ELIG, UPDATED, FREE,
     ] },
-  { slug: 'grants', label: 'Grants', h1: 'Grants para builders LatAm', noun: ['grant', 'grants'], where: 'para builders de LatAm', feed: '/?tipo=grant',
+  { slug: 'grants', label: 'Grants', h1: 'Grants para builders de LatAm', noun: ['grant', 'grants'], where: 'para builders de LatAm', feed: '/?tipo=grant',
     match: (l) => l.type === 'grant',
     faqs: () => [
       { q: '¿Qué es un grant?', a: 'Financiamiento no reembolsable para construir un proyecto. A diferencia de un hackathon, no compite en un evento con fecha: se postula con una propuesta.' },
