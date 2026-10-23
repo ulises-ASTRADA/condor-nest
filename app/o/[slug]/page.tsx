@@ -124,8 +124,8 @@ export default async function Detail({ params }: P) {
     <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
       <dt className="shrink-0 text-fg-muted">Premio</dt>
       <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main.replace(/^premios?:\s*/i, '')}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
-      <dt className="shrink-0 text-fg-muted">{l.deadlineAt ? 'Cierre' : 'Fecha'}</dt>
-      <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} seconds /></CountdownShell></dd>
+      <dt className="shrink-0 text-fg-muted">{!l.deadlineAt && l.type === 'hackathon' ? 'Inscripción' : 'Cierre'}</dt>
+      <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} registrationOnly /></CountdownShell></dd>
       {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
       {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
       <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words leading-snug">{l.eligibilityNote || l.eligibilityShort || ELIG_LABEL[l.eligibility]}</dd>

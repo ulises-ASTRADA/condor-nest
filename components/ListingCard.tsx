@@ -5,7 +5,6 @@ import { competitionText, rewardText } from '@/lib/format';
 import { isOpen } from '@/lib/rank';
 import { TypeBadge, CardTags } from './Badges';
 import { Countdown } from './Countdown';
-import { DeadlinePill } from './DeadlinePill';
 import { LocalTime } from './LocalTime';
 
 /** showStart: lists ordered by start date also print the start when the countdown shows another date (deadline). */
@@ -23,7 +22,6 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
           <TypeBadge type={l.type} /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
-        <DeadlinePill l={l} initialNow={now} />
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
         <div className="mt-auto pt-2">
         {variant !== 'compact' && (
@@ -32,8 +30,8 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
             {r.main}{r.approx && <span className="ml-2 text-sm text-fg-muted">{r.approx}</span>}
           </p>
         )}
-        <div className="mt-2 empty:hidden"><Countdown l={l} initialNow={now} pillAware seconds /></div>
-        {showStart && l.startsAt && (l.deadlineAt || l.modality === 'online') && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Empieza <LocalTime iso={l.startsAt} /></p>}
+        <div className="mt-2"><Countdown l={l} initialNow={now} registrationOnly /></div>
+        {l.startsAt && ((!l.deadlineAt && variant !== 'compact') || showStart) && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Evento: <LocalTime iso={l.startsAt} /></p>}
         <CardTags l={l} />
         {variant !== 'compact' && l.competitors != null && (
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-sm tabular text-fg-muted">

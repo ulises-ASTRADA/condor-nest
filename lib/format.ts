@@ -80,6 +80,18 @@ export function deadlineInfo(l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type'
   return { state, iso, verb, label, date, ms };
 }
 
+/** Exact remaining time for a published deadline: days above 24h, hours/minutes below it. */
+export function deadlineCountdown(ms: number): string {
+  if (ms >= 864e5) {
+    const days = Math.floor(ms / 864e5);
+    const hours = Math.floor((ms % 864e5) / 36e5);
+    return `${days} ${days === 1 ? 'día' : 'días'}${hours ? ` ${hours} h` : ''}`;
+  }
+  const minutes = Math.max(1, Math.floor(ms / 6e4));
+  const hours = Math.floor(minutes / 60);
+  return hours ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+}
+
 export function competitionText(l: Listing) {
   if (l.competitors == null) return { count: 'Competencia: sin dato', ratio: null as string | null, low: false };
   const unit = l.competitorsKind === 'registrations' ? 'inscriptos' : 'envíos';

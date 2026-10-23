@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
 import { featuredListings, isFeatured } from '@/lib/featured';
-import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, effDeadline, locationContext, locationGroups, type Filters, type Sort } from '@/lib/rank';
+import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, locationContext, locationGroups, type Filters, type Sort } from '@/lib/rank';
 import { HUBS } from '@/lib/hubs';
 import { inCountry } from '@/lib/rank';
 import dynamic from 'next/dynamic';
@@ -14,6 +14,7 @@ import { Ticker } from './Ticker';
 import { useReduceMotionPref } from './Toggles';
 import { ECOSYSTEMS, type Eco } from '@/lib/eco';
 import { COUNTRY_ES } from '@/lib/geo';
+import { deadlineCountdown } from '@/lib/format';
 
 const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
 const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -38,7 +39,6 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
     </button>
   );
 }
-
 function Counter({ n }: { n: number }) {
   return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'convocatoria' : 'convocatorias'}</span>;
 }
@@ -114,7 +114,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       {hub && <Link href={`/${hub.slug}`} prefetch={false} className="mt-1.5 inline-flex min-h-tap items-center text-sm text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan lg:min-h-0">{hub.label} →</Link>}
     </div>
   );
-  const closingWeek = useMemo(() => sortListings(listings.filter((l) => { const d = effDeadline(l); return d && isOpen(l, nowD) && new Date(d).getTime() - nowD.getTime() < 7 * 864e5 && matches(l, { ...f, q: '' }, nowD); }), 'cierra-pronto', nowD).slice(0, 5), [listings, f, nowD]);
+  const closingWeek = useMemo(() => sortListings(listings.filter((l) => l.deadlineAt && isOpen(l, nowD) && new Date(l.deadlineAt).getTime() - nowD.getTime() < 7 * 864e5 && matches(l, { ...f, q: '' }, nowD)), 'cierra-pronto', nowD).slice(0, 5), [listings, f, nowD]);
   // Cards are server-rendered (Server Component) in #feed-list; this island only decides which show and in what order.
   const css = useMemo(() => {
     const esc = (v: string) => v.replace(/["\\]/g, '\\$&');
@@ -226,11 +226,11 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
           <Newsletter variant="compact" />
           {closingWeek.length > 0 && (
             <section aria-labelledby="cs">
-              <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Próximas fechas</h4>
-              <ul>{closingWeek.map((l) => { const ms = new Date(effDeadline(l)!).getTime() - tick; return (
+              <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierres próximos</h4>
+              <ul>{closingWeek.map((l) => { const ms = new Date(l.deadlineAt!).getTime() - tick; return (
                 <li key={l.id} className="fx-mini border-b border-border py-2.5 text-sm">
                   <Link href={`/o/${l.slug}`} prefetch={false} className="hover:text-lime" lang={l.titleLang}>{l.title}</Link>
-                  <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? (l.deadlineAt ? 'cerrada' : 'empezó') : `${l.deadlineAt ? 'Cierra' : 'Empieza'} en ${rel(ms)}`}</div>
+                  <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? 'Cerrada' : `Cierra en ${deadlineCountdown(ms)}`}</div>
                 </li>); })}</ul>
             </section>
           )}
@@ -252,9 +252,4 @@ function Empty({ f, set, unconf }: { f: Filters; set: (p: Partial<Filters>) => v
       <p className="mt-4 text-sm text-fg-muted">¿Organizás uno que no está acá? <Link href="/publicar" prefetch={false} className="text-cyan underline decoration-cyan/50 underline-offset-4 hover:decoration-cyan">Publicalo gratis</Link></p>
     </div>
   );
-}
-
-function rel(ms: number) {
-  const m = Math.floor(ms / 6e4), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
-  return d > 0 ? `${d} d ${h} h` : h > 0 ? `${h} h ${mm} min` : `${mm} min`;
 }
