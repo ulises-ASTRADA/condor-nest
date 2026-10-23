@@ -27,7 +27,7 @@ export function OrgAbout({ name, about }: { name: string; about: O }) {
     <section aria-label="Sobre el organizador" className="mt-6 min-w-0 rounded-[12px] border border-border bg-surface p-4" data-block="sobre-organizador">
       <div className="flex items-center gap-3">
         <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-surface-2 font-sans text-base font-semibold">
-          {failedLogo === logoUrl ? name.trim()[0]?.toUpperCase() : <img src={logoUrl} alt="" width={28} height={28} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailedLogo(logoUrl)} className="h-7 w-7 object-contain" />}
+          {failedLogo === logoUrl ? name.trim()[0]?.toUpperCase() : <img src={logoUrl} alt="" width={40} height={40} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailedLogo(logoUrl)} className="h-full w-full object-cover" />}
         </span>
         <div className="min-w-0"><h2 id="sobre-org" className="font-sans text-base font-semibold">Sobre el organizador</h2><p className="truncate text-sm text-fg-muted">{name}</p></div>
       </div>
