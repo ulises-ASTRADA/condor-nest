@@ -32,7 +32,7 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
             {r.main}{r.approx && <span className="ml-2 text-sm text-fg-muted">{r.approx}</span>}
           </p>
         )}
-        <div className="mt-2 empty:hidden"><Countdown l={l} initialNow={now} pillAware /></div>
+        <div className="mt-2 empty:hidden"><Countdown l={l} initialNow={now} pillAware seconds /></div>
         {showStart && l.startsAt && (l.deadlineAt || l.modality === 'online') && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Empieza <LocalTime iso={l.startsAt} /></p>}
         <CardTags l={l} />
         {variant !== 'compact' && l.competitors != null && (

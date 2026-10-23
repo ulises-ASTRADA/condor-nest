@@ -17,6 +17,8 @@ export function DeadlinePill({ l, initialNow }: { l: Pick<Listing, 'deadlineAt'>
   useEffect(() => setMounted(true), []);
   const p = regPill(l, now, tz);
   if (!p) return null;
+  // The live red countdown takes over during the final 24 hours.
+  if (new Date(l.deadlineAt!).getTime() - now.getTime() < 24 * 60 * 60 * 1000 && p.kind !== 'closed') return null;
   // Before hydration (and for crawlers) show a fixed, cache-safe text; the browser swaps in the live count.
   if (!mounted && p.kind !== 'closed') return <span className="dl-pill dl-pill--soft">Inscripciones hasta el {p.date}</span>;
   if (p.kind === 'closed') return <span className="dl-pill dl-pill--closed">Inscripción cerrada</span>;

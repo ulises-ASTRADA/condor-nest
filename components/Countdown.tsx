@@ -13,8 +13,9 @@ export function Countdown({ l, initialNow, seconds = false, pillAware = false }:
   const info = deadlineInfo(l, now, tz);
   const fast = seconds && info.state === 'closing';
   useEffect(() => { setNow(new Date()); const id = setInterval(() => setNow(new Date()), fast ? 1000 : 60000); return () => clearInterval(id); }, [fast]);
-  // Cards: within the last 7 days (or once closed) the registration pill replaces this block.
-  if (pillAware && regPill(l, now, tz)) return null;
+  // Keep the live red countdown in the final 24 hours; the pill handles earlier days.
+  const pill = pillAware ? regPill(l, now, tz) : null;
+  if (pill && !['urgent', 'closing'].includes(info.state)) return null;
   let label = info.label;
   if (fast && info.ms != null) { const s = Math.floor(info.ms / 1000); label = `¡Último momento! ${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`; }
   const showIcon = ['warning', 'urgent', 'closing'].includes(info.state);
