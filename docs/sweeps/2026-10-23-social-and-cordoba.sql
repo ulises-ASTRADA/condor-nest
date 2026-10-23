@@ -57,15 +57,16 @@ select
   'https://www.argentinaspace.com/es/hackathon', 'https://luma.com/ivdtiv4q',
   'https://www.argentinaspace.com/es/hackathon', now(),
   'https://x.com/ArtuGrande/status/2097351908843196507',
-  '2026-11-11T11:30:00Z'::timestamptz, '2026-11-13T22:00:00Z'::timestamptz,
+  null, null,
   null, 'irl', 'AR', 'Salta', 'Centro de Convenciones de Salta',
   array['Argentina']::text[], array['Space','Robótica','Innovación']::text[],
   'global', 'Presencial · Salta',
-  'Convoca a desarrolladores, diseñadores, estudiantes y perfiles de negocio. Podés anotarte individualmente, con equipo o formar uno durante el evento. Elegís entre Hackathon y Desafío Rover en el registro. La página del hackathon indica 11 y 12/11; Luma muestra la competencia completa del 11 al 13/11. El costo de participación en el hackathon no está confirmado en la página oficial.',
+  'Convoca a desarrolladores, diseñadores, estudiantes y perfiles de negocio. Podés anotarte individualmente, con equipo o formar uno durante el evento. Elegís entre Hackathon y Desafío Rover en el registro. La página del hackathon indica 11 y 12/11; Luma muestra la competencia completa del 11 al 13/11. El costo de participación en el hackathon no está confirmado en la página oficial. Los horarios específicos del hackathon no están publicados.',
   'Habrá reconocimientos para los mejores proyectos; el monto y el detalle todavía no fueron publicados.',
   array[
     'Desafíos de minería, agronomía y New Space; el Desafío Rover corre en paralelo.',
-    'La página oficial sitúa el hackathon el 11 y 12 de noviembre; el formulario Luma registra la competencia del 11 al 13. Confirmá el cronograma del track antes de viajar.',
+    'Hackathon el 11 y 12 de noviembre de 2026 según la página oficial; los horarios específicos todavía no están publicados.',
+    'El formulario Luma abarca toda la competencia del 11 al 13 de noviembre. Confirmá el cronograma de tu track antes de viajar.',
     'Podés inscribirte individualmente, con equipo o formar uno allí.',
     'Los premios monetarios y el costo específico del hackathon siguen sin confirmar.'
   ],
@@ -73,7 +74,8 @@ select
   'Argentina Space organiza el encuentro de industria espacial y tecnológica en Salta; la competencia se realiza junto con SaltaDev.',
   'https://www.argentinaspace.com/es/hackathon', 'https://www.argentinaspace.com/',
   jsonb_build_object('registration_verified', true,
-    'date_conflict', 'Página oficial: hackathon 11–12/11. Luma: competencia completa 11–13/11, 08:30 a 19:00 GMT-3. Los timestamps representan la competencia completa.',
+    'event_start_date', '2026-11-11', 'event_end_date', '2026-11-12',
+    'date_conflict', 'Página oficial: hackathon 11–12/11. Luma: competencia completa 11–13/11, 08:30 a 19:00 GMT-3. Los timestamps del hackathon se dejan nulos porque sus horas no fueron publicadas.',
     'registration_form', 'https://luma.com/ivdtiv4q')
 where not exists (
   select 1 from public.listings where slug = 'argentina-space-hackathon-2026'
