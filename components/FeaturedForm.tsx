@@ -130,7 +130,8 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
         ...(contactPhone.trim() ? [['Teléfono de contacto', contactPhone.trim()]] : []),
         ['Premio', prize.trim()],
         ['Inicio del evento', readableDate(eventStart)], ['Finalización del evento', readableDate(eventEnd)],
-        ['Duración del destacado', `${quote.days} días · ${readableDate(start)} al ${readableDate(end)}`],
+        ['Plan del destacado', `${quote.name} · ${quote.days} días`],
+        ['Fechas del destacado', `${readableDate(start)} al ${readableDate(end)}`],
         ['Precio', featuredMoney(quote.subtotalCents)],
         ...(appliedCode ? [[`Descuento ${appliedCode} (30%)`, `−${featuredMoney(quote.discountCents)}`]] : []),
         [demo ? 'Total propuesto' : 'Total', featuredMoney(quote.totalCents)],
@@ -204,7 +205,8 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {FEATURED_PLANS.map((plan) => <label key={plan.id} className="relative flex cursor-pointer flex-col rounded-[14px] border border-border bg-bg p-4 transition-colors has-[:checked]:border-lime has-[:checked]:bg-lime/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime">
             <input type="radio" name="plan" value={plan.id} required checked={planId === plan.id} onChange={() => setPlanId(plan.id)} className="mb-4 h-4 w-4 accent-[rgb(var(--lime))]" />
-            <span className="text-lg font-medium">{plan.days} días</span>
+            <span className="text-lg font-medium">{plan.name}</span>
+            <span className="mt-1 text-sm text-fg-muted">{plan.days} días</span>
             <span className="mt-2 font-mono text-xl text-lime">{featuredMoney(plan.priceCents)}</span>
             <span className="mt-3 text-xs leading-relaxed text-fg-muted">{plan.description}</span>
           </label>)}
@@ -228,7 +230,7 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
 
     <aside className={`${card} min-w-0 lg:sticky lg:top-24`} aria-labelledby="featured-summary">
       <p className="font-mono text-xs uppercase tracking-[.12em] text-magenta">Tu campaña</p>
-      <h2 id="featured-summary" className="mt-3 text-xl font-medium">Destacado · {quote.days} días</h2>
+      <h2 id="featured-summary" className="mt-3 text-xl font-medium">{quote.name} · {quote.days} días</h2>
       <p className="mt-2 text-sm text-fg-muted">{start ? `${readableDate(start)} → ${readableDate(end)}` : 'Elegí la fecha de inicio'}</p>
       <div className="mt-6 border-y border-border py-5">
         <label htmlFor="featured-coupon" className="text-sm">¿Tenés un código de descuento?</label>

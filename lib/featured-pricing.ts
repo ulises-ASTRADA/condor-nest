@@ -1,8 +1,8 @@
 // Proposed launch prices. Keep in cents; this catalog is not a live offer yet.
 export const FEATURED_PLANS = [
-  { id: 'week', days: 7, priceCents: 1900, description: 'Un impulso para la última semana de inscripción.' },
-  { id: 'fortnight', days: 14, priceCents: 2900, description: 'Dos semanas para darle más visibilidad a tu convocatoria.' },
-  { id: 'month', days: 30, priceCents: 4900, description: 'Acompañá tu convocatoria durante un mes.' },
+  { id: 'week', name: 'Impulso', days: 7, priceCents: 1900, description: 'Para darle un empujón a tu convocatoria.' },
+  { id: 'fortnight', name: 'Despegue', days: 14, priceCents: 2900, description: 'Dos semanas para ganar visibilidad.' },
+  { id: 'month', name: 'Vuelo', days: 30, priceCents: 4900, description: 'Presencia sostenida durante un mes.' },
 ] as const;
 export type FeaturedPlanId = typeof FEATURED_PLANS[number]['id'];
 export type FeaturedEvent = {
@@ -15,7 +15,7 @@ export function featuredQuote(planId: string, discountPercent = 0) {
   const plan = FEATURED_PLANS.find((item) => item.id === planId);
   if (!plan || !Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) throw new Error('Invalid quote');
   const discountCents = Math.round(plan.priceCents * discountPercent / 100);
-  return { days: plan.days, subtotalCents: plan.priceCents, discountPercent, discountCents, totalCents: plan.priceCents - discountCents, currency: 'USD' as const };
+  return { name: plan.name, days: plan.days, subtotalCents: plan.priceCents, discountPercent, discountCents, totalCents: plan.priceCents - discountCents, currency: 'USD' as const };
 }
 
 export function featuredMoney(cents: number) {
