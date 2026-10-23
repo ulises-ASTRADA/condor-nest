@@ -36,6 +36,18 @@ from public.cn_featured_requests order by created_at desc;
 
 ## Event information
 
+### Precompleted invitations from `/publicar`
+
+When `wants_featured=true`, the API uses `cn_submit_featured` to save the original submission and create a private invitation atomically. It generates 32 random bytes; only the SHA-256 token hash is stored in `cn_featured_invitations`. The internal submission notice includes `/destacar?solicitud=TOKEN` and its expiry, ready for the operator to share after review. It does not automatically send a new invitation email to the organizer. Existing free submissions still use `cn_submit`.
+
+The invitation lasts **5 days (120 hours) from creation**, independently of the existing 48-hour quote/coupon reservation after saving a featured request. `cn_featured_invite_read` discloses the original fields only for a valid, unrevoked, unexpired link. Reissue with the service/admin-only `cn_featured_invite_create(submission_id, sha256_new_token)`; older links are revoked. Share only the new original token, never the hash. Links are bearer capabilities: anyone holding one can view that submission, so keep them private and share only with its organizer. No emails, names or submission IDs are encoded into URLs.
+
+The page prepopulates title, contact email, prize, official URL and location; an explicitly Online/Virtual/Remoto location sets virtual modality. Everything remains editable. Original free-text dates/notes and contact name appear as reference, without guessing start/end dates, eligibility or an organization name from a person's name. The official link must be confirmed as the registration link. Missing fields remain empty. Duration appears between Tu evento and Datos del evento.
+
+Submission with an invitation uses `cn_featured_save_from_invite`, which rechecks expiry/revocation under a lock, stores `source_submission_id` and `invitation_id` as foreign keys, and leaves the original submission unchanged. Expired/revoked links cannot save even if opened earlier. Fingerprints include invitation identity so unrelated invitations cannot be reassociated. No token is persisted in the request details or logged. The route is dynamic, noindex, private/no-store, no-referrer and already excluded from site analytics. No ID-based public lookup is exposed; table/RPC access remains service-only.
+
+Database migration: `20261023010000_featured_submission_invitations.sql`. Transactional DB tests: `supabase/tests/featured_invitations.sql`. Unit mapping/notice tests: `lib/featured-invitation.test.ts`. Deploy migration before application code; it is backward compatible with the old public routes. Verification fixtures must use example.invalid addresses and roll back, with no real mail calls.
+
 The form collects name, short description, prize, event dates, modality, location, eligibility, HTTPS registration link, organizer name/about, required contact email and optional phone/notes. Internal URLs and slugs remain managed by Condor Nest. Submitting does not directly modify an existing published event.
 
 Virtual events disable and discard location in the persisted payload. Physical/hybrid events accept a complete address or a Google Maps link. Addresses and full place/query links show an embedded map. Short URLs are preserved as an external Maps link without inventing a map pin. No remote short-link resolution is performed.

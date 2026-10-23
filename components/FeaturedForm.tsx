@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { FEATURED_PLANS, featuredEndDate, featuredMoney, featuredQuote, type FeaturedEvent, type FeaturedPlanId } from '@/lib/featured-pricing';
 import { mapLocation } from '@/lib/map-location';
 import { Turnstile, type TurnstileHandle } from './Turnstile';
+import { invitationExpiry, type FeaturedSubmission } from '@/lib/featured-invitation';
 
 const card = 'rounded-card border border-border bg-surface p-5 sm:p-6';
 const input = 'fx-input mt-2 h-12 w-full min-w-0 rounded-[12px] border border-border bg-bg px-3.5 text-base text-fg placeholder:text-fg-muted';
@@ -12,7 +13,9 @@ const button = 'min-h-12 rounded-pill border border-border px-5 text-sm focus-vi
 function Required() { return <><span aria-hidden="true" className="text-danger"> *</span><span className="sr-only"> (obligatorio)</span></>; }
 function readableDate(value: string) { return value ? value.split('-').reverse().join('/') : 'A elegir'; }
 
-export function FeaturedForm({ event: selectedEvent, demo = true }: { event: FeaturedEvent; demo?: boolean }) {
+export function FeaturedForm({ event: selectedEvent, demo = true, invitationToken, originalSubmission, invitationExpiresAt }: {
+  event: FeaturedEvent; demo?: boolean; invitationToken?: string; originalSubmission?: FeaturedSubmission; invitationExpiresAt?: string;
+}) {
   const [planId, setPlanId] = useState<FeaturedPlanId>('fortnight');
   const [start, setStart] = useState('');
   const [title, setTitle] = useState(selectedEvent.title);
@@ -74,7 +77,7 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
     try {
       const response = await fetch('/api/destacar',{ method:'POST',headers:{ 'content-type':'application/json' },body:JSON.stringify({
         title,summary,prize,eventStart,eventEnd,modality,location,eligibility,registrationUrl,organizerName,organizerAbout,
-        contactEmail,contactPhone,notes:details.notes,planId,start,coupon:appliedCode,turnstileToken:await turnstile.current?.token(),
+        contactEmail,contactPhone,notes:details.notes,planId,start,coupon:appliedCode,invitationToken,turnstileToken:await turnstile.current?.token(),
       }),cache:'no-store' });
       turnstile.current?.reset();
       const data = await response.json();
@@ -83,6 +86,8 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
         requestAnimationFrame(() => { result.current?.focus(); result.current?.scrollIntoView({ block:'start' }); });
       } else if (data.status === 'coupon_invalid') {
         resetCoupon(); setReviewing(false); setFormError('El código ya no está disponible. Revisalo antes de volver a enviar.');
+      } else if (data.status === 'invitation_expired' || data.status === 'invitation_invalid') {
+        setFormError('El enlace precompletado venció o ya no está disponible. Respondé al mail de invitación para pedir uno nuevo. No se envió esta solicitud.');
       } else setFormError(data.status === 'rate' ? 'Mandaste varias solicitudes. Esperá unos minutos y probá de nuevo.' : data.status === 'bot' ? 'No pudimos verificar la comprobación de seguridad. Probá de nuevo.' : data.status === 'expired' ? 'Ya existe una solicitud vencida con estos datos. Contactanos para renovarla.' : 'No pudimos guardar la solicitud. Probá de nuevo; tus datos siguen completos.');
     } catch { setFormError('No pudimos conectarnos. Probá de nuevo; tus datos siguen completos.'); }
     finally { setSending(false); }
@@ -153,10 +158,37 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
         <p className="font-mono text-xs uppercase tracking-[.12em] text-lime">Tu evento</p>
         <h2 id="featured-event" className="mt-3 text-xl font-medium">{title.trim() || 'Tu evento'}</h2>
         <p className="mt-2 break-words text-sm text-fg-muted">{organizerName.trim() || 'Tu organización'}{contactEmail.trim() ? ` · ${contactEmail.trim()}` : ''}</p>
-        <p className="mt-3 text-xs text-fg-muted">Completá los datos de tu evento para ver cómo quedaría el destacado.</p>
+        <p className="mt-3 text-xs text-fg-muted">{originalSubmission ? 'Precompletamos los datos que enviaste en Publicá tu evento. Revisalos, podés editarlos y completar lo que falta.' : 'Completá los datos de tu evento para ver cómo quedaría el destacado.'}</p>
+        {invitationExpiresAt && <p className="mt-2 text-xs text-fg-muted">Este enlace vence el <time dateTime={invitationExpiresAt}>{invitationExpiry(invitationExpiresAt)}</time> (hora de Argentina).</p>}
+        {originalSubmission && <details className="mt-4 border-t border-border pt-4 text-sm">
+          <summary className="cursor-pointer text-lime">Ver los datos del envío original</summary>
+          <dl className="mt-4 space-y-3 break-words text-fg-muted">
+            <div><dt className="text-fg">Contacto</dt><dd>{originalSubmission.name}</dd></div>
+            <div><dt className="text-fg">Tipo</dt><dd>{originalSubmission.kind}</dd></div>
+            <div><dt className="text-fg">Ubicación</dt><dd>{originalSubmission.location}</dd></div>
+            <div><dt className="text-fg">Fechas informadas</dt><dd>{originalSubmission.dates}</dd><dd className="mt-1 text-xs">Confirmá abajo las fechas de inicio y finalización del evento.</dd></div>
+            {originalSubmission.notes && <div><dt className="text-fg">Notas</dt><dd className="whitespace-pre-wrap">{originalSubmission.notes}</dd></div>}
+          </dl>
+        </details>}
       </section>
+      <fieldset className={card}>
+        <legend className="sr-only">Duración del destacado (obligatorio)</legend>
+        <h2 aria-hidden="true" className="text-xl font-medium">01. Duración del destacado<Required /></h2>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {FEATURED_PLANS.map((plan) => <label key={plan.id} className="relative flex cursor-pointer flex-col rounded-[14px] border border-border bg-bg p-4 transition-colors has-[:checked]:border-lime has-[:checked]:bg-lime/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime">
+            <input type="radio" name="plan" value={plan.id} required checked={planId === plan.id} onChange={() => setPlanId(plan.id)} className="mb-4 h-4 w-4 accent-[rgb(var(--lime))]" />
+            <span className="text-lg font-medium">{plan.name}</span>
+            <span className="mt-1 text-sm text-fg-muted">{plan.days} días</span>
+            <span className="mt-2 font-mono text-xl text-lime">{featuredMoney(plan.priceCents)}</span>
+            <span className="mt-3 text-xs leading-relaxed text-fg-muted">{plan.description}</span>
+          </label>)}
+        </div>
+        <label htmlFor="featured-start" className="mt-5 block text-sm">Fecha de inicio del destacado<Required /></label>
+        <input id="featured-start" name="start" type="date" required min={minStart} value={start} onChange={(event) => setStart(event.target.value)} className={input} />
+        <p aria-live="polite" className="mt-2 text-xs text-fg-muted">{end ? `Tu campaña iría del ${readableDate(start)} al ${readableDate(end)}, inclusive.` : 'Elegí una fecha. La activación está sujeta a revisión y disponibilidad.'}</p>
+      </fieldset>
       <section className={card} aria-labelledby="featured-event-details">
-        <h2 id="featured-event-details" className="text-xl font-medium">01. Datos del evento</h2>
+        <h2 id="featured-event-details" className="text-xl font-medium">02. Datos del evento</h2>
         <label htmlFor="featured-title" className="mt-5 block text-sm">Nombre del evento<Required /></label>
         <input id="featured-title" name="title" required minLength={3} maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Tu evento" className={input} />
         <label htmlFor="featured-description" className="mt-5 block text-sm">En pocas palabras<Required /></label>
@@ -180,9 +212,10 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
         <textarea id="featured-eligibility" name="eligibility" required maxLength={1000} rows={3} value={eligibility} onChange={(event) => setEligibility(event.target.value)} placeholder="¿Quiénes pueden participar? Indicá niveles, edades, países o requisitos, si los hay." className={textArea} />
         <label htmlFor="featured-registration" className="mt-5 block text-sm">Link de inscripción<Required /></label>
         <input id="featured-registration" name="registrationUrl" type="url" required maxLength={500} value={registrationUrl} onChange={(event) => setRegistrationUrl(event.target.value)} placeholder="https://…" className={input} />
+        {originalSubmission && <p className="mt-2 text-xs text-fg-muted">Precompletamos el enlace oficial que enviaste. Confirmá que sea el enlace para inscribirse.</p>}
       </section>
       <section className={card} aria-labelledby="featured-organizer">
-        <h2 id="featured-organizer" className="text-xl font-medium">02. Sobre el organizador</h2>
+        <h2 id="featured-organizer" className="text-xl font-medium">03. Sobre el organizador</h2>
         <label htmlFor="featured-organizer-name" className="mt-5 block text-sm">Nombre de la organización<Required /></label>
         <input id="featured-organizer-name" name="organizerName" required maxLength={200} value={organizerName} onChange={(event) => setOrganizerName(event.target.value)} placeholder="Tu organización" className={input} />
         <label htmlFor="featured-organizer-about" className="mt-5 block text-sm">Sobre el organizador<Required /></label>
@@ -199,22 +232,7 @@ export function FeaturedForm({ event: selectedEvent, demo = true }: { event: Fea
         </div>
         <p className="mt-2 text-xs text-fg-muted">Datos para contactar a tu organización por el destacado.</p>
       </section>
-      <fieldset className={card}>
-        <legend className="sr-only">Duración del destacado (obligatorio)</legend>
-        <h2 aria-hidden="true" className="text-xl font-medium">03. Duración del destacado<Required /></h2>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          {FEATURED_PLANS.map((plan) => <label key={plan.id} className="relative flex cursor-pointer flex-col rounded-[14px] border border-border bg-bg p-4 transition-colors has-[:checked]:border-lime has-[:checked]:bg-lime/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-lime">
-            <input type="radio" name="plan" value={plan.id} required checked={planId === plan.id} onChange={() => setPlanId(plan.id)} className="mb-4 h-4 w-4 accent-[rgb(var(--lime))]" />
-            <span className="text-lg font-medium">{plan.name}</span>
-            <span className="mt-1 text-sm text-fg-muted">{plan.days} días</span>
-            <span className="mt-2 font-mono text-xl text-lime">{featuredMoney(plan.priceCents)}</span>
-            <span className="mt-3 text-xs leading-relaxed text-fg-muted">{plan.description}</span>
-          </label>)}
-        </div>
-        <label htmlFor="featured-start" className="mt-5 block text-sm">Fecha de inicio del destacado<Required /></label>
-        <input id="featured-start" name="start" type="date" required min={minStart} value={start} onChange={(event) => setStart(event.target.value)} className={input} />
-        <p aria-live="polite" className="mt-2 text-xs text-fg-muted">{end ? `Tu campaña iría del ${readableDate(start)} al ${readableDate(end)}, inclusive.` : 'Elegí una fecha. La activación está sujeta a revisión y disponibilidad.'}</p>
-      </fieldset>
+
 
       <section className={card} aria-labelledby="featured-contact">
         <h2 id="featured-contact" className="text-xl font-medium">04. ¿Querés agregar algo?</h2>

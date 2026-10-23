@@ -1,5 +1,6 @@
 import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
+import { featuredInvitationNotice } from './featured-invitation';
 // RESEND_API_KEY is server-only. Never log recipients or tokens.
 export const SITE_URL = (process.env.SITE_URL || 'https://condor-nest.lat').replace(/\/$/, '');
 export const newToken = () => randomBytes(32).toString('hex');
@@ -68,7 +69,7 @@ export async function sendConfirmation(to: string, confirmToken: string, unsubTo
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 /** Internal notice to the site owner about a /publicar submission. */
-export async function sendSubmissionNotice(id: number, f: Record<string, string | boolean | null>): Promise<SendResult> {
+export async function sendSubmissionNotice(id: number, f: Record<string, string | boolean | null>, invitation?: { url: string; expiresAt: string }): Promise<SendResult> {
   const to = process.env.PUBLICAR_NOTIFY_TO;
   if (!to) return { ok: false, reason: 'PUBLICAR_NOTIFY_TO not set' };
   const rows = Object.entries(f).filter(([, v]) => v !== null && v !== '').map(([k, v]) => [k, String(v)]);
@@ -76,5 +77,6 @@ export async function sendSubmissionNotice(id: number, f: Record<string, string 
   const html = `<div style="font-family:Inter,Arial,sans-serif;background:#07070b;color:#ecebf5;padding:24px"><h2 style="color:#c6ff3d;margin:0 0 12px">Nuevo evento #${id}</h2><table style="font-size:14px">` +
     rows.map(([k, v]) => `<tr><td style="color:#8b8aa6;padding:4px 12px 4px 0;vertical-align:top">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') +
     `</table><p style="color:#6d6a84;font-size:12px">Supabase: cn_submissions id=${id}</p></div>`;
-  return resendSend({ to: [to], reply_to: typeof f.email === 'string' ? f.email : undefined, subject: `[Condor Nest] Nuevo evento: ${String(f.evento ?? '').slice(0, 80)}`, html, text }, `sub-${id}`);
+  const extra = invitation ? featuredInvitationNotice(invitation) : { html: '', text: '' };
+  return resendSend({ to: [to], reply_to: typeof f.email === 'string' ? f.email : undefined, subject: `[Condor Nest] Nuevo evento: ${String(f.evento ?? '').slice(0, 80)}`, html: html.replace(/<\/div>$/, `${extra.html}</div>`), text: text + extra.text }, `sub-${id}`);
 }

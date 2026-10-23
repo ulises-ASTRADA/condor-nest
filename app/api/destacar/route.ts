@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { featuredRequest, featuredToday } from '@/lib/featured-request';
 import { featuredQuote } from '@/lib/featured-pricing';
 import { featuredEmail, type SavedFeaturedRequest } from '@/lib/featured-email';
-import { resendSend, sha256 } from '@/lib/email';
+import { resendSend, sha256, isToken } from '@/lib/email';
 import { rateLimit } from '@/lib/rate-limit';
 import { serverRpc } from '@/lib/server-supabase';
 import { turnstileOk } from '@/lib/turnstile';
@@ -17,12 +17,21 @@ export async function POST(req: Request) {
   if (raw.length > 16384) return reply({ status:'invalid' },413);
   let b: Record<string, unknown>;
   try { b = JSON.parse(raw); } catch { return reply({ status:'invalid' },400); }
+  if (!b || typeof b !== 'object' || Array.isArray(b)) return reply({ status:'invalid' },400);
+  const hasInvitation = b.invitationToken !== undefined;
+  if (hasInvitation && !isToken(b.invitationToken)) return reply({ status:'invitation_invalid' },400);
   const f = featuredRequest(b,featuredToday());
   if (!f) return reply({ status:'invalid' },400);
   if (!(await turnstileOk(b.turnstileToken,ip))) return reply({ status:'bot' },403);
   const base = featuredQuote(f.planId);
   let result: { status:string; request?:SavedFeaturedRequest };
-  try { result = await serverRpc('cn_featured_save',{ p:f,p_fingerprint:sha256(JSON.stringify(f)),p_subtotal:base.subtotalCents,p_days:base.days }); }
+  try {
+    const invitationHash = hasInvitation ? sha256(b.invitationToken as string) : undefined;
+    const args = { p:f,p_fingerprint:sha256(JSON.stringify(invitationHash ? { details:f,invitationHash } : f)),p_subtotal:base.subtotalCents,p_days:base.days };
+    result = invitationHash
+      ? await serverRpc('cn_featured_save_from_invite',{ ...args,p_token_hash:invitationHash })
+      : await serverRpc('cn_featured_save',args);
+  }
   catch { console.error('featured: save failed'); return reply({ status:'error' },503); }
   if (result.status !== 'saved' || !result.request) return reply({ status:result.status },result.status === 'rate' ? 429 : 409);
   const saved = result.request;

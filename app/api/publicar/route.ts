@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { serverRpc } from '@/lib/server-supabase';
 import { rateLimit } from '@/lib/rate-limit';
-import { sendSubmissionNotice } from '@/lib/email';
+import { sendSubmissionNotice, newToken, sha256, SITE_URL } from '@/lib/email';
 import { turnstileOk } from '@/lib/turnstile';
 // /publicar submissions: always stored in Supabase (cn_submissions), then an email notice is attempted via Resend.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -36,12 +36,20 @@ export async function POST(req: Request) {
   if (Object.keys(errors).length) return NextResponse.json({ status: 'invalid', errors }, { status: 400 });
   if (!(await turnstileOk(b.turnstileToken, ip))) return NextResponse.json({ status: 'bot' }, { status: 403 });
   let id: number;
-  try { id = Number(await serverRpc('cn_submit', { p: f })); } catch { console.error('publicar: insert failed'); return NextResponse.json({ status: 'error' }, { status: 500 }); }
+  let invitation: { url: string; expiresAt: string } | undefined;
+  try {
+    if (f.wants_featured) {
+      const token = newToken();
+      const saved = await serverRpc('cn_submit_featured', { p: f, p_token_hash: sha256(token) }) as { id: number; expires_at?: string };
+      id = Number(saved.id);
+      if (id !== -1 && saved.expires_at) invitation = { url: `${SITE_URL}/destacar?solicitud=${token}`, expiresAt: saved.expires_at };
+    } else id = Number(await serverRpc('cn_submit', { p: f }));
+  } catch { console.error('publicar: insert failed'); return NextResponse.json({ status: 'error' }, { status: 500 }); }
   if (id === -1) return NextResponse.json({ status: 'rate' }, { status: 429 }); // DB-backed hourly caps
   const sent = await sendSubmissionNotice(id, {
     nombre: f.name, email: f.email, evento: f.event_name, tipo: f.kind, lugar: f.location, fechas: f.dates,
     premio: f.prize || null, link: f.url, notas: f.notes || null, destacado: f.wants_featured ? 'quiere info de Destacado' : null,
-  });
+  }, invitation);
   await serverRpc('cn_submission_mail', { sub_id: id, st: sent.ok ? 'sent' : `failed:${sent.reason}` }).catch(() => {});
   return NextResponse.json({ status: 'ok' }); // stored either way; the owner sees it in Supabase even if the mail failed
 }

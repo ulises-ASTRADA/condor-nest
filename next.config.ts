@@ -41,6 +41,7 @@ const config: NextConfig = {
       // /go/ click redirects: the external site gets no referrer (same as the old rel="noreferrer" direct link). Listed last to override the default.
       { source: '/go/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },
       { source: '/como-nos-conociste', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'private, no-store' }, ...noindex] },
+      { source: '/destacar', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }, { key: 'Cache-Control', value: 'private, no-store' }, ...noindex] },
     ];
   },
 };
