@@ -1,18 +1,18 @@
 'use client';
 import { useRef, useState } from 'react';
 import { Turnstile, type TurnstileHandle } from './Turnstile';
-type St = 'idle' | 'submitting' | 'success' | 'saved' | 'already' | 'invalid' | 'error';
-const MSG: Partial<Record<St, string>> = { success: '¡Listo! Te mandamos un mail para confirmar.', saved: 'Te anotamos. El mail de confirmación todavía no salió: te lo reenviamos en cuanto se active el envío, sin que hagas nada.', already: 'Ya estás suscripto a Condor Nest. Si no estás recibiendo nuestros mails, revisá las carpetas Spam y Promociones.', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
+type St = 'idle' | 'submitting' | 'success' | 'recent' | 'saved' | 'already' | 'invalid' | 'error';
+const MSG: Partial<Record<St, string>> = { success: 'Te enviamos un mail. Abrilo y tocá “Confirmar” para activar tu suscripción.', recent: 'Ya solicitaste un mail hace menos de una hora. Revisá Spam o Promociones y, si no aparece, pedí otro después de una hora.', saved: 'Te anotamos, pero el mail de confirmación no pudo salir. Volvé a pedirlo después de una hora.', already: 'Ya estás suscripto a Condor Nest. Si no estás recibiendo nuestros mails, revisá las carpetas Spam y Promociones.', invalid: 'Revisá el email, parece incompleto.', error: 'No pudimos suscribirte. Probá de nuevo en un rato.' };
 
 export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compact' | 'footer' | 'mini' | 'resub' }) {
   const [st, setSt] = useState<St>('idle'); const [email, setEmail] = useState(''); const [shake, setShake] = useState(0);
   const ts = useRef<TurnstileHandle>(null);
-  const done = st === 'success' || st === 'already' || st === 'saved';
+  const done = st === 'success' || st === 'recent' || st === 'already' || st === 'saved';
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setSt('invalid'); setShake((s) => s + 1); return; }
     setSt('submitting');
-    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: await ts.current?.token() }) }); ts.current?.reset(); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'already', 'saved'].includes(j.status)) setShake((s) => s + 1); }
+    try { const r = await fetch('/api/newsletter', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, turnstileToken: await ts.current?.token() }) }); ts.current?.reset(); const j = await r.json(); setSt((j.status as St) ?? 'error'); if (!['success', 'recent', 'already', 'saved'].includes(j.status)) setShake((s) => s + 1); }
     catch { setSt('error'); setShake((s) => s + 1); }
   }
   const id = `nl-${variant}`;
@@ -42,12 +42,13 @@ export function Newsletter({ variant = 'inline' }: { variant?: 'inline' | 'compa
           {done && (
             <p className="flex items-start gap-2 font-medium">
               <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" className="mt-0.5 shrink-0 text-lime"><path className="cn-check" pathLength={1} d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>
-              <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{resub && st !== 'already' ? 'Listo. Si ese mail está anotado, en unos minutos te llega un link nuevo. Revisá también Spam o Promociones.' : MSG[st]}</span>
+              <span className={`cn-fade ${st === 'success' ? 'text-gradient' : ''}`}>{MSG[st]}</span>
             </p>
           )}
-          {st === 'success' && <p className="cn-fade mt-1 pl-[30px] text-xs text-fg-muted">Si no lo ves en un par de minutos, revisá Spam o Promociones y marcalo como "No es spam".</p>}
+          {st === 'success' && <p className="cn-fade mt-1 pl-[30px] text-xs text-fg-muted">Si no lo ves en unos minutos, revisá Spam o Promociones. El enlace vence en 48 horas.</p>}
           {err && <p className="cn-fade text-danger">{MSG[st]}</p>}
         </div>
+        {(st === 'success' || st === 'recent' || st === 'saved') && <p className="mt-3 text-xs text-fg-muted">Podés pedir otro correo una hora después del anterior. <button type="button" onClick={() => setSt('idle')} className="text-lime underline underline-offset-4 hover:text-fg">Pedir otro correo</button></p>}
         {variant !== 'compact' && !mini && <p className="mt-2.5 text-xs text-fg-muted">Podés darte de baja cuando quieras.</p>}
       </section>
   );

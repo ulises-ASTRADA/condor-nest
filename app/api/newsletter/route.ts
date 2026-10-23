@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     if (res === 'rate') return NextResponse.json({ status: 'error' }, { status: 429 });
     // Confirmed subscribers get a clear message; neither case sends another mail.
     if (res === 'confirmed') return NextResponse.json({ status: 'already' });
-    if (res === 'recent') return NextResponse.json({ status: 'success' });
+    if (res === 'recent') return NextResponse.json({ status: 'recent' });
     const sent = await sendConfirmation(email, confirm, unsub);
     if (!sent.ok) {
       // keep the pending row; record why so the confirm mail can be re-sent later (no PII in the reason)
