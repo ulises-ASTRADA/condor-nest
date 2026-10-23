@@ -4,7 +4,7 @@ const STABLE = new Set(['USD', 'USDC', 'USDT', 'USDG', 'PYUSD', 'UXD']);
 export type IngestRow = Record<string, unknown> & { external_id: string; slug: string };
 const slugify = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 
-// LatAm scope: only listings held in LatAm or explicitly restricted to LatAm / a LatAm country are kept.
+// LatAm scope: listings held in LatAm, restricted to LatAm, or explicitly open globally.
 export const LATAM_COUNTRIES: Record<string, { es: string; iso: string }> = {
   Argentina: { es: 'Argentina', iso: 'AR' }, Brazil: { es: 'Brasil', iso: 'BR' }, Brasil: { es: 'Brasil', iso: 'BR' },
   Mexico: { es: 'México', iso: 'MX' }, 'México': { es: 'México', iso: 'MX' }, Chile: { es: 'Chile', iso: 'CL' },
@@ -31,9 +31,10 @@ export function latamCountryOf(location: string | null | undefined): string | nu
   return null;
 }
 /** Superteam region → eligibility, or null when not LatAm (dropped) */
-export function superteamEligibility(region: string | undefined): { eligibility: string; note: string | null; tags: string[]; country: string } | null {
+export function superteamEligibility(region: string | undefined): { eligibility: string; note: string | null; tags: string[]; country: string | null } | null {
   if (!region) return null;
   const r = region.trim();
+  if (/^global$/i.test(r)) return { eligibility: 'global', note: null, tags: [], country: null };
   if (/latin america|latam/i.test(r)) return { eligibility: 'latam', note: null, tags: ['LatAm'], country: 'LATAM' };
   const c = LATAM_COUNTRIES[r];
   if (!c) return null;

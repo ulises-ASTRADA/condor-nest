@@ -45,7 +45,7 @@ test('sig2 + deadline states', () => {
 
 import { superteamEligibility, latamCountryOf } from './ingest.ts';
 test('LatAm scope', () => {
-  assert.equal(superteamEligibility('Global'), null);
+  assert.deepEqual(superteamEligibility('Global'), { eligibility: 'global', note: null, tags: [], country: null });
   assert.equal(superteamEligibility('Turkey'), null);
   assert.equal(superteamEligibility('Argentina')?.eligibility, 'ar');
   assert.equal(superteamEligibility('Brazil')?.note, 'Solo Brasil');
