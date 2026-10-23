@@ -133,11 +133,15 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const chipTipo = (t: ListingType) => set({ tipos: f.tipos.length === 1 && f.tipos[0] === t ? [...ALL_TYPES] : [t] });
   const onlyTipo = (t: ListingType) => f.tipos.length === 1 && f.tipos[0] === t;
   const search = (
-    <label className="block">
-      <span className="sr-only">Buscar</span>
-      <input type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="⌕  Buscar hackathons, bounties, grants…"
-        className="fx-input h-12 w-full rounded-[12px] border border-border bg-surface-2 px-3.5 text-base text-fg placeholder:text-fg-muted" />
-    </label>
+    <div role="search" aria-label="Buscar eventos">
+      <label htmlFor="buscar-eventos" className="mb-2 block font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Buscar eventos</label>
+      <div className="relative">
+        <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg text-cyan">⌕</span>
+        <input id="buscar-eventos" type="search" value={f.q} onChange={(e) => set({ q: e.target.value })} placeholder="Nombre, organización, ciudad o tema…"
+          className="fx-input h-14 w-full rounded-[14px] border border-border bg-surface-2 pl-11 pr-11 text-base text-fg placeholder:text-fg-muted focus:border-cyan/60" />
+        {f.q && <button type="button" onClick={() => set({ q: '' })} aria-label="Borrar búsqueda" className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-pill text-fg-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">✕</button>}
+      </div>
+    </div>
   );
   const anyFilter = !!(f.ciudad || f.virtual || f.abiertoTodos || f.pais || f.ecos.length || f.showClosed || !f.sinConfirmar || f.tipos.length !== ALL_TYPES.length);
   const clearAll = () => { setF({ ...DEFAULT_FILTERS, tipos: [...ALL_TYPES], q: f.q }); setLimit(PAGE); };

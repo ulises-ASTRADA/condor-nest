@@ -36,6 +36,13 @@ test('type + virtual filters', () => {
   assert.equal(matches(L({ title: 'Agentic Banking MCP' }), { ...DEFAULT_FILTERS, ecos: ['IA'] }, now), true);
   assert.equal(matches(L({ title: 'Write a thread' }), { ...DEFAULT_FILTERS, ecos: ['Ethereum'] }, now), false);
 });
+test('search finds event details and keeps Argentina-only requirements visible', () => {
+  const edu = L({ title: 'Hackathon EDU HUB', country: 'AR', eligibility: 'restricted', summaryEs: ['Cuatro tracks en LABITCONF'], eligibilityNote: 'Solo miembros de universidades acreditadas' });
+  assert.equal(matches(edu, DEFAULT_FILTERS, now), true);
+  assert.equal(matches(edu, { ...DEFAULT_FILTERS, q: 'labitconf' }, now), true);
+  assert.equal(matches(edu, { ...DEFAULT_FILTERS, q: 'universidades' }, now), true);
+  assert.equal(matches({ ...edu, country: 'MX' }, DEFAULT_FILTERS, now), false);
+});
 test('sig2 + deadline states', () => {
   assert.equal(sig2(41.6), 42); assert.equal(sig2(1234), 1200);
   assert.equal(deadlineInfo(L({ deadlineAt: '2026-10-13T05:00:00Z' }), now).state, 'urgent');

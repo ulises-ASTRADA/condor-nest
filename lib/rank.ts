@@ -28,7 +28,7 @@ export function matches(l: Listing, f: Filters, now: Date): boolean {
   if (f.ecos.length && !ecosOf(l).some((e) => f.ecos.includes(e))) return false;
   if (f.q) {
     const q = norm(f.q);
-    const hay = norm([l.title, l.organizer, l.city, ...l.ecosystems].filter(Boolean).join(' '));
+    const hay = norm([l.title, l.organizer, l.city, l.country, l.eligibilityShort, l.eligibilityNote, l.rewardText, ...(l.summaryEs ?? []), ...l.ecosystems].filter(Boolean).join(' '));
     if (!hay.includes(q)) return false;
   }
   return true;
@@ -81,8 +81,8 @@ export function locationGroups(all: Listing[], ctx: LocCtx, f: Filters, now: Dat
   })).filter((g) => g.iso === f.pais || all.some((l) => inCountry(l, g.iso) && matches(l, { ...f, pais: g.iso, ciudad: null }, now)));
 }
 
-/** "Abierto a AR/LatAm": hides listings restricted to another country (e.g. "Solo México"). */
-export const openToArLatam = (l: Listing) => l.eligibility !== 'restricted'; // 'restricted' = non-AR-wide limit (country 'ar' uses eligibility 'ar')
+/** "Abierto a AR/LatAm": includes Argentine listings with explicit requirements, but hides listings restricted to another country. */
+export const openToArLatam = (l: Listing) => l.eligibility !== 'restricted' || l.country === 'AR'; // Argentina-specific requirements remain visible and labeled.
 /** Listing is in / for this country itself (not counting LatAm-wide ones). */
 export const inCountry = (l: Listing, iso: string) => l.country === iso || (iso === 'AR' && l.eligibility === 'ar');
 /** Country view: the country's own listings plus ones open to all of LatAm or online without a country restriction. */
