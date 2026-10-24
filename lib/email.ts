@@ -1,6 +1,7 @@
 import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { featuredInvitationNotice } from './featured-invitation';
+import { emailBodyFont, emailDisplayFont, emailFonts, emailSignatureHtml, emailSignatureText } from './email-brand';
 // RESEND_API_KEY is server-only. Never log recipients or tokens.
 export const SITE_URL = (process.env.SITE_URL || 'https://condor-nest.lat').replace(/\/$/, '');
 export const newToken = () => randomBytes(32).toString('hex');
@@ -10,22 +11,22 @@ export const isToken = (s: unknown): s is string => typeof s === 'string' && /^[
 export function confirmEmail(confirmUrl: string) {
   // No unsubscribe link here: the person is not subscribed until they confirm (List-Unsubscribe header still set).
   // Compact on purpose: on a phone the button must be visible without scrolling. Fixed px sizes so Gmail doesn't upscale.
-  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Confirmá tu suscripción</title></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:Helvetica,Arial,sans-serif;color:#18181b">
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>Confirmá tu suscripción</title>${emailFonts}</head>
+<body style="margin:0;padding:0;background:#07080b;font-family:${emailBodyFont};color:#f2f4f8">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f4f5;opacity:0">Un toque y listo, confirmá tu suscripción.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5"><tr><td align="center" style="padding:16px 8px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px">
-<tr><td style="padding:24px">
-<div style="font-size:12px;line-height:16px;letter-spacing:.12em;font-weight:700;color:#52525b">CONDOR NEST</div>
-<h1 style="margin:8px 0 8px;font-size:22px;line-height:28px;font-weight:700;color:#18181b">Confirmá tu suscripción</h1>
-<p style="margin:0 0 16px;font-size:15px;line-height:22px;color:#3f3f46">Un toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#07080b" style="background:#07080b"><tr><td align="center" style="padding:16px 8px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#0f1117;border:1px solid #262a36;border-radius:16px">
+<tr><td style="padding:24px;color:#f2f4f8;font-family:${emailBodyFont}">
+<div style="font-size:12px;line-height:16px;letter-spacing:2px;font-weight:700;color:#c6ff3d">CONDOR NEST</div>
+<h1 style="font-family:${emailDisplayFont};margin:12px 0;font-size:23px;line-height:1.35;font-weight:700;color:#f2f4f8">Confirmá tu suscripción</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:22px;color:#cbd1dd">Un toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#c6ff3d" style="border-radius:10px;background:#c6ff3d">
-<a href="${confirmUrl}" style="display:block;height:48px;line-height:48px;font-size:16px;font-weight:700;color:#0b0b10;text-decoration:none;white-space:nowrap;border-radius:10px">Confirmar</a>
+<a href="${confirmUrl}" style="display:block;height:48px;line-height:48px;font-size:16px;font-weight:700;color:#07080b;text-decoration:none;white-space:nowrap;border-radius:10px">Confirmar</a>
 </td></tr></table>
-<p style="margin:16px 0 0;font-size:13px;line-height:19px;color:#71717a">El link vence en 48 h. Si no fuiste vos, ignorá este mail.</p>
-<p style="margin:8px 0 0;font-size:13px;line-height:19px;color:#71717a">Hecho en Córdoba</p>
+<p style="margin:16px 0 0;font-size:13px;line-height:19px;color:#9aa3b5">El link vence en 48 h. Si no fuiste vos, ignorá este mail.</p>
+${emailSignatureHtml}
 </td></tr></table></td></tr></table></body></html>`;
-  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba`;
+  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\n${emailSignatureText}`;
   return { html, text };
 }
 
@@ -74,9 +75,9 @@ export async function sendSubmissionNotice(id: number, f: Record<string, string 
   if (!to) return { ok: false, reason: 'PUBLICAR_NOTIFY_TO not set' };
   const rows = Object.entries(f).filter(([, v]) => v !== null && v !== '').map(([k, v]) => [k, String(v)]);
   const text = `Nuevo evento para Condor Nest (#${id})\n\n` + rows.map(([k, v]) => `${k}: ${v}`).join('\n') + `\n\nFila en Supabase: cn_submissions id=${id}`;
-  const html = `<div style="font-family:Inter,Arial,sans-serif;background:#07070b;color:#ecebf5;padding:24px"><h2 style="color:#c6ff3d;margin:0 0 12px">Nuevo evento #${id}</h2><table style="font-size:14px">` +
-    rows.map(([k, v]) => `<tr><td style="color:#8b8aa6;padding:4px 12px 4px 0;vertical-align:top">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') +
-    `</table><p style="color:#6d6a84;font-size:12px">Supabase: cn_submissions id=${id}</p></div>`;
   const extra = invitation ? featuredInvitationNotice(invitation) : { html: '', text: '' };
-  return resendSend({ to: [to], reply_to: typeof f.email === 'string' ? f.email : undefined, subject: `[Condor Nest] Nuevo evento: ${String(f.evento ?? '').slice(0, 80)}`, html: html.replace(/<\/div>$/, `${extra.html}</div>`), text: text + extra.text }, `sub-${id}`);
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="color-scheme" content="dark">${emailFonts}</head><body style="margin:0;background:#07080b;color:#f2f4f8;font-family:${emailBodyFont}"><table role="presentation" width="100%"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="100%" style="max-width:560px;background:#0f1117;border:1px solid #262a36;border-radius:16px"><tr><td style="padding:26px"><h2 style="font-family:${emailDisplayFont};color:#c6ff3d;margin:0 0 12px;font-size:22px">Nuevo evento #${id}</h2><table style="font-size:14px;color:#f2f4f8">` +
+    rows.map(([k, v]) => `<tr><td style="color:#8b8aa6;padding:4px 12px 4px 0;vertical-align:top">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') +
+    `</table><p style="color:#9aa3b5;font-size:12px">Supabase: cn_submissions id=${id}</p>${extra.html}${emailSignatureHtml}</td></tr></table></td></tr></table></body></html>`;
+  return resendSend({ to: [to], reply_to: typeof f.email === 'string' ? f.email : undefined, subject: `[Condor Nest] Nuevo evento: ${String(f.evento ?? '').slice(0, 80)}`, html, text: text + extra.text + `\n\n${emailSignatureText}` }, `sub-${id}`);
 }

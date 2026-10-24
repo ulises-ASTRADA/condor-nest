@@ -40,6 +40,7 @@ test('welcome links stay on the HTTPS site and have HTML and text versions', () 
   const email = welcomeEmail('https://condor-nest.lat', 'https://condor-nest.lat/newsletter/baja?token=abc&other=123');
   assert.match(email.html, /token=abc&amp;other=123/);
   assert.match(email.text, /Equipo de Condor Nest/);
+  assert.match(email.html, /email\/condor-nest-firma\.png/);
   assert.doesNotMatch(email.html, /El lunes/);
   assert.throws(() => welcomeEmail('https://condor-nest.lat', 'https://other.example/'));
 });

@@ -31,5 +31,19 @@ test('HTML escapes listing text and provides Resend unsubscribe plus campaign li
   assert.match(content.html, /Demo &lt;evento&gt;/);
   assert.match(content.html, /utm_campaign=2026-10-26/);
   assert.match(content.html, /\{\{\{RESEND_UNSUBSCRIBE_URL\}\}\}/);
+  assert.match(content.html, /email\/condor-nest-firma\.png/);
+  assert.match(content.html, /background:#07080b/);
+  assert.match(content.html, /Space Grotesk/);
   assert.equal(content.name, 'Condor Nest · 2026-10-26');
+});
+
+test('active page highlights appear first and disappear after their featured week', () => {
+  const selected = selectDigestListings([
+    listing({ slug: 'regular', deadlineAt: '2026-10-27T20:00:00Z' }),
+    listing({ slug: 'feature', featured: true, featuredUntil: '2026-10-30T20:00:00Z', deadlineAt: '2026-11-10T20:00:00Z' }),
+    listing({ slug: 'old-feature', featured: true, featuredUntil: '2026-10-25T20:00:00Z' }),
+  ], '2026-10-26');
+  assert.deepEqual(selected.map((item) => item.slug), ['feature', 'regular']);
+  const content = digestContent(selected, '2026-10-26');
+  assert.ok(content.html.indexOf('★ DESTACADO') < content.html.indexOf('Demo &lt;evento&gt;'));
 });
