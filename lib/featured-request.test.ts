@@ -29,5 +29,7 @@ test('featured confirmation escapes input, includes frozen totals and never impl
     assert.match(mail.text,/USD 20,30/);
     assert.match(mail.text,/no se realizó ningún cobro/);
     assert.match(mail.text,/48 horas/);
+    assert.match(mail.html,/email\/condor-nest-firma\.png/);
+    assert.match(mail.html,/background:#07080b/);
   }
 });
