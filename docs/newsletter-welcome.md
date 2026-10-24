@@ -4,7 +4,7 @@
 
 El mail usa `lib/welcome-email.ts`, con HTML oscuro, verde lima, texto plano, botón de oportunidades y firma de Condor Nest. Incluye enlace personal para darse de baja y cabeceras One-Click; los tokens de baja solo se guardan como hashes. La nueva bienvenida reemplaza el token de baja del mail de confirmación con el enlace incluido en la bienvenida.
 
-El newsletter del 26/10 incluye una apertura editorial sobre la primera semana, con cifras verificadas al 24/10 (265 visitantes, 677 páginas vistas en los últimos siete días de Vercel y 6 suscripciones confirmadas). Es una foto de esa edición; los borradores de semanas posteriores usan una apertura cálida sin repetir esas cifras. Los destacados vigentes siguen primero dentro de la selección de oportunidades.
+El newsletter del 26/10 incluye una apertura editorial sobre la primera semana, con cifras verificadas al 24/10 (265 visitantes, 677 páginas vistas y visitantes de 24 países en los últimos siete días de Vercel; 6 suscripciones confirmadas). Es una foto de esa edición; los borradores de semanas posteriores usan una apertura cálida sin repetir esas cifras. Los destacados vigentes siguen primero dentro de la selección de oportunidades.
 
 La entrega usa la clave `newsletter-welcome-<id>` y los dos intentos del helper de Resend. `sent` significa aceptado por Resend; la entrega final se verifica en su dashboard. Si falla, la suscripción sigue confirmada y queda el registro `failed`. No hay reintento programado adicional: revisar fallos antes de reenviar y no reintentar a ciegas después de las 24 horas de idempotencia de Resend.
 

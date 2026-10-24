@@ -37,6 +37,8 @@ test('HTML escapes listing text and provides Resend unsubscribe plus campaign li
   assert.match(content.html, /Nuestra primera semana juntos/);
   assert.match(content.html, /265/);
   assert.match(content.text, /677 páginas vistas/);
+  assert.match(content.html, /24 países/);
+  assert.match(content.text, /24 países/);
   assert.equal(content.name, 'Condor Nest · 2026-10-26');
 });
 
