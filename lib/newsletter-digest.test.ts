@@ -34,7 +34,16 @@ test('HTML escapes listing text and provides Resend unsubscribe plus campaign li
   assert.match(content.html, /email\/condor-nest-firma\.png/);
   assert.match(content.html, /background:#07080b/);
   assert.match(content.html, /Space Grotesk/);
+  assert.match(content.html, /Nuestra primera semana juntos/);
+  assert.match(content.html, /265/);
+  assert.match(content.text, /677 páginas vistas/);
   assert.equal(content.name, 'Condor Nest · 2026-10-26');
+});
+
+test('first-week snapshot is not repeated in later editions', () => {
+  const content = digestContent([listing({ deadlineAt: '2026-11-06T20:00:00Z' })], '2026-11-02');
+  assert.doesNotMatch(content.html, /265/);
+  assert.match(content.html, /Gracias por ser parte de Condor Nest/);
 });
 
 test('active page highlights appear first and disappear after their featured week', () => {
