@@ -10,6 +10,12 @@ Antes de desplegar, aplicar `supabase/migrations/20261022193000_newsletter_welco
 
 El 22/10/2026 se verificó que Ulises estaba confirmado desde el 14/10 y se enviaron pruebas de la plantilla solo a su dirección autorizada. La plantilla de prueba en Resend desactiva el enlace de baja explícitamente para no modificar su suscripción durante la revisión. El envío automático sí lleva un enlace válido.
 
-Este cambio no implementa el newsletter semanal. La promesa de lunes que ya existe en la web corresponde a un flujo separado aún pendiente.
+## Newsletter semanal: prueba controlada
+
+La audiencia de prueba en Resend es el segmento `e1d0abe6-6148-4b90-9a02-2be2a7764fe8`, con dos contactos autorizados por Ulises. La edición inicial está en [Broadcasts](https://resend.com/broadcasts/cf35b1a0-beab-465f-8830-c4c66bb0f246/editor) como borrador. El 24/10/2026 se envió un **test email**, no el Broadcast, a las dos direcciones; Resend marcó ambas entregadas.
+
+El cron `GET /api/cron/newsletter-draft` corre los domingos a las 12:00 UTC y crea un borrador para el lunes siguiente. Selecciona hasta cinco convocatorias con fecha de cierre conocida dentro de las próximas tres semanas, enlace de aplicación, elegibilidad conocida y acceso desde Argentina/LatAm. Incluye links a las fichas con UTM y la baja propia de Resend. Si hay menos de tres, no crea una edición vacía. La ruta usa `CRON_SECRET`, revisa si ya existe un Broadcast con el mismo nombre y segmento, y nunca lo envía. La precisión del cron en Vercel Hobby es de una hora; eso es suficiente para preparar un borrador el domingo.
+
+Para activarlo se necesita `RESEND_BROADCAST_API_KEY` con acceso a Broadcasts en Production. La clave actual `RESEND_API_KEY` está limitada al envío de `/emails` y se conserva para confirmaciones y bienvenidas. La ruta no admite cambiar el segmento: solo apunta a las dos direcciones de prueba. `RESEND_FROM` debe ser un remitente del dominio verificado. Revisar contenido, enlaces y destinatarios en Resend antes de enviar o programar cada edición. La sincronización de los suscriptores confirmados de Supabase y sus bajas con Resend queda pendiente antes de ampliar la audiencia; agregar solo a quienes tengan consentimiento confirmado.
 
 Los reenvíos puntuales autorizados a suscriptores ya confirmados se preparan con un registro privado que contiene un `dispatch_token_hash` aleatorio y vencimiento corto. El mismo endpoint consume ese token una sola vez, verifica que el contacto siga confirmado y conserva `confirmed_at`. Este mecanismo no selecciona ni envía automáticamente a toda la base. El enlace de baja nuevo reemplaza el anterior.
