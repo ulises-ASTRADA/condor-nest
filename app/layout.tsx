@@ -7,6 +7,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ClientBoot } from '@/components/ClientBoot';
 import { SiteAnalytics } from '@/components/SiteAnalytics';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Variable fonts: one file each for Unbounded and Space Grotesk, plus Geist Mono 500.
 // Display face uses 'optional': the hero H1 is the mobile LCP; no late swap means LCP lands on first paint (fallback metrics are adjusted).
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
         <ClientBoot /><Cursor />
         <SiteAnalytics />
+        <SpeedInsights />
       </body>
     </html>
   );
