@@ -4,7 +4,7 @@ import { deadlineCountdown, deadlineInfo, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
 import { useTz } from './LocalTime';
 import { Ticker } from './Ticker';
-import { CLOSE_TBC, deadlineLogicIso, liveLabel, phase, startedLabel, ymdDm, ymdLong } from '@/lib/dates';
+import { CLOSE_TBC, deadlineLogicIso, liveLabel, phase, regClosedLabel, startedLabel, ymdDm, ymdLong } from '@/lib/dates';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
@@ -20,6 +20,9 @@ export function Countdown({ l, initialNow, seconds = false, registrationOnly = f
   // after the start day when no end is published (never an unlimited green pill).
   const ph = registrationOnly ? phase(full, now) : null;
   if (ph === 'live') return <span className="dl-pill dl-pill--live"><span>{liveLabel(full)}</span></span>;
+  // Registration closed, event still running until its published end: grey intermediate state instead of plain "Cerrado".
+  const rc = registrationOnly ? regClosedLabel(full, now) : null;
+  if (rc) return <div className="min-w-0 break-words font-mono text-sm tabular text-fg-muted">{rc}</div>;
   if (ph === 'started') return <div className="min-w-0 break-words font-mono text-sm tabular text-fg-muted">{startedLabel(full)}</div>;
   // Date-only close: the published day plus "Hora a confirmar"; end of that day (event-city time, else Córdoba) only decides open/closed.
   if (registrationOnly && !l.deadlineAt && l.deadlineDate) {

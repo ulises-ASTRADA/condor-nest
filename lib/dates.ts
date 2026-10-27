@@ -83,6 +83,15 @@ export function isOpenAt(l: D, now: Date): boolean {
   if (p === 'ended') return false;
   return l.modality === 'online';
 }
+/** Registration closed but the event's published end (ends_at / end_date) is still ahead, e.g. Wolfram after 6/11 until 16/11:
+ *  "Inscripción cerrada · Termina el 16 de noviembre" (grey). Not open: same as any passed close for feed/ranking.
+ *  Returns the label, or null when not in that state. */
+export function regClosedLabel(l: D, now: Date): string | null {
+  const d = deadlineLogicIso(l); const end = endLogicIso(l);
+  if (!d || !end || new Date(d) > now || new Date(end) < now) return null;
+  const day = l.endsAt ? fmtDay(l.endsAt, logicTz(l)) : ymdLong(l.endDate!);
+  return `Inscripción cerrada · Termina el ${day}`;
+}
 /** "En curso" or "En curso · <status_note from data>". */
 export const liveLabel = (l: D) => (l.statusNote ? `En curso · ${l.statusNote}` : 'En curso');
 export const END_TBC = 'Fin a confirmar';

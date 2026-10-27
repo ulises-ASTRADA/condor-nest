@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { isOpen } from './rank.ts';
 import { eventLd } from './jsonld.ts';
 import { fromRow } from './types.ts';
-import { closeDisplay, closeLine, dayEndIn, isLive, liveLabel, phase, startedLabel, ymdOrNull, ymdShort, ymdLong } from './dates.ts';
+import { closeDisplay, closeLine, dayEndIn, regClosedLabel, isLive, liveLabel, phase, startedLabel, ymdOrNull, ymdShort, ymdLong } from './dates.ts';
 
 const base: any = { country: null, eligibilityShort: null, rewardText: null, id: 'x', slug: 'x', type: 'hackathon', title: 't', organizer: null, source: 'manual', sourceUrl: 'https://example.org', rewardAmount: null, rewardCurrency: 'USD', rewardUsd: null, rewardKind: null, deadlineAt: null, startsAt: null, endsAt: null, startDate: null, endDate: null, deadlineDate: null, statusNote: null, competitors: null, competitorsKind: null, eligibility: 'global', eligibilityNote: null, modality: 'online', city: null, ecosystems: [], summaryEs: null, featured: false, featuredUntil: null, disclosureKey: null, updatedAt: '', createdAt: '2026-10-27T05:00:00Z', titleLang: 'en', applyUrl: 'https://example.org/apply', sourcePostUrl: null, verifiedUrl: null, curated: true, venue: null, venueLocality: null };
 const L = (o: any) => ({ ...base, ...o });
@@ -107,4 +107,31 @@ test('fromRow: date-only values validated and used only when the timestamp is nu
   const r = fromRow({ ...row, start_date: '2026-10-31', end_date: '2026-02-30', deadline_date: '2026-11-01', deadline_at: '2026-10-31T05:59:00Z', status_note: '  x ' });
   assert.deepEqual([r.startDate, r.endDate, r.deadlineDate, r.statusNote], ['2026-10-31', null, null, 'x']);
   assert.equal(ymdOrNull('31/10/2026'), null);
+});
+
+// Wolfram (a77d3340…): online, starts 9/11 14:30 GMT-3, registration closes 6/11 (date-only), projects due 16/11 (date-only end).
+const wolfram = L({ slug: 'wolfram-hackathon-virtual-brasil-2026', startsAt: '2026-11-09T17:30:00Z', deadlineDate: '2026-11-06', endDate: '2026-11-16' });
+test('Wolfram timeline: open to 6/11 23:59 Córdoba, then "Inscripción cerrada · Termina el 16 de noviembre" (not open) to 16/11 23:59, then closed', () => {
+  const at = (iso: string) => new Date(iso);
+  assert.equal(isOpen(wolfram, at('2026-11-07T02:59:00Z')), true); // 6/11 23:59 Córdoba
+  assert.equal(closeLine(wolfram, true), 'Cierra el 6 de noviembre · Hora a confirmar');
+  assert.equal(regClosedLabel(wolfram, at('2026-11-07T02:59:00Z')), null);
+  for (const t of ['2026-11-07T03:00:01Z', '2026-11-12T12:00:00Z', '2026-11-17T02:59:00Z']) {
+    assert.equal(isOpen(wolfram, at(t)), false, t);
+    assert.equal(regClosedLabel(wolfram, at(t)), 'Inscripción cerrada · Termina el 16 de noviembre', t);
+    assert.equal(phase(wolfram, at(t)), null, t); // never green En curso while a close exists
+  }
+  assert.equal(regClosedLabel(wolfram, at('2026-11-17T03:00:01Z')), null);
+  assert.equal(isOpen(wolfram, at('2026-11-17T03:00:01Z')), false);
+});
+test('Wolfram JSON-LD: startDate/endDate unchanged by the registration close', () => {
+  const before = eventLd(wolfram, null, new Date('2026-11-01T12:00:00Z')) as any;
+  const during = eventLd(wolfram, null, new Date('2026-11-12T12:00:00Z')) as any;
+  for (const ev of [before, during]) { assert.equal(ev.startDate, '2026-11-09T17:30:00Z'); assert.equal(ev.endDate, '2026-11-16'); assert.equal(ev.offers.validThrough, '2026-11-06'); }
+  assert.equal(before.offers.availability, 'https://schema.org/InStock');
+  assert.equal(during.offers.availability, 'https://schema.org/SoldOut');
+});
+test('generic: passed ends_at close with future ends_at shows the intermediate label in the event city', () => {
+  const x = L({ modality: 'irl', city: 'Ciudad de México', deadlineAt: '2026-10-20T05:59:00Z', startsAt: '2026-10-27T21:00:00Z', endsAt: '2026-10-29T01:00:00Z' });
+  assert.equal(regClosedLabel(x, new Date('2026-10-28T12:00:00Z')), 'Inscripción cerrada · Termina el 28 de octubre');
 });

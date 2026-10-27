@@ -20,7 +20,7 @@ import { getOrgAbout } from '@/lib/organizer';
 import { OrgAbout } from '@/components/OrgAbout';
 import { Location, LocationNote } from '@/components/Location';
 import { bareHost, goPath, hostLabel } from '@/lib/go';
-import { closeDisplay, EVENT_TBC, ymdLong, ymdLongYear } from '@/lib/dates';
+import { closeDisplay, EVENT_TBC, regClosedLabel, ymdLong, ymdLongYear } from '@/lib/dates';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Cordoba';
@@ -108,7 +108,7 @@ export default async function Detail({ params }: P) {
   const l = await getListing(slug);
   if (!l) notFound();
   const now = new Date(); const nowIso = now.toISOString();
-  const r = rewardText(l); const c = competitionText(l); const open = isOpen(l, now);
+  const r = rewardText(l); const c = competitionText(l); const open = isOpen(l, now); const regClosed = regClosedLabel(l, now);
   const [all, about] = await Promise.all([getListings(), l.organizer ? getOrgAbout(l.slug) : Promise.resolve(null)]);
   const score = (x: Listing) => (l.country && x.country === l.country ? 2 : 0) + (x.type === l.type ? 1 : 0) + (x.ecosystems.some((e) => l.ecosystems.includes(e)) ? 1 : 0);
   const cands = sortListings(all.filter((x) => x.id !== l.id && isOpen(x, now) && score(x) > 0), 'cierra-pronto', now);
@@ -155,12 +155,15 @@ export default async function Detail({ params }: P) {
         <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link prefetch={false} href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
         <ShareButton title={l.title} />
       </div>
-      {!open && (
+      {!open && regClosed && (
+        <div role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-4 text-sm text-fg-muted">{regClosed}. <a href="#similares" className="text-lime hover:underline">Mirá similares abiertas.</a></div>
+      )}
+      {!open && !regClosed && (
         <div role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-4 text-sm"><span className="mr-2 rounded-pill bg-danger/15 px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>Esta convocatoria cerró{closedAt ? <> el <LocalTime iso={closedAt} format="full" /></> : closedDay ? <> el {ymdLongYear(closedDay)}</> : null}. <a href="#similares" className="text-lime hover:underline">Mirá similares abiertas.</a></div>
       )}
       <div className="mt-2 grid gap-8 lg:grid-cols-3">
         <article className="min-w-0 lg:col-span-2">
-          <div className="flex flex-wrap gap-1.5">{!open && <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
+          <div className="flex flex-wrap gap-1.5">{!open && (regClosed ? <span className="inline-flex items-center rounded-pill border border-border px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Inscripción cerrada</span> : <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>)}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           <p className="mt-1 font-mono text-xs text-fg-muted">Actualizado el <time dateTime={updated}>{numDate(updated)}</time></p>
