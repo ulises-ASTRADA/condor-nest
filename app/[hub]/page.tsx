@@ -111,7 +111,7 @@ export default async function HubPage({ params }: P) {
                 <p className="mt-2 text-fg-muted">{g.items.length} abiertos, el próximo es {shortName(g.items[0])}{startDm(g.items[0]) && <> el {startDm(g.items[0])}</>}.</p>
                 <RefList items={g.items} city={false} />
               </>) : (
-                <p className="mt-2 text-fg-muted">Hoy no hay hackathons abiertos en {g.city}. Los sumamos apenas se publican, después de verificarlos en su página oficial. ¿Organizás una hackatón en {g.city}? <Link prefetch={false} href="/publicar" className="text-lime hover:underline">Publicala gratis</Link>. Para enterarte cuando aparezcan, sumate al <a href="#nl-mini-t" className="underline decoration-border underline-offset-2 hover:text-fg lg:hidden">newsletter de los lunes</a><Link prefetch={false} href="/#nl-compact-t" className="hidden underline decoration-border underline-offset-2 hover:text-fg lg:inline">newsletter de los lunes</Link>.</p>
+                <p className="mt-2 text-fg-muted">Hoy no hay hackathons abiertos en {g.city}. Los sumamos apenas se publican, después de verificarlos en su página oficial. ¿Organizás un hackathon en {g.city}? <Link prefetch={false} href="/publicar" className="text-lime hover:underline">Publicala gratis</Link>. Para enterarte cuando aparezcan, sumate al <a href="#nl-mini-t" className="underline decoration-border underline-offset-2 hover:text-fg lg:hidden">newsletter</a><Link prefetch={false} href="/#nl-compact-t" className="hidden underline decoration-border underline-offset-2 hover:text-fg lg:inline">newsletter</Link>.</p>
               )}
             </section>
           ))}

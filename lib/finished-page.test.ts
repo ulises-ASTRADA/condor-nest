@@ -88,3 +88,20 @@ test('no weekly/Monday promise in the footer newsletter or /acerca', async () =>
   const acerca = readFileSync(new URL('../app/acerca/page.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(acerca, /lunes|por semana/);
 });
+
+test('no Monday/weekly promise in any newsletter copy, hub text, confirm mail or confirmed state', async () => {
+  const { readFileSync } = await import('node:fs');
+  const r = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const nl = r('../components/Newsletter.tsx');
+  assert.match(nl, />Novedades en tu mail</);
+  assert.match(nl, />Las mejores oportunidades, en tu mail</);
+  assert.match(nl, />Te mandamos lo que cierra pronto y lo que tiene poca competencia\. Sin spam\.</);
+  const hubPage = r('../app/[hub]/page.tsx');
+  assert.match(hubPage, /¿Organizás un hackathon en/);
+  assert.match(r('./hubs.ts'), /por el newsletter\./);
+  const mail = r('./email.ts');
+  assert.equal(mail.split('Un toque y listo: te llegan por mail las oportunidades de LatAm que cierran pronto.').length - 1, 2); // HTML + text
+  for (const [name, src] of Object.entries({ nl, hubPage, hubs: r('./hubs.ts'), mail, auto: r('../app/newsletter/confirmar/AutoConfirm.tsx'), estado: r('../app/newsletter/[estado]/page.tsx') })) {
+    assert.doesNotMatch(src, /lunes|por semana|semanal/i, name);
+  }
+});

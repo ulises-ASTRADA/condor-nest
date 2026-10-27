@@ -24,14 +24,14 @@ export default function AutoConfirm({ token }: { token: string }) {
   }, [token, run]);
   const C = {
     loading: { t: 'Confirmando…', d: 'Un segundo.' },
-    confirmado: { t: '¡Listo, ya estás suscripto!', d: 'El lunes te llega el primero.' },
+    confirmado: { t: '¡Listo, ya estás suscripto!', d: '' },
     invalido: { t: 'Este link ya venció', d: 'Poné tu mail y te mandamos uno nuevo. Si ya lo habías confirmado, no tenés que hacer nada.' },
     error: { t: 'No pudimos procesarlo', d: 'Puede ser la conexión. Probá de nuevo.' },
   }[st];
   return (<>
     <div aria-live="polite" data-state={st}>
       <h1 className="mt-3 font-display text-2xl font-semibold">{C.t}</h1>
-      <p className="mt-3 text-fg-muted">{C.d}</p>
+      {C.d && <p className="mt-3 text-fg-muted">{C.d}</p>}
     </div>
     {st === 'invalido' && <Newsletter variant="resub" />}
     {st === 'error' && <div><button type="button" onClick={run} className={PRIMARY}>Reintentar</button></div>}

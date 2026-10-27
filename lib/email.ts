@@ -18,14 +18,14 @@ export function confirmEmail(confirmUrl: string) {
 <tr><td style="padding:24px">
 <div style="font-size:12px;line-height:16px;letter-spacing:.12em;font-weight:700;color:#52525b">CONDOR NEST</div>
 <h1 style="margin:8px 0 8px;font-size:22px;line-height:28px;font-weight:700;color:#18181b">Confirmá tu suscripción</h1>
-<p style="margin:0 0 16px;font-size:15px;line-height:22px;color:#3f3f46">Un toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:22px;color:#3f3f46">Un toque y listo: te llegan por mail las oportunidades de LatAm que cierran pronto.</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#c6ff3d" style="border-radius:10px;background:#c6ff3d">
 <a href="${confirmUrl}" style="display:block;height:48px;line-height:48px;font-size:16px;font-weight:700;color:#0b0b10;text-decoration:none;white-space:nowrap;border-radius:10px">Confirmar</a>
 </td></tr></table>
 <p style="margin:16px 0 0;font-size:13px;line-height:19px;color:#71717a">El link vence en 48 h. Si no fuiste vos, ignorá este mail.</p>
 <p style="margin:8px 0 0;font-size:13px;line-height:19px;color:#71717a">Hecho en Córdoba</p>
 </td></tr></table></td></tr></table></body></html>`;
-  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba`;
+  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: te llegan por mail las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba`;
   return { html, text };
 }
 

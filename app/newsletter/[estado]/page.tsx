@@ -5,7 +5,7 @@ import { Newsletter } from '@/components/Newsletter';
 import { SECONDARY } from '../confirmar/styles';
 export const metadata: Metadata = { title: 'Newsletter', robots: { index: false, follow: false } };
 const COPY: Record<string, { k: string; t: string; d: string; ok: boolean }> = {
-  confirmado: { k: 'SUSCRIPCIÓN ACTIVA', t: '¡Listo, ya estás suscripto!', d: 'El lunes te llega el primero.', ok: true },
+  confirmado: { k: 'SUSCRIPCIÓN ACTIVA', t: '¡Listo, ya estás suscripto!', d: '', ok: true },
   invalido: { k: 'LINK INVÁLIDO', t: 'Este link ya venció', d: 'Poné tu mail y te mandamos uno nuevo. Si ya lo habías confirmado, no tenés que hacer nada.', ok: false },
   error: { k: 'ALGO FALLÓ', t: 'No pudimos procesarlo', d: 'Probá abrir el link de nuevo en un rato.', ok: false },
 };
@@ -20,7 +20,7 @@ export default async function Page({ params }: { params: Promise<{ estado: strin
         </div>
         <p className="font-mono text-xs tracking-[.18em] text-lime">{c.k}</p>
         <h1 className="mt-3 font-display text-2xl font-semibold"><span className={c.ok ? 'inline-block text-gradient [-webkit-box-decoration-break:clone] [box-decoration-break:clone]' : ''}>{c.t.includes('\n') ? c.t.split('\n').map((l, i) => <span key={i} className={i ? 'block whitespace-nowrap' : 'block'}>{l}</span>) : c.t}</span></h1>
-        <p className="mt-3 text-fg-muted">{c.d}</p>
+        {c.d && <p className="mt-3 text-fg-muted">{c.d}</p>}
         {estado === 'invalido' && <Newsletter variant="resub" />}
         <Link href="/" className={estado === 'invalido' ? SECONDARY : 'btn-sweep mt-7 inline-grid h-12 place-items-center rounded-[12px] bg-lime px-6 font-bold text-primary-fg shadow-[0_0_24px_-6px_rgb(var(--lime)/.6)]'}>Ver oportunidades</Link>
       </section>
