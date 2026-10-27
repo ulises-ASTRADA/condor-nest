@@ -20,3 +20,10 @@ test('Countdown date-only close: day plus "Hora a confirmar", no hour', async ()
   assert.match(html, /Cierra el 1 de noviembre<\/span> · Hora a confirmar/);
   assert.doesNotMatch(html, /\d{2}:\d{2}/);
 });
+test('Countdown online started, no end, no note, after start day: grey "Empezó el 9 de noviembre · Fin a confirmar", no green pill', async () => {
+  const Countdown = await load();
+  const html = renderToStaticMarkup(createElement(Countdown, { l: { type: 'hackathon', modality: 'online', deadlineAt: null, startsAt: '2026-11-09T17:30:00Z', endsAt: null }, initialNow: '2026-11-12T12:00:00Z', registrationOnly: true }));
+  assert.match(html, /text-fg-muted/);
+  assert.match(html, /Empezó el 9 de noviembre · Fin a confirmar/);
+  assert.doesNotMatch(html, /dl-pill--live/);
+});

@@ -2,7 +2,7 @@ import type { Listing, ListingType } from './types';
 import { ecosOf, ECOSYSTEMS, type Eco } from './eco';
 import { citySlug } from './city';
 import { COUNTRY_ES } from './geo';
-import { dayEndAr, deadlineLogicIso, isLive } from './dates';
+import { deadlineLogicIso, isOpenAt, startLogicIso } from './dates';
 export type Sort = 'cierra-pronto' | 'mayor-premio' | 'menos-competencia' | 'mas-nuevos';
 export const SORTS: { id: Sort; label: string }[] = [
   { id: 'cierra-pronto', label: 'Cierra pronto' }, { id: 'mayor-premio', label: 'Mayor premio' },
@@ -13,10 +13,10 @@ export type Filters = { tipos: ListingType[]; ecos: Eco[]; q: string; showClosed
 export const ALL_TYPES: ListingType[] = ['hackathon', 'bounty', 'grant'];
 export const DEFAULT_FILTERS: Filters = { tipos: [...ALL_TYPES], ecos: [], q: '', showClosed: false, pais: null, abierto: true, sinConfirmar: true, ciudad: null, virtual: false, abiertoTodos: false }; // sinConfirmar = show unknown-eligibility listings (at the end)
 
-/** deadline used for open/closed + ordering: deadline (date-only = end of that day, Córdoba), else IRL start (date-only = end of that day). */
-export const effDeadline = (l: Listing) => deadlineLogicIso(l) ?? (l.modality !== 'online' ? (l.startsAt ?? (l.startDate ? dayEndAr(l.startDate) : null)) : null);
-/** Open = before the effective deadline, or "En curso" (started with no close and no end published; see isLive). */
-export const isOpen = (l: Listing, now: Date) => { const d = effDeadline(l); return !d || new Date(d) > now || isLive(l, now); };
+/** Ordering key ("cierra pronto"): registration close (date-only = end of that day, event-city time), else in-person start. */
+export const effDeadline = (l: Listing) => deadlineLogicIso(l) ?? (l.modality !== 'online' ? startLogicIso(l) : null);
+/** Open/closed incl. "En curso" / "Fin a confirmar" states; see isOpenAt / phase in lib/dates.ts. */
+export const isOpen = (l: Listing, now: Date) => isOpenAt(l, now);
 
 export function matches(l: Listing, f: Filters, now: Date): boolean {
   if (!f.showClosed && !isOpen(l, now)) return false;

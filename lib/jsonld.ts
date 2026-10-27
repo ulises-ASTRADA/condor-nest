@@ -3,7 +3,7 @@ import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 import type { OrgAbout } from './organizer';
 import { access } from './rank';
-import { deadlineLogicIso, endLogicIso, isLive, startLogicIso } from './dates';
+import { deadlineLogicIso, endLogicIso, isOpenAt, startLogicIso } from './dates';
 
 const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|microsoft\.com|typeform\.com|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -81,7 +81,7 @@ export function eventLd(l: Listing, about?: OrgAbout | null, now?: Date): Record
   const close = l.deadlineAt ?? l.deadlineDate ?? end ?? start;
   const closeAt = deadlineLogicIso(l) ?? endLogicIso(l) ?? startLogicIso(l)!;
   const nowD = now ?? new Date();
-  const open = new Date(closeAt).getTime() > nowD.getTime() || isLive(l, nowD);
+  const open = isOpenAt(l, nowD);
   const offerUrl = l.applyUrl ?? officialUrl(l) ?? `${SITE}/o/${l.slug}`;
   ev.offers = { '@type': 'Offer', availability: `https://schema.org/${open ? 'InStock' : 'SoldOut'}`, url: offerUrl, ...(new Date(l.createdAt) < new Date(closeAt) ? { validFrom: l.createdAt } : {}), validThrough: close };
   return ev;
