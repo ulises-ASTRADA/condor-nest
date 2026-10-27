@@ -6,9 +6,12 @@ const URL_OK = 'https://condor-nest.lat/newsletter/confirmar?token=' + 'a'.repea
 
 test('reminder uses the approved copy, the confirm link and the shared light layout', () => {
   const m = reminderEmail(URL_OK);
-  assert.equal(m.subject, 'Te falta un clic para recibir Condor Nest');
+  assert.equal(m.subject, '¡Te falta un clic para entrar al nido!');
+  assert.ok(m.html.includes('<h1 style="margin:8px 0 8px;font-size:22px;line-height:28px;font-weight:700;color:#18181b">¡Te falta un clic para entrar al nido!</h1>'));
+  assert.ok(m.text.startsWith('¡Te falta un clic para entrar al nido!'));
+  assert.ok(!m.html.includes('casualidad'));
   assert.equal(REMINDER_SUBJECT, m.subject);
-  for (const s of ['Para que enterarte no sea casualidad', 'quedó sin confirmar', 'cuándo cierran en tu hora', 'Confirmar suscripción', 'El link vence en 48 horas', 'Hecho en Córdoba. Para builders de toda LatAm.', 'CONDOR NEST', '#c6ff3d', 'max-width:480px']) {
+  for (const s of ['quedó sin confirmar', 'cuándo cierran en tu hora', 'Confirmar suscripción', 'El link vence en 48 horas', 'Hecho en Córdoba. Para builders de toda LatAm.', 'CONDOR NEST', '#c6ff3d', 'max-width:480px']) {
     assert.ok(m.html.includes(s), `html missing: ${s}`);
   }
   assert.ok(m.html.includes(`href="${URL_OK}"`));
@@ -37,4 +40,12 @@ test('only https links to /newsletter/confirmar are accepted, and they are escap
   assert.throws(() => reminderEmail('https://condor-nest.lat/otra?token=x'));
   const m = reminderEmail('https://condor-nest.lat/newsletter/confirmar?token=a&x="1"');
   assert.ok(m.html.includes('token=a&amp;x=&quot;1&quot;'));
+});
+
+test('reminder sender display name is always Condor Nest', async () => {
+  const { reminderFrom } = await import('./newsletter-reminder');
+  assert.equal(reminderFrom('Condor Nest <hola@condor-nest.lat>'), 'Condor Nest <hola@condor-nest.lat>');
+  assert.equal(reminderFrom('hola@condor-nest.lat'), 'Condor Nest <hola@condor-nest.lat>');
+  assert.equal(reminderFrom('Otro <onboarding@resend.dev>'), 'Condor Nest <onboarding@resend.dev>');
+  assert.throws(() => reminderFrom('nada'));
 });

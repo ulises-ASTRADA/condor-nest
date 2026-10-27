@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { featuredInvitationNotice } from './featured-invitation';
 import { confirmLayout } from './confirm-layout';
-import { reminderEmail } from './newsletter-reminder';
+import { reminderEmail, reminderFrom } from './newsletter-reminder';
 // RESEND_API_KEY is server-only. Never log recipients or tokens.
 export const SITE_URL = (process.env.SITE_URL || 'https://condor-nest.lat').replace(/\/$/, '');
 export const newToken = () => randomBytes(32).toString('hex');
@@ -64,7 +64,7 @@ export async function sendReminder(to: string, confirmToken: string, unsubToken:
   const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${unsubToken}`;
   const { subject, html, text } = reminderEmail(confirmUrl);
   return resendSend({
-    to: [to], subject, html, text,
+    from: reminderFrom(RESEND_FROM()), to: [to], subject, html, text,
     headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
   }, `newsletter-reminder-${sha256(confirmToken)}`);
 }
