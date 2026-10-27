@@ -1,4 +1,4 @@
-import type { Listing } from './types';
+import { safeHttpsUrl, type Listing } from './types';
 import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 import type { OrgAbout } from './organizer';
@@ -60,10 +60,17 @@ export function eventLd(l: Listing, about?: OrgAbout | null, now?: Date, venues?
   if (!start) return null;
   const end = l.endsAt ?? l.endDate;
   const online = l.modality === 'online';
-  const virt = { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl };
+  // VirtualLocation url = the listing's official page (source_url, else apply_url), https only. No usable URL = no
+  // VirtualLocation (never a null url). An online or hybrid listing with no venue gets the VirtualLocation alone,
+  // so `location` is never missing or null when there is something real to point at.
+  const virtUrl = safeHttpsUrl(l.sourceUrl) ?? safeHttpsUrl(l.applyUrl);
+  const virt = virtUrl ? { '@type': 'VirtualLocation', url: virtUrl } : null;
   const multi = !online && venues && venues.length >= 2 ? venuePlacesLd(l, venues) : null;
-  const place = multi ? null : placeLd(l);
-  const location = online ? virt : multi ? (l.modality === 'hybrid' ? [...multi, virt] : multi) : l.modality === 'hybrid' && place ? [place, virt] : place ?? undefined;
+  const place = online || multi ? null : placeLd(l);
+  const physical = multi ?? (place ? [place] : []);
+  const parts = l.modality === 'online' ? [virt] : l.modality === 'hybrid' ? [...physical, virt] : physical;
+  const locs = parts.filter((x): x is Record<string, unknown> => !!x);
+  const location = locs.length === 0 ? undefined : locs.length === 1 ? locs[0] : locs;
   const ev: Record<string, unknown> = {
     '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: start, ...(end ? { endDate: end } : {}),
     eventAttendanceMode: mode(l),
