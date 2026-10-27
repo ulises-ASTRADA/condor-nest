@@ -152,7 +152,7 @@ function richCountryFaqs(h: Hub, name: string, items: Listing[], now: Date, all:
   const groups = cityGroups(h, items);
   const withEv = groups.filter((g) => g.items.length); const empty = groups.filter((g) => !g.items.length);
   const cityBits = withEv.map((g) => `en ${g.city} ${g.items.length === 1 ? 'hay 1 abierto' : `hay ${g.items.length} abiertos`} (${g.items.length === 1 ? '' : 'el próximo es '}${shortName(g.items[0])}${startDm(g.items[0]) ? `, ${startDm(g.items[0])}` : ''})`);
-  const emptyBit = empty.length ? ` ${empty.length === 1 ? `En ${empty[0].city}` : `En ${joinY(empty.map((g) => g.city))}`} no hay ninguno abierto hoy; los sumamos apenas se publican y se verifican, y te podés enterar por el newsletter de los lunes.` : '';
+  const emptyBit = empty.length ? ` ${empty.length === 1 ? `En ${empty[0].city}` : `En ${joinY(empty.map((g) => g.city))}`} no hay ninguno abierto hoy; los sumamos apenas se publican y se verifican, y te podés enterar por el newsletter.` : '';
   const q2 = `${cityBits.length ? `Al ${dmy(now)}, ${joinY(cityBits)}.` : `Al ${dmy(now)} no hay hackathons abiertos en ${joinY(groups.map((g) => g.city))}.`}${emptyBit}`;
   const st = items.filter(studentOnly);
   const q3 = `${st.length ? `Sí: ${joinY(st.map(ref))} ${st.length === 1 ? 'es' : 'son'} solo para estudiantes.` : `Hoy ninguno de los abiertos en ${name} es solo para estudiantes.`} Otros también los aceptan: la elegibilidad de cada tarjeta sale de la fuente oficial, así que fijate quién puede participar en cada uno.`;

@@ -1,31 +1,22 @@
 import 'server-only';
 import { createHash, randomBytes } from 'node:crypto';
 import { featuredInvitationNotice } from './featured-invitation';
+import { confirmLayout } from './confirm-layout';
+import { reminderEmail } from './newsletter-reminder';
 // RESEND_API_KEY is server-only. Never log recipients or tokens.
 export const SITE_URL = (process.env.SITE_URL || 'https://condor-nest.lat').replace(/\/$/, '');
 export const newToken = () => randomBytes(32).toString('hex');
 export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 export const isToken = (s: unknown): s is string => typeof s === 'string' && /^[0-9a-f]{64}$/.test(s);
 
+const CONFIRM_INTRO = 'Un toque y listo: te llegan por mail las oportunidades de LatAm que cierran pronto.';
 export function confirmEmail(confirmUrl: string) {
   // No unsubscribe link here: the person is not subscribed until they confirm (List-Unsubscribe header still set).
-  // Compact on purpose: on a phone the button must be visible without scrolling. Fixed px sizes so Gmail doesn't upscale.
-  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Confirmá tu suscripción</title></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:Helvetica,Arial,sans-serif;color:#18181b">
-<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f4f5;opacity:0">Un toque y listo, confirmá tu suscripción.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5"><tr><td align="center" style="padding:16px 8px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px">
-<tr><td style="padding:24px">
-<div style="font-size:12px;line-height:16px;letter-spacing:.12em;font-weight:700;color:#52525b">CONDOR NEST</div>
-<h1 style="margin:8px 0 8px;font-size:22px;line-height:28px;font-weight:700;color:#18181b">Confirmá tu suscripción</h1>
-<p style="margin:0 0 16px;font-size:15px;line-height:22px;color:#3f3f46">Un toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.</p>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#c6ff3d" style="border-radius:10px;background:#c6ff3d">
-<a href="${confirmUrl}" style="display:block;height:48px;line-height:48px;font-size:16px;font-weight:700;color:#0b0b10;text-decoration:none;white-space:nowrap;border-radius:10px">Confirmar</a>
-</td></tr></table>
-<p style="margin:16px 0 0;font-size:13px;line-height:19px;color:#71717a">El link vence en 48 h. Si no fuiste vos, ignorá este mail.</p>
-<p style="margin:8px 0 0;font-size:13px;line-height:19px;color:#71717a">Hecho en Córdoba</p>
-</td></tr></table></td></tr></table></body></html>`;
-  const text = `Confirmá tu suscripción a Condor Nest\n\nUn toque y listo: cada lunes te llegan las oportunidades de LatAm que cierran pronto.\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba`;
+  const html = confirmLayout({
+    title: 'Confirmá tu suscripción', preheader: 'Un toque y listo, confirmá tu suscripción.', paragraphs: [CONFIRM_INTRO],
+    button: 'Confirmar', url: confirmUrl, finePrint: ['El link vence en 48 h. Si no fuiste vos, ignorá este mail.', 'Hecho en Córdoba'],
+  });
+  const text = `Confirmá tu suscripción a Condor Nest\n\n${CONFIRM_INTRO}\n\nConfirmar: ${confirmUrl}\n\nEl link vence en 48 h. Si no fuiste vos, ignorá este mail.\n\nHecho en Córdoba`;
   return { html, text };
 }
 
@@ -65,6 +56,17 @@ export async function sendConfirmation(to: string, confirmToken: string, unsubTo
     to: [to], subject: 'Confirmá tu suscripción a Condor Nest', html, text,
     headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
   }, sha256(confirmToken));
+}
+
+/** One-time reminder for an expired signup. Caller must have rotated both tokens (hashes stored) first. */
+export async function sendReminder(to: string, confirmToken: string, unsubToken: string): Promise<SendResult> {
+  const confirmUrl = `${SITE_URL}/newsletter/confirmar?token=${confirmToken}`;
+  const unsubUrl = `${SITE_URL}/api/newsletter/unsubscribe?token=${unsubToken}`;
+  const { subject, html, text } = reminderEmail(confirmUrl);
+  return resendSend({
+    to: [to], subject, html, text,
+    headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+  }, `newsletter-reminder-${sha256(confirmToken)}`);
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));

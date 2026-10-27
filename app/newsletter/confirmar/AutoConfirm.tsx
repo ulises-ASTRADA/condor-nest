@@ -24,7 +24,7 @@ export default function AutoConfirm({ token }: { token: string }) {
   }, [token, run]);
   const C = {
     loading: { t: 'Confirmando…', d: 'Un segundo.' },
-    confirmado: { t: '¡Listo, ya estás suscripto!', d: 'El lunes te llega el primero.' },
+    confirmado: { t: '¡Listo, ya estás suscripto!', d: 'Te escribimos cuando haya oportunidades nuevas.' },
     invalido: { t: 'Este link ya venció', d: 'Poné tu mail y te mandamos uno nuevo. Si ya lo habías confirmado, no tenés que hacer nada.' },
     error: { t: 'No pudimos procesarlo', d: 'Puede ser la conexión. Probá de nuevo.' },
   }[st];

@@ -5,7 +5,7 @@ import { Newsletter } from '@/components/Newsletter';
 import { SECONDARY } from '../confirmar/styles';
 export const metadata: Metadata = { title: 'Newsletter', robots: { index: false, follow: false } };
 const COPY: Record<string, { k: string; t: string; d: string; ok: boolean }> = {
-  confirmado: { k: 'SUSCRIPCIÓN ACTIVA', t: '¡Listo, ya estás suscripto!', d: 'El lunes te llega el primero.', ok: true },
+  confirmado: { k: 'SUSCRIPCIÓN ACTIVA', t: '¡Listo, ya estás suscripto!', d: 'Te escribimos cuando haya oportunidades nuevas.', ok: true },
   invalido: { k: 'LINK INVÁLIDO', t: 'Este link ya venció', d: 'Poné tu mail y te mandamos uno nuevo. Si ya lo habías confirmado, no tenés que hacer nada.', ok: false },
   error: { k: 'ALGO FALLÓ', t: 'No pudimos procesarlo', d: 'Probá abrir el link de nuevo en un rato.', ok: false },
 };
