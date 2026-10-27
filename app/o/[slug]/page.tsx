@@ -17,8 +17,9 @@ import { eventLd, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
 import { hubsFor } from '@/lib/hubs';
 import { getOrgAbout } from '@/lib/organizer';
+import { getVenues } from '@/lib/venues-server';
 import { OrgAbout } from '@/components/OrgAbout';
-import { Location, LocationNote } from '@/components/Location';
+import { Location, LocationNote, MultiLocation } from '@/components/Location';
 import { bareHost, goPath, hostLabel } from '@/lib/go';
 export const revalidate = 300;
 
@@ -95,7 +96,7 @@ export default async function Detail({ params }: P) {
   if (!l) notFound();
   const now = new Date(); const nowIso = now.toISOString();
   const r = rewardText(l); const c = competitionText(l); const open = isOpen(l, now);
-  const [all, about] = await Promise.all([getListings(), l.organizer ? getOrgAbout(l.slug) : Promise.resolve(null)]);
+  const [all, about, venues] = await Promise.all([getListings(), l.organizer ? getOrgAbout(l.slug) : Promise.resolve(null), l.modality !== 'online' ? getVenues(l.slug) : Promise.resolve(null)]);
   const score = (x: Listing) => (l.country && x.country === l.country ? 2 : 0) + (x.type === l.type ? 1 : 0) + (x.ecosystems.some((e) => l.ecosystems.includes(e)) ? 1 : 0);
   const cands = sortListings(all.filter((x) => x.id !== l.id && isOpen(x, now) && score(x) > 0), 'cierra-pronto', now);
   const similar = cands.map((x, i) => ({ x, i, s: score(x) })).sort((a, b) => b.s - a.s || a.i - b.i).slice(0, 4).map((o) => o.x);
@@ -132,7 +133,7 @@ export default async function Detail({ params }: P) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l, about), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l, about, venues), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
       <div className="reading-progress fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-grad-brand" aria-hidden="true" />
       <div className="flex items-center justify-between pt-3">
         <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link prefetch={false} href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
@@ -156,7 +157,8 @@ export default async function Detail({ params }: P) {
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
           {!r.missing && r.detail && <p className="mt-2 text-fg-muted">{r.detail}</p>}
           <section className="mt-6 min-w-0 rounded-card border border-border bg-surface p-4 lg:hidden" aria-label="Datos clave"><h2 className="mb-3 font-medium">Datos clave</h2>{keyData}</section>
-          {l.modality !== 'online' && l.venue ? <Location name={l.venue} address={[l.venueLocality, l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} />
+          {l.modality !== 'online' && venues ? <MultiLocation venues={venues} countryName={l.country && COUNTRY_ES[l.country]} />
+            : l.modality !== 'online' && l.venue ? <Location name={l.venue} address={[l.venueLocality, l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} />
             : l.modality !== 'online' && l.city ? <Location mode="city" name={l.city} address={[l.city, l.country && COUNTRY_ES[l.country]].filter(Boolean).join(', ')} official={official} />
             : l.type === 'hackathon' && <LocationNote text={l.modality === 'online' ? 'Online' : 'Sede a confirmar'} official={official} />}
           <section className="mt-8">

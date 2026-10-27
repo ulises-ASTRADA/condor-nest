@@ -3,6 +3,7 @@ import { SITE } from './site';
 import { COUNTRY_ES } from './geo';
 import type { OrgAbout } from './organizer';
 import { access } from './rank';
+import type { Venue } from './venues';
 
 const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|microsoft\.com|typeform\.com|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -37,6 +38,11 @@ export function placeLd(l: Listing): Record<string, unknown> | null {
   const address = street || l.city || country ? { '@type': 'PostalAddress', ...(street ? { streetAddress: street } : {}), ...(l.city ? { addressLocality: l.city } : {}), ...(country ? { addressCountry: country } : {}) } : null;
   return { '@type': 'Place', name: l.venue ?? l.city, ...(address ? { address } : {}) };
 }
+/** One Place per day for multi-venue events (raw.venues), each with its own PostalAddress. */
+export function venuePlacesLd(l: Listing, venues: Venue[]): Record<string, unknown>[] {
+  const country = l.country && COUNTRY_ES[l.country] ? l.country : null;
+  return venues.map((v) => ({ '@type': 'Place', name: v.name, address: { '@type': 'PostalAddress', streetAddress: v.street, addressLocality: v.locality, ...(country ? { addressCountry: country } : {}) } }));
+}
 const mode = (l: Listing) => `https://schema.org/${l.modality === 'online' ? 'Online' : l.modality === 'hybrid' ? 'Mixed' : 'Offline'}EventAttendanceMode`;
 /** One sentence on who can take part, from the same rule as the card tag; null when eligibility is unknown (omitted). */
 export function accessSentence(l: Listing): string | null {
@@ -47,13 +53,14 @@ export function accessSentence(l: Listing): string | null {
 }
 const withAccess = (d: string | null, l: Listing) => [d, accessSentence(l)].filter(Boolean).join(' ') || null;
 /** Event schema from real listing data only; null when there is no start date to anchor an Event. */
-export function eventLd(l: Listing, about?: OrgAbout | null): Record<string, unknown> | null {
+export function eventLd(l: Listing, about?: OrgAbout | null, venues?: Venue[] | null): Record<string, unknown> | null {
   const start = l.startsAt;
   if (!start) return null;
   const online = l.modality === 'online';
-  const place = placeLd(l);
   const virt = { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl };
-  const location = online ? virt : l.modality === 'hybrid' && place ? [place, virt] : place ?? undefined;
+  const multi = !online && venues && venues.length >= 2 ? venuePlacesLd(l, venues) : null;
+  const place = multi ? null : placeLd(l);
+  const location = online ? virt : multi ? (l.modality === 'hybrid' ? [...multi, virt] : multi) : l.modality === 'hybrid' && place ? [place, virt] : place ?? undefined;
   const ev: Record<string, unknown> = {
     '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: start, ...(l.endsAt ? { endDate: l.endsAt } : {}),
     eventAttendanceMode: mode(l),
