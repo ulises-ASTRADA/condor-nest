@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canonicalOrigin } from './site.ts';
-import { listingName, listingTitle, listingState, listingDescription, hubTitle, hubDescription, nextHub, nextHubText, TITLE_MAX } from './seo.ts';
+import { isFinished, wayForward, listingName, listingTitle, listingState, listingDescription, hubTitle, hubDescription, nextHub, nextHubText, TITLE_MAX } from './seo.ts';
 import { hubBySlug } from './hubs.ts';
 import nextConfig from '../next.config.ts';
 
@@ -32,7 +32,8 @@ test('www.condor-nest.lat/* → 301 to https://condor-nest.lat/* (path kept; Nex
 
 test('listing name: kind, city and year added only when missing', () => {
   assert.equal(listingName(shippear), 'Shippear #3 Hackathon Rosario 2026');
-  assert.equal(listingName(openPayments), 'Hackatón Open Payments Medellín 2026');
+  assert.equal(listingName(openPayments), 'Hackathon Open Payments Medellín 2026'); // DB name says "Hackatón": normalized only here
+  assert.equal(listingName(L({ title: 'hackaton Rosario', city: 'Rosario' })), 'Hackathon Rosario');
   assert.equal(listingName(L({ title: 'ETH Buenos Aires Hackathon 2026', city: 'Buenos Aires', startsAt: '2026-11-01T12:00:00Z' })), 'ETH Buenos Aires Hackathon 2026');
   assert.equal(listingName(L({ type: 'bounty', modality: 'online', title: 'Write a Solana thread', deadlineAt: '2026-11-05T12:00:00Z' })), 'Bounty: Write a Solana thread 2026');
   assert.equal(listingName(L({ type: 'grant', modality: 'online', title: 'Solana Foundation Grants' })), 'Solana Foundation Grants');
@@ -42,11 +43,11 @@ test('listing name: kind, city and year added only when missing', () => {
   assert.equal(listingName(L({ title: 'Fin de año', modality: 'online', startsAt: '2027-01-01T01:00:00Z' })), 'Fin de año Hackathon 2026');
 });
 
-test('finished listing: title says "finalizada", description too, and points to the country hub', () => {
+test('finished listing: title says "finalizado", description too, and points to the country hub', () => {
   assert.equal(listingState(shippear, now), 'finished');
   const t = listingTitle(shippear, { now, prize: null, date: '24 de octubre' });
-  assert.equal(t, 'Shippear #3 Hackathon Rosario 2026 — finalizada | Condor Nest');
-  assert.equal(listingTitle(openPayments, { now, prize: 'USD 20.000 en premios', date: '16 de octubre' }), 'Hackatón Open Payments Medellín 2026 — finalizada | Condor Nest');
+  assert.equal(t, 'Shippear #3 Hackathon Rosario 2026 — finalizado | Condor Nest');
+  assert.equal(listingTitle(openPayments, { now, prize: 'USD 20.000 en premios', date: '16 de octubre' }), 'Hackathon Open Payments Medellín 2026 — finalizado | Condor Nest');
   const hub = nextHub(shippear)!;
   assert.equal(hub.slug, 'hackathons-argentina');
   assert.equal(nextHub(openPayments), null); // no Colombia hub: no invented link
@@ -54,17 +55,19 @@ test('finished listing: title says "finalizada", description too, and points to 
   assert.equal(nextHubText(hub, 1), 'el hackathon abierto en Argentina');
   assert.equal(nextHubText(hub, 0), 'hackathons en Argentina');
   const d = listingDescription(['Hackathon presencial en Rosario de shippear.', 'Abierto · gratis.', 'Empezó el 24 de octubre.'], 'finished', `Mirá ${nextHubText(hub, 5)}.`);
-  assert.equal(d, 'Convocatoria finalizada. Hackathon presencial en Rosario de shippear. Abierto · gratis. Mirá los 5 hackathons abiertos en Argentina.');
+  assert.equal(d, 'Hackathon finalizado. Hackathon presencial en Rosario de shippear. Abierto · gratis. Empezó el 24 de octubre. Mirá los 5 hackathons abiertos en Argentina.');
   assert.ok(d.length <= 155);
   // the hub link survives even when the body is long; whole sentences only
   const long = listingDescription(['Hackathon presencial en Medellín de Interledger Foundation.', 'Abierto a todos · Medellín.', 'USD 20.000 en premios.', 'Empezó el 16 de octubre.'], 'finished', 'Mirá los 5 hackathons abiertos en Argentina.');
-  assert.ok(long.length <= 155 && long.startsWith('Convocatoria finalizada. Hackathon presencial') && long.endsWith('Mirá los 5 hackathons abiertos en Argentina.'), long);
+  assert.ok(long.length <= 155 && long.startsWith('Hackathon finalizado. Hackathon presencial') && long.endsWith('Mirá los 5 hackathons abiertos en Argentina.'), long);
   assert.equal(listingDescription(['Bounty virtual de Superteam.', 'Cierra el 3 de noviembre.'], 'open', null), 'Bounty virtual de Superteam. Cierra el 3 de noviembre.');
 });
 
 test('open listing: published prize, close date, online / abierto a LatAm, ~60 chars', () => {
   const open = L({ title: 'Hackatón Open Payments Medellín', city: 'Medellín', startsAt: '2026-11-16T12:00:00Z', deadlineAt: '2026-11-10T12:00:00Z' });
-  assert.equal(listingTitle(open, { now, prize: 'USD 20.000 en premios', date: 'cierra 10 de noviembre' }), 'Hackatón Open Payments Medellín 2026 — USD 20.000 en premios | Condor Nest');
+  assert.equal(listingTitle(open, { now, prize: 'USD 20.000', date: 'cierra 10 de noviembre' }), 'Hackathon Open Payments Medellín 2026 — premio USD 20.000 | Condor Nest');
+  // a part that would push past ~60 chars is dropped, never cut mid-phrase
+  assert.equal(listingTitle(open, { now, prize: 'USD 20.000 en premios', date: 'cierra 10 de noviembre' }), 'Hackathon Open Payments Medellín 2026 | Condor Nest');
   const online = L({ title: 'AI Agents', modality: 'online', eligibility: 'latam', deadlineAt: '2026-11-10T12:00:00Z' });
   assert.equal(listingTitle(online, { now, prize: null, date: 'cierra 10 de noviembre' }), 'AI Agents Hackathon 2026 — cierra 10 de noviembre, online | Condor Nest');
   const latam = L({ title: 'Build Córdoba', city: 'Córdoba', eligibility: 'latam', startsAt: '2026-11-20T12:00:00Z' });
@@ -75,7 +78,16 @@ test('open listing: published prize, close date, online / abierto a LatAm, ~60 c
   for (const t of [listingTitle(open, { now, prize: 'USD 20.000 en premios', date: 'cierra 10 de noviembre' }), listingTitle(online, { now, prize: null, date: 'cierra 10 de noviembre' })]) assert.ok(t.replace(' | Condor Nest', '').length <= TITLE_MAX);
 });
 
-test('registration closed but event not over: "inscripción cerrada", not "finalizada"', () => {
+test('every finished page has a way forward: country hub with real count, else the open feed for its type', () => {
+  assert.deepEqual(wayForward(shippear, () => 5), { href: '/hackathons-argentina', text: 'Mirá los 5 hackathons abiertos en Argentina' });
+  assert.deepEqual(wayForward(shippear, () => 1), { href: '/hackathons-argentina', text: 'Mirá el hackathon abierto en Argentina' });
+  assert.deepEqual(wayForward(openPayments, () => 9), { href: '/?tipo=hackathon', text: 'Mirá los hackathons abiertos' });
+  assert.equal(wayForward(L({ type: 'bounty', modality: 'online' }), () => 3).href, '/bounties');
+  assert.match(listingDescription(['Bounty virtual.'], 'finished', null, 'bounty'), /^Bounty finalizado\./);
+  assert.doesNotMatch(listingTitle(shippear, { now, prize: null, date: null }), /finalizada/);
+});
+
+test('registration closed but event not over: "inscripción cerrada", not "finalizado"', () => {
   const l = L({ title: 'Hack Rosario', city: 'Rosario', deadlineAt: '2026-10-20T12:00:00Z', startsAt: '2026-11-02T12:00:00Z' });
   assert.equal(listingState(l, now), 'regClosed');
   assert.equal(listingTitle(l, { now, prize: null, date: null }), 'Hack Rosario Hackathon 2026 — inscripción cerrada | Condor Nest');
@@ -100,4 +112,31 @@ test('hub description: count, next one, ≤155', () => {
   assert.match(hubDescription(ar, 1, 0, 'inicio', null), /^1 hackathon abierto en Argentina\./);
   assert.match(hubDescription(ar, 0, 2, 'inicio', null), /^Hoy no hay hackathons abiertos solo en Argentina: te mostramos 2 abiertos a LatAm\./);
   assert.doesNotMatch(hubDescription(ar, 0, 0, 'inicio', null), /\b0\b/);
+});
+
+test('finished uses the same close rules as lib/dates.ts (online no end never finished; in person no end = 23:59 local of start day)', () => {
+  // Stranger Builds: online, starts 2026-10-31 14:01 ART, no end, no close.
+  const sb = L({ slug: 'stranger-builds', modality: 'online', city: null, startsAt: '2026-10-31T17:01:00Z', endsAt: null, deadlineAt: null });
+  for (const t of ['2026-10-31T17:01:00Z', '2026-11-01T03:00:00Z', '2026-11-07T17:01:00Z', '2027-01-01T00:00:00Z']) {
+    assert.equal(isFinished(sb, new Date(t)), false, t);
+    assert.notEqual(listingState(sb, new Date(t)), 'finished', t);
+  }
+  assert.doesNotMatch(listingTitle(sb, { now: new Date('2026-11-07T17:01:00Z'), prize: null, date: null }), /finalizad/);
+  // In person, no end: finished only after 23:59:59 of the start day in the city's zone (Rosario → Córdoba time).
+  const irl = L({ modality: 'irl', city: 'Rosario', startsAt: '2026-11-07T13:00:00Z', endsAt: null, deadlineAt: null });
+  assert.equal(isFinished(irl, new Date('2026-11-08T02:59:59Z')), false); // 23:59:59 ART
+  assert.equal(isFinished(irl, new Date('2026-11-08T03:00:00Z')), true);
+  // Known other-zone city: CDMX (UTC-6) day ends later in UTC.
+  const mx = L({ modality: 'irl', city: 'Ciudad de México', startsAt: '2026-11-07T16:00:00Z', endsAt: null, deadlineAt: null });
+  assert.equal(isFinished(mx, new Date('2026-11-08T05:59:00Z')), false);
+  assert.equal(isFinished(mx, new Date('2026-11-08T06:00:01Z')), true);
+  // Date-only end counts to 23:59:59 local.
+  const dOnly = L({ modality: 'irl', city: 'Córdoba', startsAt: null, startDate: '2026-11-14', endsAt: null, endDate: '2026-11-15', deadlineAt: null });
+  assert.equal(isFinished(dOnly, new Date('2026-11-16T02:59:00Z')), false);
+  assert.equal(isFinished(dOnly, new Date('2026-11-16T03:00:00Z')), true);
+  // Real ones stay finished.
+  assert.equal(isFinished(shippear, now), true);
+  assert.equal(isFinished(openPayments, now), true);
+  assert.equal(listingState(shippear, now), 'finished');
+  assert.equal(listingState(openPayments, now), 'finished');
 });
