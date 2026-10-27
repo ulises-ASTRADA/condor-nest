@@ -1,3 +1,4 @@
+import { ymdOrNull } from './dates';
 /** Returns the URL only if it parses and uses https:, else null (blocks javascript:/data: etc.). */
 export function safeHttpsUrl(v: unknown): string | null {
   if (typeof v !== 'string' || !v) return null;
@@ -18,6 +19,9 @@ export type Listing = {
   rewardKind: 'total_pool' | 'top_prize' | 'per_winner' | 'range' | 'non_monetary' | null;
   deadlineAt: string | null;
   startsAt: string | null; endsAt: string | null;
+  // Date-only values (YYYY-MM-DD) from raw->>'start_date' / 'end_date' / 'deadline_date' when the organizer publishes a day but no hour.
+  // Used only when the matching timestamp is null; see lib/dates.ts. statusNote: raw->>'status_note' (e.g. "7 días para entregar desde el 31/10").
+  startDate: string | null; endDate: string | null; deadlineDate: string | null; statusNote: string | null;
   competitors: number | null;
   competitorsKind: 'submissions' | 'registrations' | null;
   eligibility: Eligibility;
@@ -43,6 +47,9 @@ export type Listing = {
 export type Row = Record<string, any>;
 /** Public columns (raw is not readable by anon). */
 export const LISTING_COLS = 'id,slug,source,type,title,title_lang,organizer,source_url,apply_url,reward_amount,reward_currency,reward_usd,reward_kind,reward_text,deadline_at,starts_at,ends_at,competitors,competitors_kind,eligibility,eligibility_note,eligibility_short,modality,city,ecosystems,summary_es,featured,featured_until,curated,disclosure_key,source_post_url,verified_url,created_at,updated_at,in_latam,country,venue,venue_locality';
+/** Read-only generated columns mirroring raw->>'start_date' | 'end_date' | 'deadline_date' | 'status_note' (migration
+ *  20261027050000_listing_date_only.sql). Selected separately so the site keeps working if the migration is not applied yet. */
+export const LISTING_DATE_COLS = 'start_date,end_date,deadline_date,status_note';
 export function fromRow(r: Row): Listing {
   const u = (v: any) => safeHttpsUrl(v);
   const n = (v: any) => (v === null || v === undefined ? null : Number(v));
@@ -58,6 +65,10 @@ export function fromRow(r: Row): Listing {
     verifiedUrl: u(r.verified_url), curated: !!r.curated,
     country: typeof r.country === 'string' ? r.country.toUpperCase() : null,
     venue: r.venue ?? null, venueLocality: r.venue_locality ?? null,
+    // A date-only value is used only when the precise timestamp is missing.
+    startDate: r.starts_at ? null : ymdOrNull(r.start_date), endDate: r.ends_at ? null : ymdOrNull(r.end_date),
+    deadlineDate: r.deadline_at ? null : ymdOrNull(r.deadline_date),
+    statusNote: typeof r.status_note === 'string' && r.status_note.trim() ? r.status_note.trim().slice(0, 120) : null,
   };
 }
 

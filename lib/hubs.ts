@@ -1,6 +1,7 @@
 import type { Listing } from './types';
 import { ecosOf } from './eco';
 import { normCity } from './city';
+import { startLogicIso, ymdDm } from './dates';
 import { DEFAULT_FILTERS, effDeadline, inCountry, isOpen, matches, openToArLatam, sortListings } from './rank';
 
 export type Faq = { q: string; a: string };
@@ -13,7 +14,7 @@ export type Hub = {
 /** Hackathon hubs list by start date (the date the card shows for in-person events); bounties/grants by deadline. */
 export const hubOrder = (h: Hub): 'inicio' | 'cierre' => (h.slug === 'bounties' || h.slug === 'grants' ? 'cierre' : 'inicio');
 const tms = (iso: string | null) => (iso ? new Date(iso).getTime() : Infinity);
-const startKey = (l: Listing) => l.startsAt ?? effDeadline(l);
+const startKey = (l: Listing) => startLogicIso(l) ?? effDeadline(l);
 const sortHub = (h: Hub, list: Listing[], now: Date) => hubOrder(h) === 'cierre' ? sortListings(list, 'cierra-pronto', now) : [...list].sort((x, y) => tms(startKey(x)) - tms(startKey(y)));
 
 const UPDATED: Faq = { q: '¿Cada cuánto se actualiza esta lista?', a: 'Todos los días a las 8 (hora de Argentina) corre una carga automática desde Superteam Earn, Devpost y Taikai, y sumamos eventos curados de X y Luma después de verificarlos en su página oficial. La página se regenera sola con esos datos.' };
@@ -107,10 +108,10 @@ export function shortName(l: Listing): string {
 }
 /** "(Buenos Aires, 7/11, Digital House)": city (optional), start date, venue, only when the DB has them. */
 export const refDetails = (l: Listing, { city = true, venue = false } = {}) => {
-  const bits = [city ? (l.modality !== 'online' ? l.city : 'online') : null, l.startsAt ? dm(l.startsAt) : null, venue && l.modality !== 'online' ? l.venue : null].filter(Boolean);
+  const bits = [city ? (l.modality !== 'online' ? l.city : 'online') : null, l.startsAt ? dm(l.startsAt) : l.startDate ? ymdDm(l.startDate) : null, venue && l.modality !== 'online' ? l.venue : null].filter(Boolean);
   return bits.length ? ` (${bits.join(', ')})` : '';
 };
-export const startDm = (l: Listing) => (l.startsAt ? dm(l.startsAt) : null);
+export const startDm = (l: Listing) => (l.startsAt ? dm(l.startsAt) : l.startDate ? ymdDm(l.startDate) : null);
 export const shortRef = (l: Listing) => `${shortName(l)}${refDetails(l)}`;
 export const joinY = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`);
 /** Pieces of the self-contained answer ("Al 20/10/2026 hay 5 hackathons abiertos en Argentina, todos presenciales: …"). Up to 5 named; more → 3 + "y N más". */

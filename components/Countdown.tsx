@@ -4,15 +4,25 @@ import { deadlineCountdown, deadlineInfo, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
 import { useTz } from './LocalTime';
 import { Ticker } from './Ticker';
+import { CLOSE_TBC, dayEndAr, isLive, liveLabel, ymdDm, ymdLong } from '@/lib/dates';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
-export function Countdown({ l, initialNow, seconds = false, registrationOnly = false }: { l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>; initialNow: string; seconds?: boolean; registrationOnly?: boolean }) {
+type CL = Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'> & Partial<Pick<Listing, 'endsAt' | 'city' | 'deadlineDate' | 'startDate' | 'endDate' | 'statusNote'>>;
+export function Countdown({ l, initialNow, seconds = false, registrationOnly = false }: { l: CL; initialNow: string; seconds?: boolean; registrationOnly?: boolean }) {
   const [now, setNow] = useState(() => new Date(initialNow));
   const tz = useTz();
   const info = deadlineInfo(registrationOnly ? { ...l, startsAt: null, modality: 'online' } : l, now, tz);
   const fast = seconds && info.state === 'closing';
   useEffect(() => { setNow(new Date()); const id = setInterval(() => setNow(new Date()), fast ? 1000 : 60000); return () => clearInterval(id); }, [fast]);
+  const full = { endsAt: null, city: null, ...l };
+  // Started with no close and no end published: green "En curso" pill, with the note from data when there is one.
+  if (registrationOnly && isLive(full, now)) return <span className="dl-pill dl-pill--live"><span>{liveLabel(full)}</span></span>;
+  // Date-only close: the published day plus "Hora a confirmar"; end of that day (Córdoba) only decides open/closed, no countdown hours.
+  if (registrationOnly && !l.deadlineAt && l.deadlineDate) {
+    const closed = new Date(dayEndAr(l.deadlineDate)) <= now;
+    return <div className="min-w-0 break-words font-mono text-sm tabular text-fg-muted">{closed ? `Cerrado el ${ymdDm(l.deadlineDate)}` : <><span className="text-fg">Cierra el {ymdLong(l.deadlineDate)}</span> · {CLOSE_TBC}</>}</div>;
+  }
   let label = info.label;
   if (registrationOnly) {
     if (!info.iso) label = l.type === 'hackathon' ? 'Cierre de inscripción sin confirmar' : 'Fecha límite sin confirmar';

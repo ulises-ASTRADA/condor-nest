@@ -1,17 +1,21 @@
-import { fromRow, LISTING_COLS, type Listing } from './types';
+import { fromRow, LISTING_COLS, LISTING_DATE_COLS, type Listing } from './types';
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const headers = () => ({ apikey: KEY, Authorization: `Bearer ${KEY}`, 'content-type': 'application/json' });
 
-export async function getListings(): Promise<Listing[]> {
-  const r = await fetch(`${URL_}/rest/v1/listings?select=${LISTING_COLS}&in_latam=eq.true`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
+/** Listings with the date-only columns; if PostgREST rejects them (400: migration not applied yet), retry without them. */
+async function listingRows(filter: string): Promise<any[]> {
+  const get = (cols: string) => fetch(`${URL_}/rest/v1/listings?select=${cols}&in_latam=eq.true${filter}`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
+  let r = await get(`${LISTING_COLS},${LISTING_DATE_COLS}`);
+  if (r.status === 400) r = await get(LISTING_COLS);
   if (!r.ok) throw new Error(`supabase ${r.status}`);
-  return (await r.json()).map(fromRow);
+  return r.json();
+}
+export async function getListings(): Promise<Listing[]> {
+  return (await listingRows('')).map(fromRow);
 }
 export async function getListing(slug: string): Promise<Listing | null> {
-  const r = await fetch(`${URL_}/rest/v1/listings?select=${LISTING_COLS}&in_latam=eq.true&slug=eq.${encodeURIComponent(slug)}`, { headers: headers(), next: { revalidate: 300, tags: ['listings'] } });
-  if (!r.ok) throw new Error(`supabase ${r.status}`);
-  const rows = await r.json();
+  const rows = await listingRows(`&slug=eq.${encodeURIComponent(slug)}`);
   return rows[0] ? fromRow(rows[0]) : null;
 }
 export async function lastIngest(): Promise<string | null> {
