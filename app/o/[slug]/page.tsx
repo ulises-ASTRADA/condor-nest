@@ -41,7 +41,7 @@ function prizePhrase(l: Listing): string | null {
 const closeDay = (l: Listing) => closeDisplay(l)?.day ?? null;
 /** Start day for title/description: timestamp in Argentina time, else the published date-only day. */
 const startDay = (l: Listing) => (l.startsAt ? shortDate(l.startsAt) : l.startDate ? ymdLong(l.startDate) : null);
-const hm = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
+const hm = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso));
 const weekday = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso)).replace(',', '');
 const sameDay = (a: string, b: string) => shortDate(a) === shortDate(b);
 /** When the event happens, from startsAt/endsAt (or their date-only values) only. tbc = "Horario a confirmar" for date-only starts. */

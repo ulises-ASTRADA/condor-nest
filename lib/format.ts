@@ -46,18 +46,18 @@ export const tzCity = (tz: string) => /^America\/(Argentina\/|Buenos_Aires$|Cord
 export const tzLabel = (tz: string, iso?: string) => tz === 'UTC' || tz === 'Etc/UTC' ? 'hora UTC (GMT)' : `hora de ${tzCity(tz)} (${tzOffset(tz, iso)})`;
 
 export function artShort(iso: string, tz: string = TZ): string {
-  const p = parts(fmt(tz, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }, 'short'), iso);
+  const p = parts(fmt(tz, { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, 'short'), iso);
   const wd = String(p.weekday).replace('.', '');
   return `${wd} ${p.day}/${p.month} · ${p.hour}:${p.minute} ${tzOffset(tz, iso)}`;
 }
 export const artDay = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit' }, 'day').format(new Date(iso));
 export const dayKey = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit', year: 'numeric' }, 'dk').format(new Date(iso));
-export const hhmm = (iso: string, tz: string = TZ) => fmt(tz, { hour: '2-digit', minute: '2-digit', hour12: false }, 'hm').format(new Date(iso));
+export const hhmm = (iso: string, tz: string = TZ) => fmt(tz, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, 'hm').format(new Date(iso));
 export function srDate(iso: string, verb = 'Cierra', tz: string = TZ): string {
-  const p = parts(fmt(tz, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false }, 'long'), iso);
+  const p = parts(fmt(tz, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, 'long'), iso);
   return `${verb} el ${p.weekday} ${p.day} de ${p.month} a las ${p.hour}:${p.minute}, ${tzLabel(tz, iso)}.`;
 }
-export const artFull = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }, 'full').format(new Date(iso)) + ' ' + tzOffset(tz, iso);
+export const artFull = (iso: string, tz: string = TZ) => fmt(tz, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, 'full').format(new Date(iso)) + ' ' + tzOffset(tz, iso);
 
 export type DeadlineState = 'normal' | 'soon' | 'warning' | 'urgent' | 'closing' | 'closed' | 'unknown' | 'rolling';
 export function deadlineInfo(l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>, now: Date, tz: string = TZ) {

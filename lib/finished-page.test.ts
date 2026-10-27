@@ -98,6 +98,7 @@ test('no Monday/weekly promise in any newsletter copy, hub text, confirm mail or
   assert.match(nl, />Te mandamos lo que cierra pronto y lo que tiene poca competencia\. Sin spam\.</);
   const hubPage = r('../app/[hub]/page.tsx');
   assert.match(hubPage, /¿Organizás un hackathon en/);
+  assert.match(hubPage, />Publicalo gratis</); assert.doesNotMatch(hubPage, /Publicala gratis/);
   assert.match(r('./hubs.ts'), /por el newsletter\./);
   const mail = r('./email.ts');
   assert.equal(mail.split('Un toque y listo: te llegan por mail las oportunidades de LatAm que cierran pronto.').length - 1, 2); // HTML + text
