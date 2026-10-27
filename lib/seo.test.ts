@@ -81,7 +81,17 @@ test('open listing: published prize, close date, online / abierto a LatAm, ~60 c
 test('every finished page has a way forward: country hub with real count, else the open feed for its type', () => {
   assert.deepEqual(wayForward(shippear, () => 5), { href: '/hackathons-argentina', text: 'Mirá los 5 hackathons abiertos en Argentina' });
   assert.deepEqual(wayForward(shippear, () => 1), { href: '/hackathons-argentina', text: 'Mirá el hackathon abierto en Argentina' });
-  assert.deepEqual(wayForward(openPayments, () => 9), { href: '/?tipo=hackathon', text: 'Mirá los hackathons abiertos' });
+  // 0 open in the hub, or no hub: open feed of that type in LatAm; never "los 0"
+  assert.deepEqual(wayForward(shippear, () => 0), { href: '/?tipo=hackathon', text: 'Mirá los hackathons abiertos en LatAm' });
+  assert.deepEqual(wayForward(openPayments, () => 9), { href: '/?tipo=hackathon', text: 'Mirá los hackathons abiertos en LatAm' });
+  assert.deepEqual(wayForward(L({ type: 'bounty', modality: 'online' }), () => 0), { href: '/?tipo=bounty', text: 'Mirá los bounties abiertos en LatAm' });
+  for (const n of [0, 1, 2, 7]) {
+    const fw = wayForward(shippear, () => n);
+    assert.doesNotMatch(fw.text, /los 0|\b0 /);
+    const d = listingDescription(['Hackathon presencial en Rosario de shippear.'], 'finished', `${fw.text}.`);
+    assert.ok(d.endsWith(`${fw.text}.`), d);
+    assert.match(d, n === 0 ? /Mirá los hackathons abiertos en LatAm\.$/ : n === 1 ? /Mirá el hackathon abierto en Argentina\.$/ : new RegExp(`Mirá los ${n} hackathons abiertos en Argentina\\.$`));
+  }
   assert.equal(wayForward(L({ type: 'bounty', modality: 'online' }), () => 3).href, '/bounties');
   assert.match(listingDescription(['Bounty virtual.'], 'finished', null, 'bounty'), /^Bounty finalizado\./);
   assert.doesNotMatch(listingTitle(shippear, { now, prize: null, date: null }), /finalizada/);

@@ -86,10 +86,11 @@ export function nextHub(l: Listing): Hub | null {
   return HUBS.find((h) => h.iso && h.match(l)) ?? (l.type === 'hackathon' ? null : hubBySlug(l.type === 'bounty' ? 'bounties' : 'grants'));
 }
 const PLURAL: Record<Listing['type'], string> = { hackathon: 'hackathons', bounty: 'bounties', grant: 'grants' };
-/** Where a finished listing sends people: its hub with the real count, else the feed filtered to open ones of its type. */
+/** Where a finished listing sends people (link + description): its hub when it has open ones ("los N … abiertos en X" /
+ *  "el … abierto en X"), else, with no hub or 0 open there, the feed of open ones of its type ("… abiertos en LatAm"). Never "los 0". */
 export function wayForward(l: Listing, countOpen: (h: Hub) => number): { href: string; text: string } {
-  const h = nextHub(l);
-  return h ? { href: `/${h.slug}`, text: `Mirá ${nextHubText(h, countOpen(h))}` } : { href: `/?tipo=${l.type}`, text: `Mirá los ${PLURAL[l.type]} abiertos` };
+  const h = nextHub(l); const n = h ? countOpen(h) : 0;
+  return h && n > 0 ? { href: `/${h.slug}`, text: `Mirá ${nextHubText(h, n)}` } : { href: `/?tipo=${l.type}`, text: `Mirá los ${PLURAL[l.type]} abiertos en LatAm` };
 }
 /** Link text to that hub's open listings, with the real count; never "0 abiertos". */
 export function nextHubText(h: Hub, n: number): string {

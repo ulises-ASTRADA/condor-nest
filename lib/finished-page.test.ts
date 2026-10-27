@@ -25,7 +25,8 @@ test('finished listing page: indexable (no robots noindex in metadata, headers o
   assert.equal(md.robots, undefined);
   assert.equal(md.title.absolute, 'Shippear #3 Hackathon Rosario 2026 — finalizado | Condor Nest');
   assert.match(md.description, /^Hackathon finalizado\./);
-  assert.match(md.description, /Mirá los \d+ hackathons? abiertos? en Argentina\.$|Mirá hackathons en Argentina\.$/);
+  // the mocked DB has only this (finished) listing, so the hub has 0 open: falls back to the LatAm feed, never "los 0"
+  assert.match(md.description, /Mirá los hackathons abiertos en LatAm\.$/);
   assert.equal(md.alternates.canonical, '/o/shippear-3-rosario-2026');
   const cfg = (await import('../next.config.ts')).default as any;
   const { pathToRegexp } = await import('next/dist/compiled/path-to-regexp/index.js' as any).catch(() => ({ pathToRegexp: null }));
