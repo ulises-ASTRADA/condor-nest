@@ -15,7 +15,8 @@ import { Newsletter } from '@/components/Newsletter';
 import { ShareButton, CountdownShell } from '@/components/DetailClient';
 import { eventLd, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
-import { hubsFor } from '@/lib/hubs';
+import { hubItems, hubsFor } from '@/lib/hubs';
+import { listingDescription, listingState, listingTitle, nextHub, nextHubText } from '@/lib/seo';
 import { getOrgAbout } from '@/lib/organizer';
 import { OrgAbout } from '@/components/OrgAbout';
 import { Location, LocationNote } from '@/components/Location';
@@ -53,15 +54,14 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
   if (!l) return { title: 'No encontrado', robots: { index: false } };
   const prize = prizePhrase(l); const close = closeIso(l); const open = isOpen(l, new Date());
-  const tail = [prize && (/premio/i.test(prize) ? prize : `premio ${prize}`), close ? `${open ? 'cierra' : 'cerró'} ${shortDate(close)}` : l.startsAt && shortDate(l.startsAt)].filter(Boolean).join(', ');
-  const title = `${l.title}${tail ? ` — ${tail}` : ''} | Condor Nest`;
+  // Name + kind/city/year, then published prize, close date, online/LatAm; closed ones say so ("finalizada"). See lib/seo.ts.
+  const title = listingTitle(l, { now: new Date(), prize, date: close ? `cierra ${shortDate(close)}` : l.startsAt ? shortDate(l.startsAt) : null });
   // ≤155 chars, priority: qué/dónde + quién organiza, quién puede, premio, fecha. Whole sentences only; last-resort cut at a word.
   const who = l.eligibilityShort ? `${l.eligibilityShort.replace(/\.$/, '')}.` : whoSentence(l).split(/(?<=\.)\s/)[0];
   const date = close ? `${open ? 'Cierra' : 'Cerró'} el ${shortDate(close)}.` : l.startsAt ? `${new Date(l.startsAt) < new Date() ? 'Empezó' : 'Empieza'} el ${shortDate(l.startsAt)}.` : null;
   const parts = [`${TYPE_LABEL[l.type]} ${modalityText(l)}${l.organizer ? ` de ${l.organizer}` : ''}.`, who, prize ? `${prize[0].toUpperCase()}${prize.slice(1)}.` : null, date].filter(Boolean) as string[];
-  let description = '';
-  for (const p of parts) { const next = description ? `${description} ${p}` : p; if (next.length <= 155) description = next; }
-  if (!description) description = parts[0].slice(0, 154).replace(/\s+\S*$/, '') + '…';
+  const st = listingState(l, new Date()); const hub = st === 'finished' ? nextHub(l) : null;
+  const description = listingDescription(parts, st, hub ? `Mirá ${nextHubText(hub, hubItems(hub, await getListings(), new Date()).length)}.` : null);
   return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'website' } };
 }
 
@@ -99,6 +99,8 @@ export default async function Detail({ params }: P) {
   const score = (x: Listing) => (l.country && x.country === l.country ? 2 : 0) + (x.type === l.type ? 1 : 0) + (x.ecosystems.some((e) => l.ecosystems.includes(e)) ? 1 : 0);
   const cands = sortListings(all.filter((x) => x.id !== l.id && isOpen(x, now) && score(x) > 0), 'cierra-pronto', now);
   const similar = cands.map((x, i) => ({ x, i, s: score(x) })).sort((a, b) => b.s - a.s || a.i - b.i).slice(0, 4).map((o) => o.x);
+  // Finished: point to the open ones in its country hub (e.g. /hackathons-argentina), with the real count.
+  const finishedHub = listingState(l, now) === 'finished' ? nextHub(l) : null; const nextHubLink = finishedHub ? { h: finishedHub, n: hubItems(finishedHub, all, now).length } : null;
   const prize = prizePhrase(l); const close = closeIso(l); const when = whenText(l, open);
   const officialUrl = l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl;
   let officialHost: string | null = null; try { officialHost = officialUrl ? new URL(officialUrl).hostname.replace(/^www\./, '') : null; } catch {}
@@ -174,6 +176,7 @@ export default async function Detail({ params }: P) {
           )}
           <section id="similares" className="mt-10">
             <h2 className="font-medium text-lg">Oportunidades similares{open ? '' : ' abiertas'}</h2>
+            {nextHubLink && <p className="mt-1">Esta convocatoria ya terminó. <Link prefetch={false} href={`/${nextHubLink.h.slug}`} className="text-lime hover:underline">Mirá {nextHubText(nextHubLink.h, nextHubLink.n)}</Link>.</p>}
             {hubsFor(l).length > 0 && <p className="mt-1 text-sm text-fg-muted">Ver más: {hubsFor(l).map((h, i) => <span key={h.slug}>{i ? ' · ' : ''}<Link prefetch={false} href={`/${h.slug}`} className="text-lime hover:underline">{h.label}</Link></span>)}</p>}
             {similar.length ? <ul className="mt-3 grid gap-3">{similar.map((s) => <li key={s.id}><ListingCard listing={s} variant="compact" now={nowIso} /></li>)}</ul> : <p className="mt-2 text-fg-muted">Por ahora no hay otras abiertas parecidas. <Link prefetch={false} href="/" className="text-lime hover:underline">Mirá todas las oportunidades</Link>.</p>}
           </section>
