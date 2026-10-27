@@ -6,6 +6,7 @@ import { isOpen } from '@/lib/rank';
 import { TypeBadge, CardTags } from './Badges';
 import { Countdown } from './Countdown';
 import { LocalTime } from './LocalTime';
+import { ymdShort } from '@/lib/dates';
 
 /** showStart: lists ordered by start date also print the start when the countdown shows another date (deadline). */
 export function ListingCard({ listing: l, variant = 'default', now, showStart = false }: { listing: Listing; variant?: 'default' | 'featured' | 'compact'; now: string; showStart?: boolean }) {
@@ -31,7 +32,7 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
           </p>
         )}
         <div className="mt-2"><Countdown l={l} initialNow={now} registrationOnly /></div>
-        {l.startsAt && ((!l.deadlineAt && variant !== 'compact') || showStart) && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Evento: <LocalTime iso={l.startsAt} /></p>}
+        {(l.startsAt || l.startDate) && ((!l.deadlineAt && !l.deadlineDate && variant !== 'compact') || showStart) && <p className="mt-1 font-mono text-sm tabular text-fg-muted">Evento: {l.startsAt ? <LocalTime iso={l.startsAt} /> : ymdShort(l.startDate!)}</p>}
         <CardTags l={l} />
         {variant !== 'compact' && l.competitors != null && (
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-sm tabular text-fg-muted">

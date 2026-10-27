@@ -4,15 +4,31 @@ import { deadlineCountdown, deadlineInfo, srDate } from '@/lib/format';
 import type { Listing } from '@/lib/types';
 import { useTz } from './LocalTime';
 import { Ticker } from './Ticker';
+import { CLOSE_TBC, deadlineLogicIso, liveLabel, phase, regClosedLabel, startedLabel, ymdDm, ymdLong } from '@/lib/dates';
 
 const COLOR: Record<string, string> = { normal: 'text-fg-muted', soon: 'text-fg', warning: 'text-warning', urgent: 'text-danger font-bold', closing: 'text-danger font-bold', closed: 'text-fg-muted', unknown: 'text-fg-muted', rolling: 'text-fg-muted' };
 
-export function Countdown({ l, initialNow, seconds = false, registrationOnly = false }: { l: Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'>; initialNow: string; seconds?: boolean; registrationOnly?: boolean }) {
+type CL = Pick<Listing, 'deadlineAt' | 'startsAt' | 'type' | 'modality'> & Partial<Pick<Listing, 'endsAt' | 'city' | 'deadlineDate' | 'startDate' | 'endDate' | 'statusNote'>>;
+export function Countdown({ l, initialNow, seconds = false, registrationOnly = false }: { l: CL; initialNow: string; seconds?: boolean; registrationOnly?: boolean }) {
   const [now, setNow] = useState(() => new Date(initialNow));
   const tz = useTz();
   const info = deadlineInfo(registrationOnly ? { ...l, startsAt: null, modality: 'online' } : l, now, tz);
   const fast = seconds && info.state === 'closing';
   useEffect(() => { setNow(new Date()); const id = setInterval(() => setNow(new Date()), fast ? 1000 : 60000); return () => clearInterval(id); }, [fast]);
+  const full = { endsAt: null, city: null, ...l };
+  // Started with no registration close: green "En curso" (+ note from data) while live; grey "Empezó el X · Fin a confirmar"
+  // after the start day when no end is published (never an unlimited green pill).
+  const ph = registrationOnly ? phase(full, now) : null;
+  if (ph === 'live') return <span className="dl-pill dl-pill--live"><span>{liveLabel(full)}</span></span>;
+  // Registration closed, event still running until its published end: grey intermediate state instead of plain "Cerrado".
+  const rc = registrationOnly ? regClosedLabel(full, now) : null;
+  if (rc) return <div className="min-w-0 break-words font-mono text-sm tabular text-fg-muted">{rc}</div>;
+  if (ph === 'started') return <div className="min-w-0 break-words font-mono text-sm tabular text-fg-muted">{startedLabel(full)}</div>;
+  // Date-only close: the published day plus "Hora a confirmar"; end of that day (event-city time, else Córdoba) only decides open/closed.
+  if (registrationOnly && !l.deadlineAt && l.deadlineDate) {
+    const closed = new Date(deadlineLogicIso(full)!) <= now;
+    return <div className="min-w-0 break-words font-mono text-sm tabular text-fg-muted">{closed ? `Cerrado el ${ymdDm(l.deadlineDate)}` : <><span className="text-fg">Cierra el {ymdLong(l.deadlineDate)}</span> · {CLOSE_TBC}</>}</div>;
+  }
   let label = info.label;
   if (registrationOnly) {
     if (!info.iso) label = l.type === 'hackathon' ? 'Cierre de inscripción sin confirmar' : 'Fecha límite sin confirmar';

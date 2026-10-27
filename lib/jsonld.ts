@@ -4,6 +4,7 @@ import { COUNTRY_ES } from './geo';
 import type { OrgAbout } from './organizer';
 import { access } from './rank';
 import type { Venue } from './venues';
+import { deadlineLogicIso, endLogicIso, isOpenAt, startLogicIso } from './dates';
 
 const PLATFORMS = /(^|\.)(luma\.com|lu\.ma|devpost\.com|taikai\.network|eventtia\.com|eventbrite\.[a-z.]+|microsoft\.com|typeform\.com|x\.com|twitter\.com|superteam\.fun|earn\.superteam\.fun|forms\.gle|google\.com|notion\.site|dorahacks\.io)$/i;
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -53,16 +54,18 @@ export function accessSentence(l: Listing): string | null {
 }
 const withAccess = (d: string | null, l: Listing) => [d, accessSentence(l)].filter(Boolean).join(' ') || null;
 /** Event schema from real listing data only; null when there is no start date to anchor an Event. */
-export function eventLd(l: Listing, about?: OrgAbout | null, venues?: Venue[] | null): Record<string, unknown> | null {
-  const start = l.startsAt;
+export function eventLd(l: Listing, about?: OrgAbout | null, now?: Date, venues?: Venue[] | null): Record<string, unknown> | null {
+  // startDate/endDate: full timestamp when published, else the plain published day ("2026-10-31"); never an invented hour.
+  const start = l.startsAt ?? l.startDate;
   if (!start) return null;
+  const end = l.endsAt ?? l.endDate;
   const online = l.modality === 'online';
   const virt = { '@type': 'VirtualLocation', url: l.applyUrl ?? l.verifiedUrl ?? l.sourceUrl };
   const multi = !online && venues && venues.length >= 2 ? venuePlacesLd(l, venues) : null;
   const place = multi ? null : placeLd(l);
   const location = online ? virt : multi ? (l.modality === 'hybrid' ? [...multi, virt] : multi) : l.modality === 'hybrid' && place ? [place, virt] : place ?? undefined;
   const ev: Record<string, unknown> = {
-    '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: start, ...(l.endsAt ? { endDate: l.endsAt } : {}),
+    '@type': 'Event', '@id': `${SITE}/o/${l.slug}#event`, name: l.title, url: `${SITE}/o/${l.slug}`, startDate: start, ...(end ? { endDate: end } : {}),
     eventAttendanceMode: mode(l),
     eventStatus: 'https://schema.org/EventScheduled', inLanguage: l.titleLang === 'en' ? 'en' : 'es-AR',
     ...(location ? { location } : {}),
@@ -70,8 +73,8 @@ export function eventLd(l: Listing, about?: OrgAbout | null, venues?: Venue[] | 
     // No per-listing image in the DB: use the site OG image (same one the page's og:image uses).
     image: [`${SITE}/opengraph-image`],
   };
-  // endDate: real end date; else single-day fallback = startDate (documented in knowledge notes).
-  if (!l.endsAt) ev.endDate = start;
+  // endDate: only a published end (ends_at, else raw end_date). No end published = no endDate. The old single-day fallback
+  // (endDate = startDate) was removed on 2026-10-27 (SEO decision): it gave multi-day events like Stranger Builds a zero duration.
   // Hosting does not establish performing. No verified performer field exists in the data model,
   // so omit that optional property rather than copying the organizer to silence a warning.
   if (l.organizer) {
@@ -81,10 +84,13 @@ export function eventLd(l: Listing, about?: OrgAbout | null, venues?: Venue[] | 
     ev.organizer = org;
   }
   // offers = registration link + availability only, not the prize. No price: entry cost is not verified (no entry_cost column yet).
-  const close = l.deadlineAt ?? l.endsAt ?? start;
-  const open = new Date(close).getTime() > Date.now();
+  // validThrough = published value (timestamp or plain day); open/closed uses the logic instants from lib/dates.ts.
+  const close = l.deadlineAt ?? l.deadlineDate ?? end ?? start;
+  const closeAt = deadlineLogicIso(l) ?? endLogicIso(l) ?? startLogicIso(l)!;
+  const nowD = now ?? new Date();
+  const open = isOpenAt(l, nowD);
   const offerUrl = l.applyUrl ?? officialUrl(l) ?? `${SITE}/o/${l.slug}`;
-  ev.offers = { '@type': 'Offer', availability: `https://schema.org/${open ? 'InStock' : 'SoldOut'}`, url: offerUrl, ...(new Date(l.createdAt) < new Date(close) ? { validFrom: l.createdAt } : {}), validThrough: close };
+  ev.offers = { '@type': 'Offer', availability: `https://schema.org/${open ? 'InStock' : 'SoldOut'}`, url: offerUrl, ...(new Date(l.createdAt) < new Date(closeAt) ? { validFrom: l.createdAt } : {}), validThrough: close };
   return ev;
 }
 export const ldScript = (data: unknown) => ({ __html: JSON.stringify(data).replace(/</g, '\\u003c') });

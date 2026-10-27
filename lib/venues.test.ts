@@ -17,7 +17,7 @@ const RAW = [
 ];
 
 test('multi-venue JSON-LD: location is an array of one Place per day, each with its own PostalAddress', () => {
-  const ev = eventLd(base, null, parseVenues(RAW)) as any;
+  const ev = eventLd(base, null, undefined, parseVenues(RAW)) as any;
   assert.deepEqual(ev.location, [
     { '@type': 'Place', name: 'Lucerna 34', address: { '@type': 'PostalAddress', streetAddress: 'Lucerna 34, Juárez', addressLocality: 'Ciudad de México', addressCountry: 'MX' } },
     { '@type': 'Place', name: 'Sandbox Hub', address: { '@type': 'PostalAddress', streetAddress: 'Luis G. Urbina 4, Polanco', addressLocality: 'Ciudad de México', addressCountry: 'MX' } },
@@ -26,9 +26,9 @@ test('multi-venue JSON-LD: location is an array of one Place per day, each with 
 });
 
 test('multi-venue JSON-LD: hybrid keeps the VirtualLocation after the places; online ignores venues', () => {
-  const hy = eventLd({ ...base, modality: 'hybrid' }, null, parseVenues(RAW)) as any;
+  const hy = eventLd({ ...base, modality: 'hybrid' }, null, undefined, parseVenues(RAW)) as any;
   assert.deepEqual(hy.location.map((x: any) => x['@type']), ['Place', 'Place', 'VirtualLocation']);
-  const on = eventLd({ ...base, modality: 'online' }, null, parseVenues(RAW)) as any;
+  const on = eventLd({ ...base, modality: 'online' }, null, undefined, parseVenues(RAW)) as any;
   assert.equal(on.location['@type'], 'VirtualLocation');
 });
 
@@ -37,7 +37,7 @@ test('without raw.venues (or with fewer than two valid ones) JSON-LD is the sing
   assert.deepEqual(before.location, { '@type': 'Place', name: 'Lucerna 34', address: { '@type': 'PostalAddress', streetAddress: 'Lucerna 34, Juárez', addressLocality: 'Ciudad de México', addressCountry: 'MX' } });
   for (const raw of [null, undefined, {}, 'x', [], [RAW[0]], [RAW[0], { label: 'Día 2', name: 'Sandbox Hub' }]]) {
     assert.equal(parseVenues(raw), null);
-    assert.deepEqual(eventLd(base, null, parseVenues(raw)), before);
+    assert.deepEqual(eventLd(base, null, undefined, parseVenues(raw)), before);
   }
   // Pre-update DB row (venue with a note in parentheses, no raw.venues): unchanged single Place.
   const old = eventLd({ ...base, venue: 'Lucerna 34 (kickoff del día 1)' }) as any;

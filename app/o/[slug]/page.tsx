@@ -21,11 +21,12 @@ import { getVenues } from '@/lib/venues-server';
 import { OrgAbout } from '@/components/OrgAbout';
 import { Location, LocationNote, MultiLocation } from '@/components/Location';
 import { bareHost, goPath, hostLabel } from '@/lib/go';
+import { closeDisplay, EVENT_TBC, regClosedLabel, ymdLong, ymdLongYear } from '@/lib/dates';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Cordoba';
 const longDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
-const shortDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, day: 'numeric', month: 'long' }).format(new Date(iso));
+const shortDate = (iso: string, tz: string = AR) => new Intl.DateTimeFormat('es-AR', { timeZone: tz, day: 'numeric', month: 'long' }).format(new Date(iso));
 const numDate = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
 /** Prize phrase from real data only, or null. */
 function prizePhrase(l: Listing): string | null {
@@ -34,13 +35,25 @@ function prizePhrase(l: Listing): string | null {
   if (l.rewardText && l.rewardText.length <= 40 && !/anunciar|confirmar|sin dato/i.test(l.rewardText)) return l.rewardText.replace(/^premios?:?\s*/i, '');
   return null;
 }
-/** Registration close: only a real deadline (never the event's start/end). */
-const closeIso = (l: Listing) => l.deadlineAt ?? null;
+/** Registration close: only a real deadline (never the event's start/end). Day in the organizer's local zone for in-person
+ *  listings in a known city (a 23:59 CDMX close is already the next day in Argentina), else Argentina; date-only = published day. */
+const closeDay = (l: Listing) => closeDisplay(l)?.day ?? null;
+/** Start day for title/description: timestamp in Argentina time, else the published date-only day. */
+const startDay = (l: Listing) => (l.startsAt ? shortDate(l.startsAt) : l.startDate ? ymdLong(l.startDate) : null);
 const hm = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
 const weekday = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso)).replace(',', '');
 const sameDay = (a: string, b: string) => shortDate(a) === shortDate(b);
-/** When the event happens, from startsAt/endsAt only. */
-function whenText(l: Listing, open: boolean): string | null {
+/** When the event happens, from startsAt/endsAt (or their date-only values) only. tbc = "Horario a confirmar" for date-only starts. */
+function whenText(l: Listing, open: boolean): { text: string; tbc: boolean } | null {
+  if (!l.startsAt && l.startDate) {
+    const past = !open && new Date(`${l.startDate}T00:00:00-03:00`) < new Date();
+    const endDay = l.endDate ?? (l.endsAt ? new Intl.DateTimeFormat('en-CA', { timeZone: AR, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(l.endsAt)) : null);
+    if (endDay && endDay !== l.startDate) return { text: `${past ? 'Fue' : 'Va'} del ${ymdLong(l.startDate)} al ${ymdLongYear(endDay)}`, tbc: true };
+    return { text: `${past ? 'Fue' : 'Es'} el ${ymdLongYear(l.startDate)}`, tbc: true };
+  }
+  const t = whenTs(l, open); return t ? { text: t, tbc: false } : null;
+}
+function whenTs(l: Listing, open: boolean): string | null {
   if (!l.startsAt) return null;
   const past = !open && new Date(l.startsAt) < new Date();
   if (l.endsAt && sameDay(l.startsAt, l.endsAt)) return `${past ? 'Fue' : 'Es'} el ${weekday(l.startsAt)} de ${hm(l.startsAt)} a ${hm(l.endsAt)} h (hora de Argentina).`;
@@ -53,12 +66,13 @@ type P = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
   if (!l) return { title: 'No encontrado', robots: { index: false } };
-  const prize = prizePhrase(l); const close = closeIso(l); const open = isOpen(l, new Date());
-  const tail = [prize && (/premio/i.test(prize) ? prize : `premio ${prize}`), close ? `${open ? 'cierra' : 'cerró'} ${shortDate(close)}` : l.startsAt && shortDate(l.startsAt)].filter(Boolean).join(', ');
+  const prize = prizePhrase(l); const close = closeDay(l); const open = isOpen(l, new Date()); const start = startDay(l);
+  const tail = [prize && (/premio/i.test(prize) ? prize : `premio ${prize}`), close ? `${open ? 'cierra' : 'cerró'} ${close}` : start].filter(Boolean).join(', ');
   const title = `${l.title}${tail ? ` — ${tail}` : ''} | Condor Nest`;
   // ≤155 chars, priority: qué/dónde + quién organiza, quién puede, premio, fecha. Whole sentences only; last-resort cut at a word.
   const who = l.eligibilityShort ? `${l.eligibilityShort.replace(/\.$/, '')}.` : whoSentence(l).split(/(?<=\.)\s/)[0];
-  const date = close ? `${open ? 'Cierra' : 'Cerró'} el ${shortDate(close)}.` : l.startsAt ? `${new Date(l.startsAt) < new Date() ? 'Empezó' : 'Empieza'} el ${shortDate(l.startsAt)}.` : null;
+  const startAt = l.startsAt ?? (l.startDate ? `${l.startDate}T00:00:00-03:00` : null);
+  const date = close ? `${open ? 'Cierra' : 'Cerró'} el ${close}.` : start && startAt ? `${new Date(startAt) < new Date() ? 'Empezó' : 'Empieza'} el ${start}.` : null;
   const parts = [`${TYPE_LABEL[l.type]} ${modalityText(l)}${l.organizer ? ` de ${l.organizer}` : ''}.`, who, prize ? `${prize[0].toUpperCase()}${prize.slice(1)}.` : null, date].filter(Boolean) as string[];
   let description = '';
   for (const p of parts) { const next = description ? `${description} ${p}` : p; if (next.length <= 155) description = next; }
@@ -95,12 +109,12 @@ export default async function Detail({ params }: P) {
   const l = await getListing(slug);
   if (!l) notFound();
   const now = new Date(); const nowIso = now.toISOString();
-  const r = rewardText(l); const c = competitionText(l); const open = isOpen(l, now);
+  const r = rewardText(l); const c = competitionText(l); const open = isOpen(l, now); const regClosed = regClosedLabel(l, now);
   const [all, about, venues] = await Promise.all([getListings(), l.organizer ? getOrgAbout(l.slug) : Promise.resolve(null), l.modality !== 'online' ? getVenues(l.slug) : Promise.resolve(null)]);
   const score = (x: Listing) => (l.country && x.country === l.country ? 2 : 0) + (x.type === l.type ? 1 : 0) + (x.ecosystems.some((e) => l.ecosystems.includes(e)) ? 1 : 0);
   const cands = sortListings(all.filter((x) => x.id !== l.id && isOpen(x, now) && score(x) > 0), 'cierra-pronto', now);
   const similar = cands.map((x, i) => ({ x, i, s: score(x) })).sort((a, b) => b.s - a.s || a.i - b.i).slice(0, 4).map((o) => o.x);
-  const prize = prizePhrase(l); const close = closeIso(l); const when = whenText(l, open);
+  const prize = prizePhrase(l); const close = closeDisplay(l); const when = whenText(l, open);
   const officialUrl = l.verifiedUrl ?? l.applyUrl ?? l.sourceUrl;
   let officialHost: string | null = null; try { officialHost = officialUrl ? new URL(officialUrl).hostname.replace(/^www\./, '') : null; } catch {}
   // Informational links go directly to the official site; only the registration CTA uses /go/ and increments cn_clicks.
@@ -112,17 +126,20 @@ export default async function Detail({ params }: P) {
   const rt = (l.rewardText ?? '').toLowerCase().slice(0, 30);
   const summary = (l.summaryEs ?? []).filter((b) => !(prizeShown && (/^\s*(premios?|pozo|pool)\b/i.test(b) || /\ben premios\b/i.test(b) || (rt.length > 10 && b.toLowerCase().includes(rt)))));
   const srcLabel = SOURCE_LABEL[l.source];
+  // Timestamps render in the visitor's zone; date-only values render as the published day plus a grey "a confirmar" note.
   const dates = [
-    l.startsAt && { k: 'Empieza', v: l.startsAt, iso: l.startsAt },
-    l.deadlineAt && { k: 'Cierre', v: l.deadlineAt, iso: l.deadlineAt },
-    l.endsAt && { k: 'Termina', v: l.endsAt, iso: l.endsAt },
-  ].filter(Boolean) as { k: string; v: string; iso: string }[];
+    l.startsAt ? { k: 'Empieza', iso: l.startsAt } : l.startDate && { k: 'Empieza', day: ymdLong(l.startDate), tbc: EVENT_TBC },
+    l.deadlineAt ? { k: 'Cierre', iso: l.deadlineAt } : l.deadlineDate && { k: 'Cierre', day: ymdLong(l.deadlineDate), tbc: 'Hora a confirmar' },
+    l.endsAt ? { k: 'Termina', iso: l.endsAt } : l.endDate && { k: 'Termina', day: ymdLong(l.endDate), tbc: EVENT_TBC },
+  ].filter(Boolean) as ({ k: string; iso: string } | { k: string; day: string; tbc: string })[];
+  const closedAt = l.deadlineAt ?? l.endsAt ?? l.startsAt;
+  const closedDay = !closedAt ? (l.deadlineDate ?? l.endDate ?? l.startDate) : null;
 
   const keyData = (
     <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
       <dt className="shrink-0 text-fg-muted">Premio</dt>
       <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main.replace(/^premios?:\s*/i, '')}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
-      <dt className="shrink-0 text-fg-muted">{!l.deadlineAt && l.type === 'hackathon' ? 'Inscripción' : 'Cierre'}</dt>
+      <dt className="shrink-0 text-fg-muted">{!l.deadlineAt && !l.deadlineDate && l.type === 'hackathon' ? 'Inscripción' : 'Cierre'}</dt>
       <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} registrationOnly /></CountdownShell></dd>
       {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
       {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
@@ -133,25 +150,28 @@ export default async function Detail({ params }: P) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l, about, venues), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={ldScript({ '@context': 'https://schema.org', '@graph': [eventLd(l, about, now, venues), { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Condor Nest', item: SITE }, { '@type': 'ListItem', position: 2, name: l.title, item: `${SITE}/o/${l.slug}` }] }].filter(Boolean) })} />
       <div className="reading-progress fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-grad-brand" aria-hidden="true" />
       <div className="flex items-center justify-between pt-3">
         <nav aria-label="Migas de pan" className="min-w-0 flex-1 text-sm text-fg-muted"><ol className="flex min-w-0 min-h-tap items-center gap-1.5"><li className="shrink-0 whitespace-nowrap"><Link prefetch={false} href="/" className="hover:text-lime">Condor Nest</Link></li><li aria-hidden="true" className="shrink-0">›</li><li className="truncate" aria-current="page">{l.title}</li></ol></nav>
         <ShareButton title={l.title} />
       </div>
-      {!open && (
-        <div role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-4 text-sm"><span className="mr-2 rounded-pill bg-danger/15 px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>Esta convocatoria cerró{(l.deadlineAt ?? l.endsAt ?? l.startsAt) && <> el <LocalTime iso={(l.deadlineAt ?? l.endsAt ?? l.startsAt)!} format="full" /></>}. <a href="#similares" className="text-lime hover:underline">Mirá similares abiertas.</a></div>
+      {!open && regClosed && (
+        <div role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-4 text-sm text-fg-muted">{regClosed}. <a href="#similares" className="text-lime hover:underline">Mirá similares abiertas.</a></div>
+      )}
+      {!open && !regClosed && (
+        <div role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-4 text-sm"><span className="mr-2 rounded-pill bg-danger/15 px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>Esta convocatoria cerró{closedAt ? <> el <LocalTime iso={closedAt} format="full" /></> : closedDay ? <> el {ymdLongYear(closedDay)}</> : null}. <a href="#similares" className="text-lime hover:underline">Mirá similares abiertas.</a></div>
       )}
       <div className="mt-2 grid gap-8 lg:grid-cols-3">
         <article className="min-w-0 lg:col-span-2">
-          <div className="flex flex-wrap gap-1.5">{!open && <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
+          <div className="flex flex-wrap gap-1.5">{!open && (regClosed ? <span className="inline-flex items-center rounded-pill border border-border px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Inscripción cerrada</span> : <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>)}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           <p className="mt-1 font-mono text-xs text-fg-muted">Actualizado el <time dateTime={updated}>{numDate(updated)}</time></p>
           <section aria-labelledby="epp" className="mt-5 rounded-card border border-border bg-surface p-4 text-[15px] leading-relaxed">
             <h2 id="epp" className="mb-1.5 font-mono text-xs uppercase tracking-[.08em] text-lime">En pocas palabras</h2>
             <p><strong>{l.title}</strong> es {l.type === 'grant' ? 'un grant' : l.type === 'bounty' ? 'un bounty' : 'un hackathon'} {modalityText(l)}{l.organizer ? <>, organizado por {l.organizer}</> : null}. {whoSentence(l)}</p>
-            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {longDate(close)} (hora de Argentina). </> : null}{!close && when ? <>{when} </> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{official && <>Link oficial: <a href={official.href} target="_blank" rel={official.rel} className="text-lime hover:underline">{official.host} ↗</a></>}</p>
+            <p className="mt-1">{prize ? <>{/premio/i.test(prize) ? `${prize[0].toUpperCase()}${prize.slice(1)}` : `Premio: ${prize}`}. </> : null}{close ? <>{open ? 'Cierra' : 'Cerró'} el {close.day}{close.detail}{close.tbc ? <> · <span className="text-fg-muted">{close.tbc}</span></> : null}. </> : null}{!close && when ? <>{when.text}{when.tbc ? <> · <span className="text-fg-muted">{EVENT_TBC}</span></> : null}{when.tbc ? '. ' : ' '}</> : null}{!close && !when ? <>Sin fecha publicada. </> : null}{official && <>Link oficial: <a href={official.href} target="_blank" rel={official.rel} className="text-lime hover:underline">{official.host} ↗</a></>}</p>
           </section>
           {about && l.organizer && <OrgAbout name={l.organizer} about={about} />}
           {!r.missing && <p className="mt-6 font-display text-5xl font-extrabold tabular max-sm:text-3xl"><span className="text-gradient">{r.main}</span></p>}
@@ -168,8 +188,8 @@ export default async function Detail({ params }: P) {
           </section>
           <section className="mt-8">
             <h2 className="font-medium text-lg">Fechas (tu hora local)</h2>
-            {dates.length ? <ol className="mt-2 space-y-2 border-l border-border pl-4">{dates.map((d) => <li key={d.k}><span className="text-fg-muted">{d.k}:</span> <LocalTime iso={d.v} className="font-mono" /></li>)}</ol> : <p className="mt-2 text-fg-muted">Sin dato</p>}
-            {(l.deadlineAt || l.startsAt) && <a href={`/o/${l.slug}/ics`} className="mt-3 inline-flex min-h-tap items-center rounded-pill border border-lime/60 px-4 text-sm text-lime hover:shadow-glow-lime">Agregar al calendario</a>}
+            {dates.length ? <ol className="mt-2 space-y-2 border-l border-border pl-4">{dates.map((d) => <li key={d.k}><span className="text-fg-muted">{d.k}:</span> {'iso' in d ? <LocalTime iso={d.iso} className="font-mono" /> : <><span className="font-mono">{d.day}</span> · <span className="text-fg-muted">{d.tbc}</span></>}</li>)}</ol> : <p className="mt-2 text-fg-muted">Sin dato</p>}
+            {(l.deadlineAt || l.startsAt || l.deadlineDate || l.startDate) && <a href={`/o/${l.slug}/ics`} className="mt-3 inline-flex min-h-tap items-center rounded-pill border border-lime/60 px-4 text-sm text-lime hover:shadow-glow-lime">Agregar al calendario</a>}
           </section>
           {l.verifiedUrl && (
             <p className="mt-6 text-xs text-fg-muted">Verificado en la página oficial: <a className="hover:text-lime" href={l.verifiedUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"}>{new URL(l.verifiedUrl).hostname} ↗</a>{l.sourcePostUrl && <> · Lo vimos en <a className="hover:text-lime" href={l.sourcePostUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"}>este post de X ↗</a></>}</p>
