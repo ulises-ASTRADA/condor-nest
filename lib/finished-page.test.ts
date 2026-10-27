@@ -48,3 +48,43 @@ test('finished listing: Event JSON-LD keeps the real startDate/endDate', async (
   assert.equal(ev.endDate, '2026-10-24T21:00:00Z');
   assert.equal(ev.eventStatus, 'https://schema.org/EventScheduled'); // not marked cancelled/postponed for being over
 });
+
+test('finished listing page body: grey "Gratis" (no green "✓ Abierto · gratis"), Inscripción "Cerrada", button "Ver hackathons abiertos" to the forward link', async () => {
+  const React = await import('react');
+  (globalThis as any).React = React; // tsx compiles JSX with the classic runtime
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const page = await import('../app/o/[slug]/page.tsx');
+  const html = renderToStaticMarkup(await page.default({ params: Promise.resolve({ slug: row.slug }) }));
+  assert.match(html, /dl-pill dl-pill--closed[^>]*>Finalizado</);
+  assert.match(html, /dl-pill dl-pill--closed[^>]*>Gratis</);
+  const pills = html.match(/<div class="flex flex-wrap gap-1\.5">.*?<\/div>/)![0];
+  assert.doesNotMatch(pills, /Abierto|✓|text-cyan/); // the green/cyan eligibility pill is gone on finished pages
+  assert.doesNotMatch(html, /sin confirmar/i);
+  assert.match(html, /<dt[^>]*>Inscripción<\/dt><dd[^>]*><span[^>]*>Cerrada<\/span><\/dd>/);
+  assert.doesNotMatch(html, /Ver similares abiertas/);
+  // sticky (mobile) + aside (desktop) buttons, same destination as "Mirá los hackathons abiertos en LatAm" under the title
+  const btns = [...html.matchAll(/<a[^>]*href="([^"]*)"[^>]*>Ver hackathons abiertos<\/a>/g)].map((m) => m[1].replace(/&amp;/g, '&'));
+  assert.equal(btns.length, 2);
+  assert.ok(btns.every((h) => h === '/?tipo=hackathon'));
+  assert.match(html, /href="\/\?tipo=hackathon"[^>]*>Mirá los hackathons abiertos en LatAm</);
+});
+
+test('isFree reads only the listing data; finished button text per type', async () => {
+  const { isFree } = await import('./hubs.ts');
+  assert.equal(isFree({ eligibilityShort: 'Abierto · gratis', eligibilityNote: null }), true);
+  assert.equal(isFree({ eligibilityShort: 'Solo estudiantes', eligibilityNote: 'Inscripción gratuita' }), true);
+  assert.equal(isFree({ eligibilityShort: 'Global', eligibilityNote: null }), false);
+  const { finishedCtaText } = await import('./seo.ts');
+  assert.equal(finishedCtaText('hackathon'), 'Ver hackathons abiertos');
+  assert.equal(finishedCtaText('bounty'), 'Ver bounties abiertos');
+  assert.equal(finishedCtaText('grant'), 'Ver grants abiertos');
+});
+
+test('no weekly/Monday promise in the footer newsletter or /acerca', async () => {
+  const { readFileSync } = await import('node:fs');
+  const nl = readFileSync(new URL('../components/Newsletter.tsx', import.meta.url), 'utf8');
+  assert.match(nl, />Novedades por mail, sin spam\.</);
+  assert.doesNotMatch(nl, /Novedades cada lunes/);
+  const acerca = readFileSync(new URL('../app/acerca/page.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(acerca, /lunes|por semana/);
+});

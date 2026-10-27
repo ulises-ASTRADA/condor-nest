@@ -144,7 +144,8 @@ export function cityGroups(h: Hub, items: Listing[]): { city: string; items: Lis
 const NO_CODE = /no hace falta (saber codear|saber programar|experiencia previa)/i;
 const TEAM_ON_SITE = /(armar equipo|se arman en el lugar|arma \d+ equipos|te ayudan a armar|pod[eé]s ir solo|te sum[aá]s solo|no hace falta llegar con equipo)/i;
 const FREE_RE = /\b(gratis|gratuit[oa])\b/i;
-const freeText = (l: Listing) => [l.eligibilityShort, l.eligibilityNote].filter(Boolean).join(' ');
+/** The listing's own data (eligibility_short / note) says it is free. Never inferred. */
+export const isFree = (l: Pick<Listing, 'eligibilityShort' | 'eligibilityNote'>) => FREE_RE.test([l.eligibilityShort, l.eligibilityNote].filter(Boolean).join(' '));
 const ref = (l: Listing) => `${shortName(l)}${refDetails(l)}`;
 const names = (xs: Listing[]) => joinY(xs.map(shortName));
 /** Brief §7 FAQs (country hubs with pinned cities). Dynamic answers are built only from listing data; they regenerate with the page. */
@@ -163,7 +164,7 @@ function richCountryFaqs(h: Hub, name: string, items: Listing[], now: Date, all:
   const noCode = items.filter((l) => NO_CODE.test(l.eligibilityNote ?? ''));
   const team = items.filter((l) => TEAM_ON_SITE.test(l.eligibilityNote ?? ''));
   const q5 = `Depende de cada evento y está en sus bases oficiales. Varios aceptan perfiles de diseño, negocio o estudiantes, y en muchos los equipos se arman ahí mismo.${noCode.length ? ` Según sus fichas, ${names(noCode)} ${noCode.length === 1 ? 'indica' : 'indican'} que no hace falta saber programar o tener experiencia previa.` : ''}${team.length ? ` En ${names(team)} podés ir sin equipo y armarlo en el lugar.` : ''}`;
-  const free = items.filter((l) => FREE_RE.test(freeText(l)));
+  const free = items.filter(isFree);
   const q6 = n === 0 ? 'Depende de cada evento: revisá la ficha y las bases oficiales.'
     : free.length ? `De los ${n} abiertos hoy, ${free.length} ${free.length === 1 ? 'indica' : 'indican'} en su ficha que ${free.length === 1 ? 'es gratis' : 'son gratis'} (${names(free)}).${free.length < n ? ' Para el resto, revisá la ficha de cada uno: si la fuente no publica el costo, no lo damos por hecho.' : ''}`
     : 'Ninguno de los abiertos hoy publica el costo en su ficha. Revisá las bases oficiales de cada uno antes de inscribirte.';

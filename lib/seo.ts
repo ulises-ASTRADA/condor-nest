@@ -92,6 +92,8 @@ export function wayForward(l: Listing, countOpen: (h: Hub) => number): { href: s
   const h = nextHub(l); const n = h ? countOpen(h) : 0;
   return h && n > 0 ? { href: `/${h.slug}`, text: `Mirá ${nextHubText(h, n)}` } : { href: `/?tipo=${l.type}`, text: `Mirá los ${PLURAL[l.type]} abiertos en LatAm` };
 }
+/** Sticky/aside button on finished pages: "Ver hackathons abiertos" (goes to the same place as wayForward). */
+export const finishedCtaText = (type: Listing['type']) => `Ver ${PLURAL[type]} abiertos`;
 /** Link text to that hub's open listings, with the real count; never "0 abiertos". */
 export function nextHubText(h: Hub, n: number): string {
   return n > 0 ? `${n === 1 ? `el ${h.noun[0]} abierto` : `los ${n} ${h.noun[1]} abiertos`} ${h.where}` : `${h.noun[1]} ${h.where}`;

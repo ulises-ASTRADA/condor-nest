@@ -15,8 +15,8 @@ import { Newsletter } from '@/components/Newsletter';
 import { ShareButton, CountdownShell } from '@/components/DetailClient';
 import { eventLd, ldScript } from '@/lib/jsonld';
 import { SITE } from '@/lib/site';
-import { hubItems, hubsFor } from '@/lib/hubs';
-import { listingDescription, listingState, listingTitle, wayForward } from '@/lib/seo';
+import { hubItems, hubsFor, isFree } from '@/lib/hubs';
+import { finishedCtaText, listingDescription, listingState, listingTitle, wayForward } from '@/lib/seo';
 import { getOrgAbout } from '@/lib/organizer';
 import { getVenues } from '@/lib/venues-server';
 import { OrgAbout } from '@/components/OrgAbout';
@@ -81,10 +81,13 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'website' } };
 }
 
-function Cta({ l, className = '' }: { l: Listing; className?: string }) {
+function Cta({ l, forward, className = '' }: { l: Listing; forward?: { href: string } | null; className?: string }) {
+  // Finished: same destination as the "Mirá …" link under the title (country hub with open ones, else the open feed of that type).
   if (!isOpen(l, new Date())) return (
     <div className={`grid gap-2 ${className}`}>
-      <a href="#similares" className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg">Ver similares abiertas</a>
+      {forward
+        ? <Link prefetch={false} href={forward.href} className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg">{finishedCtaText(l.type)}</Link>
+        : <a href="#similares" className="grid min-h-14 place-items-center rounded-pill bg-lime px-6 font-medium text-primary-fg">Ver similares abiertas</a>}
       {(l.verifiedUrl ?? l.applyUrl) && <a href={(l.verifiedUrl ?? l.applyUrl)!} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} className="text-center text-sm text-fg-muted hover:text-fg">Ver sitio oficial ↗</a>}
     </div>
   );
@@ -142,8 +145,9 @@ export default async function Detail({ params }: P) {
     <dl className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm">
       <dt className="shrink-0 text-fg-muted">Premio</dt>
       <dd className={`min-w-0 break-words ${r.missing ? 'text-fg-muted' : 'font-mono tabular text-base'}`}>{r.prefix ? `${r.prefix} ` : ''}{r.main.replace(/^premios?:\s*/i, '')}{r.approx && <span className="block text-fg-muted">{r.approx}</span>}{r.detail && <span className="mt-0.5 block font-sans text-sm text-fg-muted">{r.detail}</span>}</dd>
-      <dt className="shrink-0 text-fg-muted">{!l.deadlineAt && !l.deadlineDate && l.type === 'hackathon' ? 'Inscripción' : 'Cierre'}</dt>
-      <dd className="min-w-0 break-words"><CountdownShell><Countdown l={l} initialNow={nowIso} registrationOnly /></CountdownShell></dd>
+      <dt className="shrink-0 text-fg-muted">{!l.deadlineAt && !l.deadlineDate && (l.type === 'hackathon' || forward) ? 'Inscripción' : 'Cierre'}</dt>
+      {/* Finished with no published close: "Cerrada", never "… sin confirmar" (the event is over). */}
+      <dd className="min-w-0 break-words">{forward && !l.deadlineAt && !l.deadlineDate ? <span className="font-mono text-sm text-fg-muted">Cerrada</span> : <CountdownShell><Countdown l={l} initialNow={nowIso} registrationOnly /></CountdownShell>}</dd>
       {l.competitors != null && <><dt className="shrink-0 text-fg-muted">Compiten</dt><dd className="min-w-0 break-words font-mono tabular">{c.count}</dd></>}
       {c.ratio && <><dt className="shrink-0 text-fg-muted">Por {l.competitorsKind === 'registrations' ? 'inscripto' : 'envío'}</dt><dd className="min-w-0 break-words font-mono tabular">{c.ratio.replace(/ por .*/, '')}</dd></>}
       <dt className="shrink-0 text-fg-muted">Elegibilidad</dt><dd className="min-w-0 break-words leading-snug">{l.eligibilityNote || l.eligibilityShort || ELIG_LABEL[l.eligibility]}</dd>
@@ -167,7 +171,7 @@ export default async function Detail({ params }: P) {
       )}
       <div className="mt-2 grid gap-8 lg:grid-cols-3">
         <article className="min-w-0 lg:col-span-2">
-          <div className="flex flex-wrap gap-1.5">{forward ? <span className="dl-pill dl-pill--closed" style={{ marginTop: 0 }}>Finalizado</span> : !open && (regClosed ? <span className="inline-flex items-center rounded-pill border border-border px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Inscripción cerrada</span> : <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>)}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
+          <div className="flex flex-wrap gap-1.5">{forward ? <span className="dl-pill dl-pill--closed" style={{ marginTop: 0 }}>Finalizado</span> : !open && (regClosed ? <span className="inline-flex items-center rounded-pill border border-border px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Inscripción cerrada</span> : <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>)}<TypeBadge type={l.type} /><ModalityBadge l={l} />{forward ? isFree(l) && <span className="dl-pill dl-pill--closed" style={{ marginTop: 0 }}>Gratis</span> : <EligBadge l={l} short />}</div>
           <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           {forward && <p role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-3 text-sm">Esta convocatoria ya terminó. <Link prefetch={false} href={forward.href} className="text-lime hover:underline">{forward.text}</Link>.</p>}
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
@@ -205,9 +209,9 @@ export default async function Detail({ params }: P) {
           </section>
           <div className="mt-8"><Newsletter variant="inline" /></div>
         </article>
-        <aside className="hidden min-w-0 lg:block"><div className="sticky top-20 min-w-0 space-y-4 rounded-card border border-border bg-surface p-5"><h2 className="font-medium">Datos clave</h2>{keyData}<Cta l={l} /></div></aside>
+        <aside className="hidden min-w-0 lg:block"><div className="sticky top-20 min-w-0 space-y-4 rounded-card border border-border bg-surface p-5"><h2 className="font-medium">Datos clave</h2>{keyData}<Cta l={l} forward={forward} /></div></aside>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden"><Cta l={l} /></div>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden"><Cta l={l} forward={forward} /></div>
     </>
   );
 }
