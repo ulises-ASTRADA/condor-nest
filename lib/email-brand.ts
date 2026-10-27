@@ -1,0 +1,7 @@
+export const emailFonts = `<style>@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap');</style>`;
+export const emailBodyFont = "'Space Grotesk',Arial,Helvetica,sans-serif";
+export const emailDisplayFont = "'Unbounded','Arial Black',Arial,sans-serif";
+export const emailSignatureText = 'Equipo de Condor Nest\nHecho en Córdoba, para builders de LatAm.\nhttps://condor-nest.lat';
+
+/** The public image is the same 2048×683 banner used in Condor Nest's Resend signature. */
+export const emailSignatureHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:28px"><tr><td style="border-top:1px solid #262a36;padding-top:24px"><p style="font-size:17px;font-weight:700;line-height:1.4;color:#f2f4f8;margin:0 0 10px">Equipo de Condor Nest</p><p style="font-size:14px;line-height:1.5;color:#9aa3b5;margin:0 0 20px">Hecho en Córdoba, para builders de LatAm.</p><a href="https://condor-nest.lat" style="display:block;text-decoration:none"><img src="https://condor-nest.lat/email/condor-nest-firma.png" width="520" alt="Condor Nest — Oportunidades para builders de LatAm" style="display:block;width:100%;max-width:520px;height:auto;border:0;border-radius:12px"></a><p style="margin:18px 0 0"><a href="https://condor-nest.lat" style="font-size:14px;font-weight:700;color:#c6ff3d;text-decoration:none">condor-nest.lat</a></p></td></tr></table>`;

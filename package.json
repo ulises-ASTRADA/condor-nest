@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/rank.test.ts lib/go.test.ts lib/pill.test.ts lib/feedback.test.ts lib/featured-pricing.test.ts lib/map-location.test.ts lib/featured-request.test.ts lib/featured-invitation.test.ts lib/newsletter-confirm.test.ts lib/template-dispatch.test.ts lib/listing-analytics.test.ts"
+    "test": "tsx --test lib/rank.test.ts lib/go.test.ts lib/pill.test.ts lib/feedback.test.ts lib/featured-pricing.test.ts lib/map-location.test.ts lib/featured-request.test.ts lib/featured-invitation.test.ts lib/newsletter-confirm.test.ts lib/template-dispatch.test.ts lib/listing-analytics.test.ts lib/newsletter-digest.test.ts"
   },
   "devDependencies": {
     "@types/node": "22.18.8",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "motion": "^12.43.0",
     "next": "15.5.28",
     "pdf-lib": "^1.17.1",
