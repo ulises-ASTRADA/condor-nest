@@ -9,6 +9,7 @@ import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
 import { ldScript } from '@/lib/jsonld';
 import { OG_BASE, OG_IMAGE, SITE } from '@/lib/site';
+import { hubDescription, hubNext, hubTitle } from '@/lib/seo';
 export const revalidate = 3600;
 export const dynamicParams = false;
 export const generateStaticParams = () => HUBS.map((h) => ({ hub: h.slug }));
@@ -19,9 +20,10 @@ type P = { params: Promise<{ hub: string }> };
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const h = hubBySlug((await params).hub);
   if (!h) return {};
-  const now = new Date(); const all = await getListings(); const n = hubItems(h, all, now).length; const m = monthYear(now);
-  const { title } = hubHeading(h, n, hubRegional(h, all, now).length, m);
-  const description = `${n ? `${n} ${n === 1 ? h.noun[0] : h.noun[1]} abierto${n === 1 ? '' : 's'} ${h.where}` : `${h.noun[1]} ${h.where}`}, con premio, elegibilidad y fecha de ${hubOrder(h)} en tu hora. Actualizado todos los días, en español.`;
+  const now = new Date(); const all = await getListings(); const items = hubItems(h, all, now); const n = items.length; const regionalN = hubRegional(h, all, now).length;
+  // Real open counts; n=1 → "1 abierto", n=0 never says "0" (lib/seo.ts). The h1 keeps the month (hubHeading).
+  const title = hubTitle(h, n, regionalN, now);
+  const description = hubDescription(h, n, regionalN, hubOrder(h), hubNext(h, items));
   return { title: { absolute: title }, description, alternates: { canonical: `/${h.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/${h.slug}`, ...OG_BASE, type: 'website' } };
 }
 

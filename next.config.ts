@@ -18,7 +18,12 @@ const config: NextConfig = {
   experimental: { optimizePackageImports: ['motion'] },
   async redirects() {
     // Old production hostname → custom domain (alias redirect also set in Vercel).
-    return [{ source: '/:path*', has: [{ type: 'host', value: 'condor-nest.vercel.app' }], destination: 'https://condor-nest.lat/:path*', permanent: true }];
+    // www → bare domain (Search Console showed both indexed). Vercel's domain settings already send www to the bare domain;
+    // this keeps a 301 in code too, in case that setting changes. Path and query string are preserved.
+    return [
+      { source: '/:path*', has: [{ type: 'host', value: 'condor-nest.vercel.app' }], destination: 'https://condor-nest.lat/:path*', permanent: true },
+      { source: '/:path*', has: [{ type: 'host', value: 'www.condor-nest.lat' }], destination: 'https://condor-nest.lat/:path*', statusCode: 301 },
+    ];
   },
   async headers() {
     // Indexing ON in production (owner decision, 2026-10-14). Previews, API routes and newsletter status pages stay noindex.
