@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const l = await getListing((await params).slug);
   if (!l) return { title: 'No encontrado', robots: { index: false } };
   const prize = prizePhrase(l); const close = closeIso(l); const open = isOpen(l, new Date());
-  // Name + kind/city/year, then published prize, close date, online/LatAm; closed ones say so ("finalizada"). See lib/seo.ts.
+  // Name + kind/city/year, then published prize, close date, online/LatAm; closed ones say so ("finalizado" / "inscripción cerrada"). See lib/seo.ts.
   const title = listingTitle(l, { now: new Date(), prize, date: close ? `cierra ${shortDate(close)}` : l.startsAt ? shortDate(l.startsAt) : null });
   // ≤155 chars, priority: qué/dónde + quién organiza, quién puede, premio, fecha. Whole sentences only; last-resort cut at a word.
   const who = l.eligibilityShort ? `${l.eligibilityShort.replace(/\.$/, '')}.` : whoSentence(l).split(/(?<=\.)\s/)[0];
