@@ -8,7 +8,7 @@ import type { Listing } from '@/lib/types';
 import { ListingCard } from '@/components/ListingCard';
 import { FaqList, faqLd } from '@/components/Faq';
 import { ldScript } from '@/lib/jsonld';
-import { OG_BASE, OG_IMAGE, SITE } from '@/lib/site';
+import { OG_BASE, OG_IMAGE, SITE, TWITTER_BASE } from '@/lib/site';
 import { hubDescription, hubNext, hubTitle } from '@/lib/seo';
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -24,7 +24,12 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   // Real open counts; n=1 → "1 abierto", n=0 never says "0" (lib/seo.ts). The h1 keeps the month (hubHeading).
   const title = hubTitle(h, n, regionalN, now);
   const description = hubDescription(h, n, regionalN, hubOrder(h), hubNext(h, items));
-  return { title: { absolute: title }, description, alternates: { canonical: `/${h.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/${h.slug}`, ...OG_BASE, type: 'website' } };
+  const image = { ...OG_IMAGE, url: `/${h.slug}/opengraph-image`, alt: `${h.h1} · Condor Nest` };
+  return {
+    title: { absolute: title }, description, alternates: { canonical: `/${h.slug}` },
+    openGraph: { images: [image], title, description, url: `/${h.slug}`, ...OG_BASE, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [image], ...TWITTER_BASE },
+  };
 }
 
 export default async function HubPage({ params }: P) {
@@ -111,7 +116,7 @@ export default async function HubPage({ params }: P) {
                 <p className="mt-2 text-fg-muted">{g.items.length} abiertos, el próximo es {shortName(g.items[0])}{startDm(g.items[0]) && <> el {startDm(g.items[0])}</>}.</p>
                 <RefList items={g.items} city={false} />
               </>) : (
-                <p className="mt-2 text-fg-muted">Hoy no hay hackathons abiertos en {g.city}. Los sumamos apenas se publican, después de verificarlos en su página oficial. ¿Organizás una hackatón en {g.city}? <Link prefetch={false} href="/publicar" className="text-lime hover:underline">Publicala gratis</Link>. Para enterarte cuando aparezcan, sumate al <a href="#nl-mini-t" className="underline decoration-border underline-offset-2 hover:text-fg lg:hidden">newsletter de los lunes</a><Link prefetch={false} href="/#nl-compact-t" className="hidden underline decoration-border underline-offset-2 hover:text-fg lg:inline">newsletter de los lunes</Link>.</p>
+                <p className="mt-2 text-fg-muted">Hoy no hay hackathons abiertos en {g.city}. Los sumamos apenas se publican, después de verificarlos en su página oficial. ¿Organizás una hackatón en {g.city}? <Link prefetch={false} href="/publicar" className="text-lime hover:underline">Publicala gratis</Link>. Para enterarte cuando aparezcan, sumate al <Link prefetch={false} href="/#newsletter" className="underline decoration-border underline-offset-2 hover:text-fg">newsletter de los lunes</Link>.</p>
               )}
             </section>
           ))}

@@ -75,8 +75,21 @@ test('shortName: derived from the DB title, no new facts', async () => {
   assert.equal(n('belo buildathon: Agentic Banking MCP', 'Buenos Aires'), 'belo buildathon');
   assert.equal(n('Hackathon EDU HUB · LABITCONF 2026', 'Buenos Aires'), 'EDU HUB de LABITCONF');
   assert.equal(n('Hackatón Media Party Buenos Aires 2026', 'Buenos Aires'), 'Media Party');
+  assert.equal(n('Argentina Space 2026 · Hackathon', 'Salta'), 'Argentina Space');
   assert.equal(n('HackaTwin', 'Buenos Aires'), 'HackaTwin');
   assert.equal(n('Hackathon', null), 'Hackathon');
+});
+
+test('Argentina FAQ disambiguates events with the same short name by city', async () => {
+  const { hubBySlug } = await import('./hubs');
+  const h = hubBySlug('hackathons-argentina')!;
+  const items = [
+    { ...base, id: 'nasa-cba', title: 'NASA Space Apps Challenge Córdoba 2026', city: 'Córdoba', country: 'AR', eligibilityNote: 'No hace falta saber programar' },
+    { ...base, id: 'nasa-ba', title: 'NASA Space Apps Challenge Buenos Aires 2026', city: 'Buenos Aires', country: 'AR', eligibilityNote: 'No hace falta saber programar' },
+  ];
+  const answer = h.faqs(items.length, items, new Date('2026-10-30T12:00:00Z'), items).find((f) => f.q === '¿Tengo que saber programar o tener equipo?')!.a;
+  assert.match(answer, /NASA Space Apps Challenge Córdoba y NASA Space Apps Challenge Buenos Aires/);
+  assert.doesNotMatch(answer, /NASA Space Apps Challenge y NASA Space Apps Challenge/);
 });
 
 test('venueLines: all-or-none per list, only DB venues', async () => {

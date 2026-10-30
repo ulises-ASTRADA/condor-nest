@@ -1,4 +1,4 @@
-import { OG_BASE, OG_IMAGE } from '@/lib/site';
+import { OG_BASE, OG_IMAGE, TWITTER_BASE } from '@/lib/site';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -81,8 +81,8 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const image = { ...OG_IMAGE, url: `/o/${l.slug}/opengraph-image`, alt: `${l.title} · Condor Nest` };
   return {
     title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` },
-    openGraph: { images: [image], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'website' },
-    twitter: { card: 'summary_large_image', title, description, images: [image] },
+    openGraph: { images: [image], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'article', publishedTime: l.createdAt, modifiedTime: l.updatedAt },
+    twitter: { card: 'summary_large_image', title, description, images: [image], ...TWITTER_BASE },
   };
 }
 
