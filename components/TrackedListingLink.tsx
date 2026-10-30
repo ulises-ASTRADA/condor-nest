@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { cardContext, cardEvent, listingAnalyticsActive } from '@/lib/listing-analytics-client';
 import type { CardPlacement } from '@/lib/listing-analytics';
 
-export function TrackedListingLink({ slug, placement, className, children }: { slug: string; placement: CardPlacement; className: string; children: React.ReactNode }) {
+export function TrackedListingLink({ slug, placement, className, ariaLabel, children }: { slug: string; placement: CardPlacement; className: string; ariaLabel?: string; children: React.ReactNode }) {
   const router = useRouter();
   const prepare = (a: HTMLAnchorElement) => {
     // Do not add attribution parameters when tracking is disabled or storage is unavailable.
@@ -17,7 +17,7 @@ export function TrackedListingLink({ slug, placement, className, children }: { s
   const record = (a: HTMLAnchorElement) => {
     try { if (listingAnalyticsActive()) { prepare(a); cardEvent(a, 'card_click'); } } catch { /* Best effort. */ }
   };
-  return <Link href={`/o/${slug}`} prefetch={false} data-cn-card={slug} data-cn-placement={placement} className={className}
+  return <Link href={`/o/${slug}`} prefetch={false} data-cn-card={slug} data-cn-placement={placement} className={className} aria-label={ariaLabel}
     onPointerDown={(e) => prepare(e.currentTarget)} onKeyDown={(e) => { if (e.key === 'Enter') prepare(e.currentTarget); }} onContextMenu={(e) => prepare(e.currentTarget)}
     onAuxClick={(e) => { if (e.button === 1) record(e.currentTarget); }}
     onClick={(e) => {

@@ -55,9 +55,9 @@ export default async function Home({ searchParams }: { searchParams: Search }) {
           </div>
         ))}
         cards={<>
-          <li data-id="unconf" className="col-span-full hidden border-t border-border pt-4"><h3 className="font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Elegibilidad sin confirmar</h3><p className="mt-0.5 text-sm text-fg-muted">Revisá en la fuente si podés participar desde tu país.</p></li>
-          <li data-id="dataless" className="col-span-full pt-2 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Sin datos de competencia</li>
-          <li data-id="af" className="col-span-full"><Affiliate url={affiliateUrl()} /></li>
+          <li data-id="unconf" role="presentation" className="col-span-full hidden border-t border-border pt-4"><aside role="note" aria-label="Elegibilidad sin confirmar"><h3 className="font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Elegibilidad sin confirmar</h3><p className="mt-0.5 text-sm text-fg-muted">Revisá en la fuente si podés participar desde tu país.</p></aside></li>
+          <li data-id="dataless" role="presentation" className="col-span-full pt-2 text-xs text-fg-muted"><p role="note"><strong>Sin datos de competencia.</strong> Estas convocatorias no publican la cantidad de participantes y no se pueden comparar.</p></li>
+          <li data-id="af" role="presentation" className="col-span-full"><Affiliate url={affiliateUrl()} /></li>
           {renderedListings.filter((l) => !isFeatured(l)).map((l) => <li key={l.id} data-id={l.id} className="flex-col"><ListingCard listing={l} now={now.toISOString()} /></li>)}
         </>} now={now.toISOString()} initial={{ f, sort }} affUrl={affiliateUrl()} hero={<>
         <h1 className="font-display text-[26px] font-semibold leading-8 tracking-[-.01em] lg:text-[44px] lg:font-extrabold lg:leading-[48px]"><span className="text-gradient">Oportunidades</span> para builders de LatAm</h1>

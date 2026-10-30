@@ -7,6 +7,7 @@ import { TypeBadge, CardTags } from './Badges';
 import { Countdown } from './Countdown';
 import { LocalTime } from './LocalTime';
 import { ymdShort } from '@/lib/dates';
+import { withoutDecorativeEmoji } from '@/lib/accessible-text';
 
 /** showStart: lists ordered by start date also print the start when the countdown shows another date (deadline). */
 export function ListingCard({ listing: l, variant = 'default', now, showStart = false }: { listing: Listing; variant?: 'default' | 'featured' | 'compact'; now: string; showStart?: boolean }) {
@@ -18,13 +19,13 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
         className={`card card-link listing-card group flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
         {variant === 'featured' && (
-          <span data-featured-pill className="featured-pill mb-2 inline-block w-fit self-start rounded-pill bg-lime px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">★ Destacado</span>
+          <span data-featured-pill className="featured-pill mb-2 inline-block w-fit self-start rounded-pill bg-lime px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]"><span aria-hidden="true">★</span> Destacado</span>
         )}
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
           <TypeBadge type={l.type} /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
         <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>
-          <TrackedListingLink slug={l.slug} placement={placement} className="card-title-link rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">{l.title}</TrackedListingLink>
+          <TrackedListingLink slug={l.slug} placement={placement} className="card-title-link rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime" ariaLabel={withoutDecorativeEmoji(l.title)}>{l.title}</TrackedListingLink>
         </h3>
         <div className="mt-auto pt-2">
         {variant !== 'compact' && (
