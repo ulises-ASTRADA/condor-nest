@@ -27,7 +27,7 @@ function Check({ on, onClick, children }: { on: boolean; onClick: () => void; ch
     </button>
   );
 }
-const H4 = ({ children }: { children: React.ReactNode }) => <h4 className="mb-2.5 mt-5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">{children}</h4>;
+const FilterLabel = ({ children }: { children: React.ReactNode }) => <p className="mb-2.5 mt-5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">{children}</p>;
 
 const PAGE = 20;
 
@@ -164,16 +164,16 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   );
   const sideControls = (
     <div className="text-sm">
-      <H4>Ubicación</H4>
+      <FilterLabel>Ubicación</FilterLabel>
       {locSelect('')}
-      <H4>Modalidad y acceso</H4>
+      <FilterLabel>Modalidad y acceso</FilterLabel>
       <Check on={f.virtual} onClick={() => set({ virtual: !f.virtual })}>Virtual</Check>
       <Check on={f.abiertoTodos} onClick={() => set({ abiertoTodos: !f.abiertoTodos })}>Abierto a todos</Check>
-      <H4>Tipo</H4>
+      <FilterLabel>Tipo</FilterLabel>
       {ALL_TYPES.map((t) => <Check key={t} on={f.tipos.includes(t)} onClick={() => set({ tipos: toggle(f.tipos, t) })}>{TYPE_LBL[t]}</Check>)}
-      <H4>Ecosistema</H4>
+      <FilterLabel>Ecosistema</FilterLabel>
       {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
-      <H4>Estado</H4>
+      <FilterLabel>Estado</FilterLabel>
       <Check on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Check>
       <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>
       {anyFilter && <div className="mt-4"><button type="button" onClick={clearAll} className={clearCls}>Limpiar filtros</button></div>}

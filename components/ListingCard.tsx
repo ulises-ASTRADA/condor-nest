@@ -12,10 +12,10 @@ import { ymdShort } from '@/lib/dates';
 export function ListingCard({ listing: l, variant = 'default', now, showStart = false }: { listing: Listing; variant?: 'default' | 'featured' | 'compact'; now: string; showStart?: boolean }) {
   const r = rewardText(l); const c = competitionText(l);
   const closed = !isOpen(l, new Date(now));
+  const placement = variant === 'featured' ? 'featured' : variant === 'compact' ? 'related' : 'organic';
   return (
-    <TrackedListingLink slug={l.slug} placement={variant === 'featured' ? 'featured' : variant === 'compact' ? 'related' : 'organic'} className="card-link group flex h-full flex-col rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
       <article
-        className={`card flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface group-hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
+        className={`card card-link listing-card group flex h-full flex-1 flex-col rounded-card p-4 transition-[transform,border-color,filter,opacity] duration-fast ease-out-expo ${variant === 'featured' ? 'featured' : 'border border-border bg-surface hover:border-lime/60'} ${closed ? 'opacity-60 grayscale-[.6] duration-slow' : ''}`}
         style={{ viewTransitionName: variant === 'compact' ? undefined : `listing-${l.id}` } as React.CSSProperties}>
         {variant === 'featured' && (
           <span data-featured-pill className="featured-pill mb-2 inline-block w-fit self-start rounded-pill bg-lime px-2 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-[#07080B]">★ Destacado</span>
@@ -23,7 +23,9 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
         <div className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
           <TypeBadge type={l.type} /> <span className="basis-full">{l.organizer ?? SOURCE_LABEL[l.source]}</span>
         </div>
-        <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>{l.title}</h3>
+        <h3 lang={l.titleLang === 'en' ? 'en' : undefined} className={`mt-2 line-clamp-2 font-medium ${variant === 'compact' ? 'text-base' : 'text-lg'}`}>
+          <TrackedListingLink slug={l.slug} placement={placement} className="card-title-link rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime">{l.title}</TrackedListingLink>
+        </h3>
         <div className="mt-auto pt-2">
         {variant !== 'compact' && (
           <p className={`font-mono tabular ${r.missing ? (l.rewardText ? 'line-clamp-2 text-sm text-fg' : 'text-sm text-fg-muted') : 'text-xl'}`}>
@@ -43,7 +45,6 @@ export function ListingCard({ listing: l, variant = 'default', now, showStart = 
         )}
         </div>
       </article>
-    </TrackedListingLink>
   );
 }
 

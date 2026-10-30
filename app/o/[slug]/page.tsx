@@ -78,7 +78,12 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
   const st = listingState(l, new Date()); const all = st === 'finished' ? await getListings() : [];
   const fw = st === 'finished' ? wayForward(l, (h) => hubItems(h, all, new Date()).length) : null;
   const description = listingDescription(parts, st, fw ? `${fw.text}.` : null, l.type);
-  return { title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` }, openGraph: { images: [OG_IMAGE], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'website' } };
+  const image = { ...OG_IMAGE, url: `/o/${l.slug}/opengraph-image`, alt: `${l.title} · Condor Nest` };
+  return {
+    title: { absolute: title }, description, alternates: { canonical: `/o/${l.slug}` },
+    openGraph: { images: [image], title, description, url: `/o/${l.slug}`, ...OG_BASE, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
+  };
 }
 
 function Cta({ l, className = '' }: { l: Listing; className?: string }) {
