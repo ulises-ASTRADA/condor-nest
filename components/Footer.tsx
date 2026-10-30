@@ -14,7 +14,7 @@ export function Footer() {
             <Link prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href="/publicar">Publicá tu evento</Link>
             <Link prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href="/privacidad">Privacidad</Link>
             <Link prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href="/terminos">Términos</Link>
-            <a className="min-h-tap inline-flex items-center hover:text-fg" href="mailto:hola@condor-nest.lat">Contacto</a>
+            <a className="min-h-tap inline-flex items-center hover:text-fg" href="mailto:hola@condor-nest.lat">Contacto: hola@condor-nest.lat</a>
           </nav>
           <nav aria-label="Explorar" className="flex flex-wrap items-center gap-x-4 gap-y-1"><span className="font-mono text-[11px] uppercase tracking-[.12em] text-cyan">Explorar</span>{HUBS.map((h) => <Link key={h.slug} prefetch={false} className="min-h-tap inline-flex items-center hover:text-fg" href={`/${h.slug}`}>{h.label}</Link>)}</nav>
           <p>Hecho en Córdoba para builders de LatAm · Datos de Superteam Earn, Devpost, Taikai y curación propia</p>

@@ -8,10 +8,29 @@ import { HUBS, type Hub, hubBySlug, hubOrder, shortName } from './hubs';
 export const TITLE_MAX = 60;
 export const DESC_MAX = 155;
 export const BRAND = ' | Condor Nest';
+const FEED_PARAMS = new Set(['q', 'tipo', 'eco', 'cerradas', 'pais', 'ciudad', 'virtual', 'abierto', 'sinconfirmar', 'orden']);
 const AR = 'America/Argentina/Cordoba';
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const yearOf = (iso: string) => new Intl.DateTimeFormat('es-AR', { timeZone: AR, year: 'numeric' }).format(new Date(iso));
 const KIND_RE: Record<Listing['type'], RegExp> = { hackathon: /hack(a|e)?t(h)?[oó]n/i, bounty: /bount(y|ies)|recompensa/i, grant: /grant|subsidio|beca|fondo/i };
+
+/** Canonical/noindex policy for the filterable home. Exact landing equivalents canonicalize there;
+ * every other meaningful filter is noindex so query combinations cannot become duplicate index pages. */
+export function feedSeo(search: Record<string, string | string[] | undefined>): { canonical: string | null; noindex: boolean } {
+  const value = (key: string) => { const v = search[key]; return (Array.isArray(v) ? v[0] : v)?.trim().toLowerCase() ?? ''; };
+  const keys = Object.keys(search).filter((key) => FEED_PARAMS.has(key) && value(key));
+  if (!keys.length) return { canonical: '/', noindex: false };
+  const exact = (...wanted: string[]) => keys.length === wanted.length && wanted.every((key) => keys.includes(key));
+  const type = value('tipo');
+  if (exact('tipo') && type === 'bounty') return { canonical: '/bounties', noindex: false };
+  if (exact('tipo') && type === 'grant') return { canonical: '/grants', noindex: false };
+  if (exact('tipo', 'eco') && type === 'hackathon' && value('eco') === 'ia') return { canonical: '/hackathons-ia', noindex: false };
+  if (exact('tipo', 'pais') && type === 'hackathon') {
+    const country = HUBS.find((h) => h.iso?.toLowerCase() === value('pais'));
+    if (country) return { canonical: `/${country.slug}`, noindex: false };
+  }
+  return { canonical: null, noindex: true };
+}
 
 /** Greedy: keep whole parts, in priority order, while the joined result stays ≤ max. */
 export function fit(parts: (string | null | undefined | false)[], sep: string, max: number): string {

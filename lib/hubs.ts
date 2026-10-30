@@ -100,6 +100,7 @@ const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  *  minus a leading "Hackathon/Hackatón", a trailing year and a trailing city that repeats the DB city. Falls back to the title. */
 export function shortName(l: Listing): string {
   let t = l.title.split(':')[0].trim();
+  t = t.replace(/\s+·\s+hackat(h)?[oó]n$/i, '').trim();
   t = t.replace(/\s+(19|20)\d{2}$/, '').trim();
   t = t.replace(/^hackat(h)?[oó]n\s+/i, '').trim();
   if (l.city) t = t.replace(new RegExp(`\\s+(en\\s+)?${esc(l.city)}$`, 'i'), '').trim();
@@ -146,7 +147,12 @@ const TEAM_ON_SITE = /(armar equipo|se arman en el lugar|arma \d+ equipos|te ayu
 const FREE_RE = /\b(gratis|gratuit[oa])\b/i;
 const freeText = (l: Listing) => [l.eligibilityShort, l.eligibilityNote].filter(Boolean).join(' ');
 const ref = (l: Listing) => `${shortName(l)}${refDetails(l)}`;
-const names = (xs: Listing[]) => joinY(xs.map(shortName));
+const names = (xs: Listing[]) => {
+  const base = xs.map(shortName);
+  const counts = new Map<string, number>();
+  base.forEach((name) => counts.set(name.toLocaleLowerCase('es'), (counts.get(name.toLocaleLowerCase('es')) ?? 0) + 1));
+  return joinY(xs.map((l, i) => counts.get(base[i].toLocaleLowerCase('es'))! > 1 && l.city ? `${base[i]} ${l.city}` : base[i]));
+};
 /** Brief §7 FAQs (country hubs with pinned cities). Dynamic answers are built only from listing data; they regenerate with the page. */
 function richCountryFaqs(h: Hub, name: string, items: Listing[], now: Date, all: Listing[]): Faq[] {
   const n = items.length;

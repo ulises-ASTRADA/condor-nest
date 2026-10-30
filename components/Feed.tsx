@@ -1,14 +1,12 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Listing, ListingType } from '@/lib/types';
 import { featuredListings, isFeatured } from '@/lib/featured';
 import { filtersFromSearch, ALL_TYPES, DEFAULT_FILTERS, SORTS, filtersToSearch, matches, sortListings, isOpen, locationContext, locationGroups, type Filters, type Sort } from '@/lib/rank';
 import { HUBS } from '@/lib/hubs';
 import { inCountry } from '@/lib/rank';
-import dynamic from 'next/dynamic';
-const Newsletter = dynamic(() => import('./Newsletter').then((x) => x.Newsletter));
 import { Affiliate } from './Affiliate';
 import { Ticker } from './Ticker';
 import { useReduceMotionPref } from './Toggles';
@@ -49,6 +47,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   const locCtx = useMemo(() => locationContext(listings), [listings]); const cityOpts = locCtx.cities;
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [limit, setLimit] = useState(PAGE);
+  const router = useRouter();
   const first = useRef(true);
   // URL → state: logo/breadcrumb Link to "/", back/forward, or any external URL change resets the island to what the URL says.
   const sp = useSearchParams(); const spStr = sp.toString();
@@ -129,6 +128,13 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
   }, [featured, shown, dataless]);
 
   const set = (p: Partial<Filters>) => { setF((o) => ({ ...o, ...p })); setLimit(PAGE); };
+  // Closed listings are intentionally absent from the default server HTML. Toggling them performs a
+  // server navigation so the DOM, visible cards and counter all describe the same collection.
+  const toggleClosed = () => {
+    const next = { ...f, showClosed: !f.showClosed };
+    const qs = filtersToSearch(next, sort);
+    router.push(qs ? `/?${qs}` : '/');
+  };
   // mobile chips: a type chip shows "only this type"; tapping again restores all
   const chipTipo = (t: ListingType) => set({ tipos: f.tipos.length === 1 && f.tipos[0] === t ? [...ALL_TYPES] : [t] });
   const onlyTipo = (t: ListingType) => f.tipos.length === 1 && f.tipos[0] === t;
@@ -157,7 +163,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
         <Chip on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Chip>
         {ALL_TYPES.map((t) => <Chip key={t} on={onlyTipo(t)} onClick={() => chipTipo(t)}>{TYPE_LBL[t]}</Chip>)}
         {ECOSYSTEMS.map((e) => <Chip key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Chip>)}
-        <Chip on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Chip>
+        <Chip on={f.showClosed} onClick={toggleClosed}>Ver cerradas</Chip>
         {anyFilter && <button type="button" onClick={clearAll} className={clearCls}>Limpiar filtros</button>}
       </div>
     </div>
@@ -174,7 +180,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
       <FilterLabel>Ecosistema</FilterLabel>
       {ECOSYSTEMS.map((e) => <Check key={e} on={f.ecos.includes(e)} onClick={() => set({ ecos: toggle(f.ecos, e as Eco) })}>{e}</Check>)}
       <FilterLabel>Estado</FilterLabel>
-      <Check on={f.showClosed} onClick={() => set({ showClosed: !f.showClosed })}>Ver cerradas</Check>
+      <Check on={f.showClosed} onClick={toggleClosed}>Ver cerradas</Check>
       <Check on={!f.sinConfirmar} onClick={() => set({ sinConfirmar: !f.sinConfirmar })}>Ocultar sin confirmar</Check>
       {anyFilter && <div className="mt-4"><button type="button" onClick={clearAll} className={clearCls}>Limpiar filtros</button></div>}
     </div>
@@ -223,7 +229,6 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
           )}
         </section>
         <aside className="hidden flex-col gap-4 lg:flex lg:sticky lg:top-[90px] lg:self-start">
-          <Newsletter variant="compact" />
           {closingWeek.length > 0 && (
             <section aria-labelledby="cs">
               <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierres próximos</h4>

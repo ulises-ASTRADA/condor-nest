@@ -2,7 +2,7 @@ import { Cursor } from '@/components/Cursor';
 import type { Metadata, Viewport } from 'next';
 import { Unbounded, Space_Grotesk, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { OG_BASE, SITE } from '@/lib/site';
+import { OG_BASE, SITE, TWITTER_BASE } from '@/lib/site';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ClientBoot } from '@/components/ClientBoot';
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: { default: TITLE, template: '%s · Condor Nest' },
   description: DESC,
   openGraph: { title: TITLE, description: DESC, ...OG_BASE, type: 'website', url: '/' },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESC },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESC, ...TWITTER_BASE },
   robots: { index: true, follow: true }, // indexing ON by owner decision (2026-10-14)
   verification: { google: 'd3KINZQI8s8konhUVjj6G0Xrn62Bybx0eynzeu4_iC0' },
 };

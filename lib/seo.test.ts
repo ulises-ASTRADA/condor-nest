@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canonicalOrigin } from './site.ts';
-import { isFinished, wayForward, listingName, listingTitle, listingState, listingDescription, hubTitle, hubDescription, nextHub, nextHubText, TITLE_MAX } from './seo.ts';
+import { feedSeo, isFinished, wayForward, listingName, listingTitle, listingState, listingDescription, hubTitle, hubDescription, nextHub, nextHubText, TITLE_MAX } from './seo.ts';
 import { hubBySlug } from './hubs.ts';
 import nextConfig from '../next.config.ts';
 
@@ -18,6 +18,17 @@ test('canonical origin: https, no www, no trailing slash, falls back to condor-n
   assert.equal(canonicalOrigin(undefined), 'https://condor-nest.lat');
   assert.equal(canonicalOrigin(''), 'https://condor-nest.lat');
   assert.equal(canonicalOrigin('not a url'), 'https://condor-nest.lat');
+});
+
+test('filtered home canonicals only exact landing equivalents; other filters are noindex', () => {
+  assert.deepEqual(feedSeo({}), { canonical: '/', noindex: false });
+  assert.deepEqual(feedSeo({ utm_source: 'x' }), { canonical: '/', noindex: false });
+  assert.deepEqual(feedSeo({ tipo: 'hackathon', pais: 'ar' }), { canonical: '/hackathons-argentina', noindex: false });
+  assert.deepEqual(feedSeo({ tipo: 'bounty' }), { canonical: '/bounties', noindex: false });
+  assert.deepEqual(feedSeo({ tipo: 'grant' }), { canonical: '/grants', noindex: false });
+  assert.deepEqual(feedSeo({ tipo: 'hackathon', eco: 'IA' }), { canonical: '/hackathons-ia', noindex: false });
+  assert.deepEqual(feedSeo({ pais: 'ar' }), { canonical: null, noindex: true });
+  assert.deepEqual(feedSeo({ tipo: 'hackathon', pais: 'ar', cerradas: '1' }), { canonical: null, noindex: true });
 });
 
 test('www.condor-nest.lat/* → 301 to https://condor-nest.lat/* (path kept; Next keeps the query string)', async () => {
