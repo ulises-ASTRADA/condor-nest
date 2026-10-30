@@ -28,6 +28,10 @@ test('finished listing page: indexable (no robots noindex in metadata, headers o
   // the mocked DB has only this (finished) listing, so the hub has 0 open: falls back to the LatAm feed, never "los 0"
   assert.match(md.description, /Mirá los hackathons abiertos en LatAm\.$/);
   assert.equal(md.alternates.canonical, '/o/shippear-3-rosario-2026');
+  assert.equal(md.twitter.title, md.title.absolute);
+  assert.equal(md.twitter.description, md.description);
+  assert.equal(md.twitter.images[0].url, '/o/shippear-3-rosario-2026/opengraph-image');
+  assert.equal(md.openGraph.images[0].url, '/o/shippear-3-rosario-2026/opengraph-image');
   const cfg = (await import('../next.config.ts')).default as any;
   const { pathToRegexp } = await import('next/dist/compiled/path-to-regexp/index.js' as any).catch(() => ({ pathToRegexp: null }));
   for (const h of await cfg.headers()) {
@@ -46,5 +50,6 @@ test('finished listing: Event JSON-LD keeps the real startDate/endDate', async (
   const ev: any = eventLd(fromRow(row as any));
   assert.equal(ev.startDate, '2026-10-24T12:00:00Z');
   assert.equal(ev.endDate, '2026-10-24T21:00:00Z');
+  assert.equal(ev.image[0], 'https://condor-nest.lat/o/shippear-3-rosario-2026/opengraph-image');
   assert.equal(ev.eventStatus, 'https://schema.org/EventScheduled'); // not marked cancelled/postponed for being over
 });

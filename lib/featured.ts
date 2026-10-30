@@ -2,7 +2,9 @@ import type { Listing } from './types';
 
 // Owner-selected placements, in display order. Keep slugs exact: do not promote
 // every listing from an organizer. Normal feed filters and closing dates apply.
-export const FEATURED_ORDER = ['belo-hackathon-agentic-banking-mcp', 'hackatwin-2026'] as const;
+// Editorial pins are intentionally short-lived. Keep this list empty when a
+// campaign ends so a closed listing cannot remain promoted from source code.
+export const FEATURED_ORDER = [] as const;
 const priority = (l: Listing) => {
   const index = FEATURED_ORDER.findIndex((slug) => slug === l.slug);
   return index < 0 ? FEATURED_ORDER.length : index;

@@ -70,8 +70,8 @@ export function eventLd(l: Listing, about?: OrgAbout | null, now?: Date, venues?
     eventStatus: 'https://schema.org/EventScheduled', inLanguage: l.titleLang === 'en' ? 'en' : 'es-AR',
     ...(location ? { location } : {}),
     ...(withAccess(l.summaryEs?.length ? l.summaryEs.join(' ') : null, l) ? { description: withAccess(l.summaryEs?.length ? l.summaryEs.join(' ') : null, l) } : {}),
-    // No per-listing image in the DB: use the site OG image (same one the page's og:image uses).
-    image: [`${SITE}/opengraph-image`],
+    // Each listing has a generated social card even when the source does not publish a reusable image.
+    image: [`${SITE}/o/${l.slug}/opengraph-image`],
   };
   // endDate: only a published end (ends_at, else raw end_date). No end published = no endDate. The old single-day fallback
   // (endDate = startDate) was removed on 2026-10-27 (SEO decision): it gave multi-day events like Stranger Builds a zero duration.

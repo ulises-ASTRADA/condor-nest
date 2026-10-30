@@ -81,15 +81,16 @@ body { background: rgb(var(--bg)); color: rgb(var(--fg)); }
 /* Card glow on pseudo-element opacity (perf budget §4b) + spotlight */
 .card { position: relative; isolation: isolate; }
 .card::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; box-shadow: var(--glow-lime); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out-expo); pointer-events: none; }
-.card-link:hover .card::after, .card-link:focus-visible .card::after { opacity: 1; }
+.card-link:hover .card::after, .card-link:focus-within .card::after, .listing-card:hover::after, .listing-card:focus-within::after { opacity: 1; }
+.card-title-link::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
 @media (pointer: fine) {
-  .card-link:hover .card { transform: translateY(-2px); }
+  .card-link:hover .card, .listing-card:hover { transform: translateY(-2px); }
   .card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: -1; opacity: 0; transition: opacity var(--dur-fast);
     background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--lime) / .08), transparent 60%); }
-  .card-link:hover .card::before { opacity: 1; }
+  .card-link:hover .card::before, .listing-card:hover::before { opacity: 1; }
 }
-html[data-reduce-motion] .card-link:hover .card { transform: none; }
-@media (prefers-reduced-motion: reduce) { .card-link:hover .card { transform: none; } }
+html[data-reduce-motion] .card-link:hover .card, html[data-reduce-motion] .listing-card:hover { transform: none; }
+@media (prefers-reduced-motion: reduce) { .card-link:hover .card, .listing-card:hover { transform: none; } }
 
 /* Featured gradient border (mask trick) + shimmer */
 .featured { border: 2px solid rgb(var(--lime)); background: rgb(var(--surface)); box-shadow: 0 0 0 4px rgb(var(--lime) / .12); }
@@ -114,12 +115,12 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
 
 /* ---------- Hover system (150–250ms, transform/opacity first) ---------- */
 @media (hover: hover) {
-  .card-link:hover .card:not(.featured) { border-color: transparent;
+  .card-link:hover .card:not(.featured), .listing-card:hover:not(.featured) { border-color: transparent;
     background: linear-gradient(rgb(var(--surface)), rgb(var(--surface))) padding-box, linear-gradient(135deg, rgb(var(--lime)), rgb(var(--cyan))) border-box;
     box-shadow: 0 10px 30px -14px rgb(var(--cyan) / .45); }
-  .card-link:hover .card::before { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--cyan) / .12), transparent 60%); }
+  .card-link:hover .card::before, .listing-card:hover::before { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--cyan) / .12), transparent 60%); }
   .card { transition: transform 200ms cubic-bezier(.16,1,.3,1), box-shadow 200ms ease, border-color 200ms ease; }
-  .card-link:hover .card { transform: translateY(-2px); }
+  .card-link:hover .card, .listing-card:hover { transform: translateY(-2px); }
 
 
   .badge { transition: filter 160ms ease; } .card-link:hover .badge, .badge:hover { filter: brightness(1.3) saturate(1.15); }
@@ -145,10 +146,10 @@ html[data-reduce-motion] .card-link:hover .card { transform: none; }
   .fx-rotate > span { display: inline-block; transition: transform 250ms cubic-bezier(.16,1,.3,1); }
   .fx-rotate:hover > span { transform: rotate(45deg); }
 }
-html[data-reduce-motion] .card-link:hover .card, html[data-reduce-motion] .btn-sweep:hover, html[data-reduce-motion] .fx-mini:hover a, html[data-reduce-motion] .fx-rotate:hover > span { transform: none !important; }
+html[data-reduce-motion] .card-link:hover .card, html[data-reduce-motion] .listing-card:hover, html[data-reduce-motion] .btn-sweep:hover, html[data-reduce-motion] .fx-mini:hover a, html[data-reduce-motion] .fx-rotate:hover > span { transform: none !important; }
 html[data-reduce-motion] .btn-sweep::before { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .card-link:hover .card, .btn-sweep:hover, .fx-mini:hover a, .fx-rotate:hover > span { transform: none !important; }
+  .card-link:hover .card, .listing-card:hover, .btn-sweep:hover, .fx-mini:hover a, .fx-rotate:hover > span { transform: none !important; }
   .btn-sweep::before { display: none; }
 }
 
@@ -190,7 +191,7 @@ html.cursor-on input, html.cursor-on textarea { cursor: text; }
 @keyframes cn-tick { from { opacity: 0; transform: translateY(40%); } to { opacity: 1; transform: none; } }
 /* C. press scale (hover lift is above, desktop only) */
 @media (prefers-reduced-motion: no-preference) {
-  html:not([data-reduce-motion]) .card-link:active .card { transform: scale(.985); }
+  html:not([data-reduce-motion]) .card-link:active .card, html:not([data-reduce-motion]) .listing-card:active { transform: scale(.985); }
 }
 /* D. Destacado shimmer: 3 passes, then stops */
 @media (prefers-reduced-motion: no-preference) {
