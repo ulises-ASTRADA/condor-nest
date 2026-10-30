@@ -13,6 +13,7 @@ import { useReduceMotionPref } from './Toggles';
 import { ECOSYSTEMS, type Eco } from '@/lib/eco';
 import { COUNTRY_ES } from '@/lib/geo';
 import { deadlineCountdown } from '@/lib/format';
+import { withoutDecorativeEmoji } from '@/lib/accessible-text';
 
 const TYPE_LBL: Record<ListingType, string> = { hackathon: 'Hackathon', bounty: 'Bounty', grant: 'Grant' };
 const toggle = <T,>(arr: T[], v: T) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -38,7 +39,7 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   );
 }
 function Counter({ n }: { n: number }) {
-  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'convocatoria' : 'convocatorias'}</span>;
+  return <span aria-live="polite" className="font-mono tabular"><Ticker text={n.toLocaleString('es-AR')} /> {n === 1 ? 'convocatoria' : 'convocatorias'} con estos filtros</span>;
 }
 export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCards }: { listings: Listing[]; now: string; initial: { f: Filters; sort: Sort }; affUrl: string; hero?: React.ReactNode; cards: React.ReactNode; featuredCards: React.ReactNode }) {
   // Scope lives only in the URL (no hidden geo/localStorage scope): default = all LatAm (listings restricted to another country are always hidden).
@@ -198,7 +199,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
             <div role="status" className="mt-3 flex max-w-full items-start gap-2 rounded-[14px] border border-cyan/40 bg-surface-2 py-1 pl-3 pr-1 text-sm sm:inline-flex sm:items-center sm:rounded-pill">
               {/* <sm: text, then "Ver todo LatAm" on its own line; sm+: one inline row */}
               <p className="min-w-0 flex-1 py-1 sm:py-0">
-                <span>📍 Mostrando oportunidades {cityName ? `en ${cityName}, ${COUNTRY_ES[f.pais] ?? f.pais}` : `para ${COUNTRY_ES[f.pais] ?? f.pais}`}{!cityName && total > 0 && !vis.some((l) => inCountry(l, f.pais!)) && <span className="text-fg-muted"> (ninguna es específica de {COUNTRY_ES[f.pais] ?? f.pais}: son abiertas a toda LatAm u online)</span>}</span><span aria-hidden="true" className="hidden text-fg-muted sm:inline"> · </span>
+                <span><span aria-hidden="true">📍</span> Mostrando oportunidades {cityName ? `en ${cityName}, ${COUNTRY_ES[f.pais] ?? f.pais}` : `para ${COUNTRY_ES[f.pais] ?? f.pais}`}{!cityName && total > 0 && !vis.some((l) => inCountry(l, f.pais!)) && <span className="text-fg-muted"> (ninguna es específica de {COUNTRY_ES[f.pais] ?? f.pais}: son abiertas a toda LatAm u online)</span>}</span><span aria-hidden="true" className="hidden text-fg-muted sm:inline"> · </span>
                 <button type="button" onClick={() => choosePais(null)} className="mt-1 block text-cyan underline-offset-4 hover:underline sm:mt-0 sm:inline">Ver todo LatAm</button>
               </p>
               <button type="button" aria-label="Quitar filtro de ubicación" onClick={() => choosePais(null)} className="grid h-7 w-7 shrink-0 place-items-center rounded-pill text-fg-muted hover:text-fg">✕</button>
@@ -234,7 +235,7 @@ export function Feed({ listings, now, initial, affUrl, hero, cards, featuredCard
               <h4 id="cs" className="mb-0.5 font-mono text-[11px] uppercase leading-none tracking-[.08em] text-fg-muted">Cierres próximos</h4>
               <ul>{closingWeek.map((l) => { const ms = new Date(l.deadlineAt!).getTime() - tick; return (
                 <li key={l.id} className="fx-mini border-b border-border py-2.5 text-sm">
-                  <Link href={`/o/${l.slug}`} prefetch={false} className="hover:text-lime" lang={l.titleLang}>{l.title}</Link>
+                  <Link href={`/o/${l.slug}`} prefetch={false} className="hover:text-lime" lang={l.titleLang} aria-label={withoutDecorativeEmoji(l.title)}>{l.title}</Link>
                   <div className={`font-mono text-xs ${ms < 864e5 ? 'font-bold text-danger' : 'text-warning'}`}>{ms <= 0 ? 'Cerrada' : `Cierra en ${deadlineCountdown(ms)}`}</div>
                 </li>); })}</ul>
             </section>

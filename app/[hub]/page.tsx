@@ -10,7 +10,8 @@ import { FaqList, faqLd } from '@/components/Faq';
 import { ldScript } from '@/lib/jsonld';
 import { OG_BASE, OG_IMAGE, SITE, TWITTER_BASE } from '@/lib/site';
 import { hubDescription, hubNext, hubTitle } from '@/lib/seo';
-export const revalidate = 3600;
+// Keep landing metadata, FAQs, and social previews close to the daily source updates.
+export const revalidate = 300;
 export const dynamicParams = false;
 export const generateStaticParams = () => HUBS.map((h) => ({ hub: h.slug }));
 

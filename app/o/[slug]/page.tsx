@@ -23,6 +23,7 @@ import { OrgAbout } from '@/components/OrgAbout';
 import { Location, LocationNote, MultiLocation } from '@/components/Location';
 import { bareHost, goPath, hostLabel } from '@/lib/go';
 import { closeDisplay, EVENT_TBC, regClosedLabel, ymdLong, ymdLongYear } from '@/lib/dates';
+import { withoutDecorativeEmoji } from '@/lib/accessible-text';
 export const revalidate = 300;
 
 const AR = 'America/Argentina/Cordoba';
@@ -173,7 +174,7 @@ export default async function Detail({ params }: P) {
       <div className="mt-2 grid gap-8 lg:grid-cols-3">
         <article className="min-w-0 lg:col-span-2">
           <div className="flex flex-wrap gap-1.5">{forward ? <span className="dl-pill dl-pill--closed" style={{ marginTop: 0 }}>Finalizado</span> : !open && (regClosed ? <span className="inline-flex items-center rounded-pill border border-border px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-fg-muted">Inscripción cerrada</span> : <span className="inline-flex items-center rounded-pill border border-danger/50 px-2.5 py-0.5 font-mono text-xs uppercase tracking-[.08em] text-danger">Cerrada</span>)}<TypeBadge type={l.type} /><ModalityBadge l={l} /><EligBadge l={l} short /></div>
-          <h1 lang={l.titleLang === 'en' ? 'en' : undefined} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
+          <h1 lang={l.titleLang === 'en' ? 'en' : undefined} aria-label={withoutDecorativeEmoji(l.title)} className="mt-3 font-display text-3xl font-semibold" style={{ viewTransitionName: `listing-${l.id}` }}>{l.title}</h1>
           {forward && <p role="status" className="mt-2 rounded-card border border-border bg-surface-2 p-3 text-sm">Esta convocatoria ya terminó. <Link prefetch={false} href={forward.href} className="text-lime hover:underline">{forward.text}</Link>.</p>}
           <p className="mt-2 text-sm text-fg-muted">{l.organizer && <>por {l.organizer} · </>}{l.sourceUrl ? <a href={l.sourceUrl} target="_blank" rel={l.featured ? "sponsored noopener noreferrer" : "noopener noreferrer"} aria-label={`vía ${srcLabel} (abre sitio externo)`} className="hover:text-lime">vía {srcLabel} ↗</a> : null}</p>
           <p className="mt-1 font-mono text-xs text-fg-muted">Actualizado el <time dateTime={updated}>{numDate(updated)}</time></p>
